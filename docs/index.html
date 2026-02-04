@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StatusBar — Monitor Status Pages from Your Menu Bar</title>
+  <meta name="description" content="A single-file SwiftUI menu bar app that monitors multiple Atlassian Statuspage-powered status pages simultaneously.">
+  <meta property="og:title" content="StatusBar">
+  <meta property="og:description" content="Monitor multiple Atlassian Statuspage-powered status pages from your macOS menu bar.">
+  <meta property="og:image" content="icon.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="icon.png" alt="StatusBar icon" width="28" height="28">
+        StatusBar
+      </a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="3" y1="5" x2="17" y2="5"/>
+          <line x1="3" y1="10" x2="17" y2="10"/>
+          <line x1="3" y1="15" x2="17" y2="15"/>
+        </svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#status-colors">Status</a></li>
+        <li><a href="#get-started">Get Started</a></li>
+        <li><a href="#docs">Docs</a></li>
+        <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <img src="icon.png" alt="StatusBar app icon" class="hero-icon" width="128" height="128">
+      <h1>StatusBar</h1>
+      <p class="hero-tagline">A single-file SwiftUI menu bar app that monitors multiple Atlassian Statuspage-powered status pages simultaneously.</p>
+      <div class="hero-ctas">
+        <a href="https://github.com/alexnodeland/StatusBar/releases/latest" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
+          Download
+        </a>
+        <a href="https://github.com/alexnodeland/StatusBar" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <div class="hero-badges">
+        <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+" width="76" height="20">
+        <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+" width="80" height="20">
+        <img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release" width="100" height="20">
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="container">
+      <p class="section-label">Features</p>
+      <h2>Everything you need, nothing you don't</h2>
+      <div class="features-grid">
+
+        <div class="glass-card feature-card">
+          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="20" cy="20" r="14"/>
+            <circle cx="20" cy="20" r="4" fill="currentColor"/>
+            <line x1="20" y1="2" x2="20" y2="6"/><line x1="20" y1="34" x2="20" y2="38"/>
+            <line x1="2" y1="20" x2="6" y2="20"/><line x1="34" y1="20" x2="38" y2="20"/>
+          </svg>
+          <h3>Status at a Glance</h3>
+          <p>Menu bar icon reflects the worst status across all sources with a numeric badge showing issues.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="6" width="14" height="12" rx="3"/>
+            <rect x="22" y="6" width="14" height="12" rx="3"/>
+            <rect x="4" y="22" width="14" height="12" rx="3"/>
+            <rect x="22" y="22" width="14" height="12" rx="3"/>
+          </svg>
+          <h3>Multi-Source Monitoring</h3>
+          <p>Monitor any number of Atlassian Statuspage-powered services simultaneously.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8h16M12 16h16M12 24h10"/>
+            <circle cx="7" cy="8" r="2" fill="currentColor"/><circle cx="7" cy="16" r="2" fill="currentColor"/><circle cx="7" cy="24" r="2" fill="currentColor"/>
+            <path d="M28 22l4 4-4 4"/>
+          </svg>
+          <h3>Drill-Down Detail</h3>
+          <p>Tap any source to see components, active incidents, and recent history with expandable timelines.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="20" cy="20" r="14"/>
+            <path d="M14 20l4 4 8-8"/>
+          </svg>
+          <h3>Easy Configuration</h3>
+          <p>Simple <code>Name | URL</code> format. Add, remove, or comment out sources in seconds.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="20" cy="20" r="14"/>
+            <polyline points="20,10 20,20 26,24"/>
+          </svg>
+          <h3>Automatic Refresh</h3>
+          <p>Polls all sources every 5 minutes with concurrent fetching via Swift concurrency.</p>
+        </div>
+
+        <div class="glass-card feature-card">
+          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="28" height="32" rx="4"/>
+            <path d="M14 14h12M14 20h8"/>
+            <circle cx="28" cy="30" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M26 30h4M28 28v4"/>
+          </svg>
+          <h3>Native &amp; Minimal</h3>
+          <p>Single-file SwiftUI app. No Dock icon, no Electron, no overhead. Runs as a pure menu bar agent.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Status Colors -->
+  <section id="status-colors">
+    <div class="container">
+      <p class="section-label">Status Indicators</p>
+      <h2>Four severity levels at a glance</h2>
+      <div class="status-strip">
+        <div class="glass-card status-item">
+          <span class="status-dot green"></span>
+          <div>
+            <div class="status-label">Operational</div>
+            <div class="status-desc">All systems normal</div>
+          </div>
+        </div>
+        <div class="glass-card status-item">
+          <span class="status-dot yellow"></span>
+          <div>
+            <div class="status-label">Degraded</div>
+            <div class="status-desc">Performance issues</div>
+          </div>
+        </div>
+        <div class="glass-card status-item">
+          <span class="status-dot orange"></span>
+          <div>
+            <div class="status-label">Partial Outage</div>
+            <div class="status-desc">Some services affected</div>
+          </div>
+        </div>
+        <div class="glass-card status-item">
+          <span class="status-dot red"></span>
+          <div>
+            <div class="status-label">Major Outage</div>
+            <div class="status-desc">Significant disruption</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Get Started -->
+  <section id="get-started">
+    <div class="container">
+      <p class="section-label">Get Started</p>
+      <h2>Up and running in seconds</h2>
+      <div class="steps">
+        <div class="glass-card step">
+          <span class="step-number">1</span>
+          <span class="step-text">Download <strong>StatusBar-vX.Y.Z-universal.zip</strong> from the <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases page</a></span>
+        </div>
+        <div class="glass-card step">
+          <span class="step-number">2</span>
+          <span class="step-text">Extract the ZIP</span>
+        </div>
+        <div class="glass-card step">
+          <span class="step-number">3</span>
+          <span class="step-text">Drag <strong>StatusBar.app</strong> to <code>/Applications</code></span>
+        </div>
+        <div class="glass-card step">
+          <span class="step-number">4</span>
+          <span class="step-text">On first launch, right-click &rarr; <strong>Open</strong> to bypass Gatekeeper</span>
+        </div>
+      </div>
+      <div class="glass-card gatekeeper-note">
+        <strong>Note:</strong> The app is ad-hoc signed, not notarized. The universal binary runs natively on both Apple Silicon and Intel Macs.
+      </div>
+
+      <div class="collapsible">
+        <button class="collapsible-trigger" id="build-trigger">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+          Build from Source
+        </button>
+        <div class="collapsible-content" id="build-content">
+          <div class="code-block-wrapper">
+            <pre><code>chmod +x build.sh
+./build.sh
+open ./build/StatusBar.app</code></pre>
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+          </div>
+          <p style="margin-top: 12px; font-size: 0.875rem; color: var(--text-secondary);">Or compile directly:</p>
+          <div class="code-block-wrapper">
+            <pre><code>swiftc StatusBarApp.swift -parse-as-library \
+  -o StatusBar -framework SwiftUI -framework AppKit \
+  -target arm64-apple-macosx14.0
+./StatusBar</code></pre>
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation -->
+  <section id="docs">
+    <div class="container">
+      <p class="section-label">Documentation</p>
+      <h2>Reference</h2>
+
+      <!-- Adding Sources -->
+      <div class="doc-section">
+        <h3>Adding Sources</h3>
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Click the gear icon and edit the source list. Format: one source per line, <code>Name | URL</code>. Lines starting with <code>#</code> are comments. Any Atlassian Statuspage-powered URL works:</p>
+        <table class="doc-table">
+          <thead>
+            <tr><th>Service</th><th>URL</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Anthropic / Claude</td><td><code>https://status.anthropic.com</code></td></tr>
+            <tr><td>GitHub</td><td><code>https://www.githubstatus.com</code></td></tr>
+            <tr><td>Cloudflare</td><td><code>https://www.cloudflarestatus.com</code></td></tr>
+            <tr><td>Atlassian</td><td><code>https://status.atlassian.com</code></td></tr>
+            <tr><td>Datadog</td><td><code>https://status.datadoghq.com</code></td></tr>
+            <tr><td>Vercel</td><td><code>https://www.vercel-status.com</code></td></tr>
+            <tr><td>Linear</td><td><code>https://linearstatus.com</code></td></tr>
+            <tr><td>Notion</td><td><code>https://status.notion.so</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Architecture -->
+      <div class="doc-section">
+        <h3>Architecture</h3>
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Everything lives in a single <code>StatusBarApp.swift</code> (~780 lines):</p>
+        <div class="glass-card" style="padding: 16px 20px;">
+          <div class="doc-tree">
+StatusSource          &mdash; name + URL, parsed from line-delimited text<br>
+&nbsp;SourceState           &mdash; per-source fetch state (summary, incidents, loading, error)<br>
+StatusService         &mdash; @MainActor ObservableObject managing all sources concurrently<br>
+RootView              &mdash; state-driven navigation: list &harr; detail &harr; settings<br>
+&nbsp;&nbsp;&boxvr;&mdash; SourceListView   &mdash; aggregated header + scrollable source rows<br>
+&nbsp;&nbsp;&boxvr;&mdash; SourceDetailView &mdash; components, active incidents, recent incidents<br>
+&nbsp;&nbsp;&boxur;&mdash; SettingsView     &mdash; TextEditor for line-delimited source config<br>
+MenuBarLabel          &mdash; worst-status icon + issue count badge
+          </div>
+        </div>
+      </div>
+
+      <!-- API -->
+      <div class="doc-section">
+        <h3>API</h3>
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Uses the public <a href="https://developer.statuspage.io/">Statuspage API v2</a> endpoints per source. No API key required.</p>
+        <div class="glass-card api-endpoint">
+          <span class="api-method">GET</span>
+          <span class="api-path">/api/v2/summary.json</span>
+          <span class="api-desc">Overall status, components, active incidents</span>
+        </div>
+        <div class="glass-card api-endpoint" style="margin-top: 4px;">
+          <span class="api-method">GET</span>
+          <span class="api-path">/api/v2/incidents.json</span>
+          <span class="api-desc">Full incident history</span>
+        </div>
+      </div>
+
+      <!-- Roadmap -->
+      <div class="doc-section">
+        <h3>Roadmap (v2 &mdash; WidgetKit)</h3>
+        <ul class="roadmap-list">
+          <li>WidgetKit extension showing aggregated status or per-source widgets</li>
+          <li>TimelineProvider with IntentConfiguration for source selection</li>
+          <li>Shared data via App Groups between host app and widget extension</li>
+          <li>Desktop widget with compact component grid</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <nav class="footer-links">
+        <a href="https://github.com/alexnodeland/StatusBar">GitHub</a>
+        <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases</a>
+        <a href="https://github.com/alexnodeland/StatusBar/issues">Issues</a>
+      </nav>
+      <p class="footer-attr">Built with SwiftUI. Open source under MIT.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
