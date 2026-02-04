@@ -1,25 +1,45 @@
 // StatusBarApp.swift
-// A single-file macOS menu bar app that monitors multiple Atlassian Statuspage-powered status pages.
+// A macOS menu bar app that monitors multiple Atlassian Statuspage-powered status pages.
+// Features native glass UI, status change notifications, and optimized polling.
 //
-// Requirements: macOS 13+ (Ventura), Swift 5.9+
+// Requirements: macOS 14+ (Sonoma), Swift 5.9+
 //
 // Build & Run:
-//   swiftc StatusBarApp.swift -parse-as-library -o StatusBar -framework SwiftUI -framework AppKit
-//   ./StatusBar
-//
-// Or use the included build.sh to produce a proper .app bundle.
+//   ./build.sh
+//   open ./build/StatusBar.app
 
 import SwiftUI
+import UserNotifications
 
 // MARK: - Configuration
 
-private let kRefreshInterval: TimeInterval = 300 // 5 minutes
+private let kRefreshInterval: TimeInterval = 300
 
 private let kDefaultSources = """
 Anthropic | https://status.anthropic.com
 GitHub | https://www.githubstatus.com
 Cloudflare | https://www.cloudflarestatus.com
 """
+
+// MARK: - Design System
+
+enum Design {
+    enum Typography {
+        static let body = Font.system(size: 13)
+        static let bodyMedium = Font.system(size: 13, weight: .medium)
+        static let caption = Font.system(size: 11)
+        static let captionMedium = Font.system(size: 11, weight: .medium)
+        static let captionSemibold = Font.system(size: 11, weight: .semibold)
+        static let micro = Font.system(size: 10)
+        static let mono = Font.system(size: 11, design: .monospaced)
+    }
+
+    enum Timing {
+        static let hover = SwiftUI.Animation.easeOut(duration: 0.12)
+        static let transition = SwiftUI.Animation.easeInOut(duration: 0.15)
+        static let expand = SwiftUI.Animation.easeInOut(duration: 0.2)
+    }
+}
 
 // MARK: - Source Model
 
@@ -34,7 +54,6 @@ struct StatusSource: Identifiable, Equatable {
         self.baseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     }
 
-    /// Parse from "Name | URL" line format. Lines starting with # are ignored.
     static func parse(lines: String) -> [StatusSource] {
         lines
             .split(separator: "\n", omittingEmptySubsequences: true)
@@ -50,7 +69,6 @@ struct StatusSource: Identifiable, Equatable {
             }
     }
 
-    /// Serialize back to line format
     static func serialize(_ sources: [StatusSource]) -> String {
         sources.map { "\($0.name) | \($0.baseURL)" }.joined(separator: "\n")
     }
@@ -58,7 +76,7 @@ struct StatusSource: Identifiable, Equatable {
 
 // MARK: - API Models
 
-struct SPPage: Codable {
+struct SPPage: Codable, Equatable {
     let id: String
     let name: String
     let url: String
@@ -69,12 +87,12 @@ struct SPPage: Codable {
     }
 }
 
-struct SPStatus: Codable {
-    let indicator: String   // "none" | "minor" | "major" | "critical"
+struct SPStatus: Codable, Equatable {
+    let indicator: String
     let description: String
 }
 
-struct SPComponent: Codable, Identifiable {
+struct SPComponent: Codable, Identifiable, Equatable {
     let id: String
     let name: String
     let status: String
@@ -87,7 +105,7 @@ struct SPComponent: Codable, Identifiable {
     }
 }
 
-struct SPIncidentUpdate: Codable, Identifiable {
+struct SPIncidentUpdate: Codable, Identifiable, Equatable {
     let id: String
     let status: String
     let body: String
@@ -100,7 +118,7 @@ struct SPIncidentUpdate: Codable, Identifiable {
     }
 }
 
-struct SPIncident: Codable, Identifiable {
+struct SPIncident: Codable, Identifiable, Equatable {
     let id: String
     let name: String
     let status: String
@@ -117,7 +135,7 @@ struct SPIncident: Codable, Identifiable {
     }
 }
 
-struct SPSummary: Codable {
+struct SPSummary: Codable, Equatable {
     let page: SPPage
     let status: SPStatus
     let components: [SPComponent]
@@ -131,7 +149,7 @@ struct SPIncidentsResponse: Codable {
 
 // MARK: - Per-Source State
 
-struct SourceState {
+struct SourceState: Equatable {
     var summary: SPSummary?
     var recentIncidents: [SPIncident] = []
     var isLoading: Bool = false
@@ -139,7 +157,7 @@ struct SourceState {
     var lastRefresh: Date?
 
     var indicator: String { summary?.status.indicator ?? "unknown" }
-    var statusDescription: String { summary?.status.description ?? "Loading…" }
+    var statusDescription: String { summary?.status.description ?? "Loading\u{2026}" }
 
     var indicatorSeverity: Int {
         switch indicator {
@@ -162,7 +180,83 @@ struct SourceState {
     }
 }
 
-// MARK: - Multi-Source Service
+// MARK: - Notification Manager
+
+final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationManager()
+
+    private override init() {
+        super.init()
+    }
+
+    func setup() {
+        UNUserNotificationCenter.current().delegate = self
+        registerCategories()
+        requestPermission()
+    }
+
+    private func requestPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: [.alert, .sound, .badge]
+        ) { granted, _ in
+            if granted {
+                DispatchQueue.main.async {
+                    NSApp?.activate(ignoringOtherApps: true)
+                }
+            }
+        }
+    }
+
+    private func registerCategories() {
+        let viewAction = UNNotificationAction(
+            identifier: "VIEW",
+            title: "View Details",
+            options: .foreground
+        )
+        let category = UNNotificationCategory(
+            identifier: "STATUS_CHANGE",
+            actions: [viewAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+    }
+
+    func sendStatusChange(source: String, title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.categoryIdentifier = "STATUS_CHANGE"
+        content.userInfo = ["source": source]
+
+        let request = UNNotificationRequest(
+            identifier: "\(source)-\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .list])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        NSApp.activate(ignoringOtherApps: true)
+        completionHandler()
+    }
+}
+
+// MARK: - Status Service
 
 @MainActor
 final class StatusService: ObservableObject {
@@ -172,6 +266,16 @@ final class StatusService: ObservableObject {
     @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
 
     private var refreshTimer: Timer?
+    private var previousIndicators: [UUID: String] = [:]
+
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.httpMaximumConnectionsPerHost = 4
+        return URLSession(configuration: config)
+    }()
 
     init() {
         sources = StatusSource.parse(lines: storedLines)
@@ -190,7 +294,6 @@ final class StatusService: ObservableObject {
         return worst?.indicator ?? "none"
     }
 
-    /// Number of sources with non-operational status
     var issueCount: Int {
         states.values.filter { $0.indicator != "none" && $0.indicator != "unknown" }.count
     }
@@ -236,9 +339,35 @@ final class StatusService: ObservableObject {
             async let s = fetchSummary(baseURL: source.baseURL)
             async let i = fetchIncidents(baseURL: source.baseURL)
             let (summary, incidents) = try await (s, i)
+
+            let newIndicator = summary.status.indicator
+            let oldIndicator = previousIndicators[source.id]
+
             states[source.id]?.summary = summary
             states[source.id]?.recentIncidents = incidents
             states[source.id]?.lastRefresh = Date()
+
+            // Notify on status changes (skip initial load)
+            if let old = oldIndicator, old != newIndicator {
+                let oldSev = severityFor(old)
+                let newSev = severityFor(newIndicator)
+
+                if newSev > oldSev {
+                    NotificationManager.shared.sendStatusChange(
+                        source: source.name,
+                        title: "\(source.name) \u{2014} Status Degraded",
+                        body: summary.status.description
+                    )
+                } else if newSev < oldSev && newIndicator == "none" {
+                    NotificationManager.shared.sendStatusChange(
+                        source: source.name,
+                        title: "\(source.name) \u{2014} Recovered",
+                        body: "All systems operational"
+                    )
+                }
+            }
+
+            previousIndicators[source.id] = newIndicator
         } catch {
             states[source.id]?.lastError = error.localizedDescription
         }
@@ -248,14 +377,24 @@ final class StatusService: ObservableObject {
 
     private func fetchSummary(baseURL: String) async throws -> SPSummary {
         let url = URL(string: "\(baseURL)/api/v2/summary.json")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(from: url)
         return try JSONDecoder().decode(SPSummary.self, from: data)
     }
 
     private func fetchIncidents(baseURL: String) async throws -> [SPIncident] {
         let url = URL(string: "\(baseURL)/api/v2/incidents.json")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(from: url)
         return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
+    }
+
+    private func severityFor(_ indicator: String) -> Int {
+        switch indicator {
+        case "none": return 0
+        case "minor": return 1
+        case "major": return 2
+        case "critical": return 3
+        default: return -1
+        }
     }
 
     // MARK: - Source Management
@@ -264,10 +403,10 @@ final class StatusService: ObservableObject {
         let parsed = StatusSource.parse(lines: lines)
         guard !parsed.isEmpty else { return }
 
-        // Remove states for sources that no longer exist
         let newIDs = Set(parsed.map(\.id))
         for oldID in states.keys where !newIDs.contains(oldID) {
             states.removeValue(forKey: oldID)
+            previousIndicators.removeValue(forKey: oldID)
         }
 
         sources = parsed
@@ -371,7 +510,93 @@ private func labelForComponentStatus(_ status: String) -> String {
     }
 }
 
-// MARK: - Root View (List ↔ Detail navigation)
+// MARK: - Visual Effect Background
+
+struct VisualEffectBackground: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode = .behindWindow
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.autoresizingMask = [.width, .height]
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+        nsView.state = .active
+    }
+}
+
+// MARK: - Hover Effect
+
+struct HoverEffect: ViewModifier {
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isHovered ? Color.primary.opacity(0.06) : Color.clear)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+            .onHover { hovering in
+                withAnimation(Design.Timing.hover) {
+                    isHovered = hovering
+                }
+            }
+    }
+}
+
+extension View {
+    func hoverHighlight() -> some View {
+        modifier(HoverEffect())
+    }
+}
+
+// MARK: - Button Style
+
+struct GlassButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(Design.Typography.caption)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(configuration.isPressed ?
+                          Color.primary.opacity(0.1) :
+                          Color.primary.opacity(0.05))
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Glass Card
+
+struct GlassCard<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background(
+                .ultraThinMaterial,
+                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
+    }
+}
+
+// MARK: - Root View
 
 struct RootView: View {
     @ObservedObject var service: StatusService
@@ -379,29 +604,33 @@ struct RootView: View {
     @State private var showSettings = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            if let sourceID = selectedSourceID,
-               let source = service.sources.first(where: { $0.id == sourceID }) {
-                SourceDetailView(
-                    source: source,
-                    state: service.state(for: source),
-                    onRefresh: { Task { await service.refresh(source: source) } },
-                    onBack: { withAnimation(.easeInOut(duration: 0.15)) { selectedSourceID = nil } }
-                )
-            } else if showSettings {
-                SettingsView(
-                    service: service,
-                    onBack: { withAnimation(.easeInOut(duration: 0.15)) { showSettings = false } }
-                )
-            } else {
-                SourceListView(
-                    service: service,
-                    onSelect: { id in withAnimation(.easeInOut(duration: 0.15)) { selectedSourceID = id } },
-                    onSettings: { withAnimation(.easeInOut(duration: 0.15)) { showSettings = true } }
-                )
+        ZStack {
+            VisualEffectBackground(material: .popover, blendingMode: .behindWindow)
+
+            VStack(spacing: 0) {
+                if let sourceID = selectedSourceID,
+                   let source = service.sources.first(where: { $0.id == sourceID }) {
+                    SourceDetailView(
+                        source: source,
+                        state: service.state(for: source),
+                        onRefresh: { Task { await service.refresh(source: source) } },
+                        onBack: { withAnimation(Design.Timing.transition) { selectedSourceID = nil } }
+                    )
+                } else if showSettings {
+                    SettingsView(
+                        service: service,
+                        onBack: { withAnimation(Design.Timing.transition) { showSettings = false } }
+                    )
+                } else {
+                    SourceListView(
+                        service: service,
+                        onSelect: { id in withAnimation(Design.Timing.transition) { selectedSourceID = id } },
+                        onSettings: { withAnimation(Design.Timing.transition) { showSettings = true } }
+                    )
+                }
             }
         }
-        .frame(width: 400, height: 540)
+        .frame(width: 380, height: 520)
     }
 }
 
@@ -415,9 +644,9 @@ struct SourceListView: View {
     var body: some View {
         VStack(spacing: 0) {
             headerSection
-            Divider()
+            Divider().opacity(0.5)
             sourceList
-            Divider()
+            Divider().opacity(0.5)
             footerSection
         }
     }
@@ -427,10 +656,12 @@ struct SourceListView: View {
             Image(systemName: service.menuBarIcon)
                 .font(.title2)
                 .foregroundStyle(service.menuBarColor)
+                .symbolRenderingMode(.hierarchical)
+                .contentTransition(.symbolEffect(.replace))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Status Monitor")
-                    .font(.headline)
+                    .font(Design.Typography.bodyMedium)
                 Group {
                     if service.issueCount == 0 {
                         Text("All systems operational")
@@ -438,7 +669,7 @@ struct SourceListView: View {
                         Text("\(service.issueCount) source\(service.issueCount == 1 ? "" : "s") with issues")
                     }
                 }
-                .font(.subheadline)
+                .font(Design.Typography.caption)
                 .foregroundStyle(.secondary)
             }
 
@@ -446,19 +677,21 @@ struct SourceListView: View {
 
             if service.anyLoading {
                 ProgressView()
-                    .scaleEffect(0.7)
+                    .scaleEffect(0.6)
+                    .frame(width: 16, height: 16)
             }
 
             Button {
                 Task { await service.refreshAll() }
             } label: {
                 Image(systemName: "arrow.clockwise")
+                    .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
             .help("Refresh all")
         }
         .padding(12)
-        .background(.bar)
+        .background(.ultraThinMaterial)
     }
 
     private var sourceList: some View {
@@ -477,26 +710,30 @@ struct SourceListView: View {
     private var footerSection: some View {
         HStack {
             Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .font(Design.Typography.micro)
+                .foregroundStyle(.quaternary)
 
             Spacer()
 
             Button(action: onSettings) {
                 Image(systemName: "gear")
+                    .font(Design.Typography.caption)
             }
             .buttonStyle(.borderless)
             .help("Settings")
 
-            Button("Quit") {
+            Button {
                 NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(Design.Typography.micro)
             }
-            .font(.caption)
             .buttonStyle(.borderless)
+            .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .background(.ultraThinMaterial)
     }
 }
 
@@ -509,23 +746,24 @@ struct SourceRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: iconForIndicator(state.indicator))
-                .font(.body)
+                .font(Design.Typography.body)
                 .foregroundStyle(colorForIndicator(state.indicator))
+                .symbolRenderingMode(.hierarchical)
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.name)
-                    .font(.system(.body, weight: .medium))
+                    .font(Design.Typography.bodyMedium)
                     .lineLimit(1)
 
                 if let error = state.lastError {
                     Text("Error: \(error)")
-                        .font(.caption2)
+                        .font(Design.Typography.micro)
                         .foregroundStyle(.red)
                         .lineLimit(1)
                 } else {
                     Text(state.statusDescription)
-                        .font(.caption)
+                        .font(Design.Typography.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -533,16 +771,15 @@ struct SourceRow: View {
 
             Spacer()
 
-            // Badge: active incident count
             let activeCount = state.activeIncidents.count
             if activeCount > 0 {
                 Text("\(activeCount)")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.white)
+                    .font(Design.Typography.micro.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(colorForIndicator(state.indicator))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(colorForIndicator(state.indicator))
-                    .clipShape(Capsule())
+                    .background(colorForIndicator(state.indicator).opacity(0.15), in: Capsule())
             }
 
             if state.isLoading {
@@ -552,17 +789,18 @@ struct SourceRow: View {
             }
 
             Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                .font(Design.Typography.micro)
+                .foregroundStyle(.quaternary)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(state.indicatorSeverity > 0
                       ? colorForIndicator(state.indicator).opacity(0.06)
                       : Color.clear)
         )
+        .hoverHighlight()
     }
 }
 
@@ -577,7 +815,7 @@ struct SourceDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             detailHeader
-            Divider()
+            Divider().opacity(0.5)
 
             if state.isLoading && state.summary == nil {
                 loadingView
@@ -596,7 +834,7 @@ struct SourceDetailView: View {
                 }
             }
 
-            Divider()
+            Divider().opacity(0.5)
             detailFooter
         }
     }
@@ -605,18 +843,20 @@ struct SourceDetailView: View {
         HStack(spacing: 10) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
+                    .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
 
             Image(systemName: iconForIndicator(state.indicator))
                 .font(.title3)
                 .foregroundStyle(colorForIndicator(state.indicator))
+                .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.name)
-                    .font(.headline)
+                    .font(Design.Typography.bodyMedium)
                 Text(state.statusDescription)
-                    .font(.subheadline)
+                    .font(Design.Typography.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -624,16 +864,18 @@ struct SourceDetailView: View {
 
             if state.isLoading {
                 ProgressView()
-                    .scaleEffect(0.7)
+                    .scaleEffect(0.6)
+                    .frame(width: 16, height: 16)
             }
 
             Button(action: onRefresh) {
                 Image(systemName: "arrow.clockwise")
+                    .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
         }
         .padding(12)
-        .background(.bar)
+        .background(.ultraThinMaterial)
     }
 
     // MARK: - Sections
@@ -641,8 +883,9 @@ struct SourceDetailView: View {
     private var activeIncidentsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Active Incidents", systemImage: "exclamationmark.triangle.fill")
-                .font(.subheadline.weight(.semibold))
+                .font(Design.Typography.captionSemibold)
                 .foregroundStyle(.orange)
+                .symbolRenderingMode(.hierarchical)
 
             ForEach(state.activeIncidents) { incident in
                 IncidentCard(incident: incident, isActive: true)
@@ -653,16 +896,24 @@ struct SourceDetailView: View {
     private var componentsSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Components")
-                .font(.subheadline.weight(.semibold))
+                .font(Design.Typography.captionSemibold)
                 .foregroundStyle(.secondary)
 
             if state.topLevelComponents.isEmpty {
                 Text("No components reported")
-                    .font(.caption)
+                    .font(Design.Typography.micro)
                     .foregroundStyle(.tertiary)
             } else {
-                ForEach(state.topLevelComponents) { component in
-                    ComponentRow(component: component)
+                GlassCard {
+                    VStack(spacing: 0) {
+                        ForEach(Array(state.topLevelComponents.enumerated()), id: \.element.id) { index, component in
+                            ComponentRow(component: component)
+                            if index < state.topLevelComponents.count - 1 {
+                                Divider().opacity(0.3).padding(.horizontal, 4)
+                            }
+                        }
+                    }
+                    .padding(6)
                 }
             }
         }
@@ -671,13 +922,13 @@ struct SourceDetailView: View {
     private var recentIncidentsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Recent Incidents")
-                .font(.subheadline.weight(.semibold))
+                .font(Design.Typography.captionSemibold)
                 .foregroundStyle(.secondary)
 
             let incidents = Array(state.recentIncidents.prefix(10))
             if incidents.isEmpty {
                 Text("No recent incidents")
-                    .font(.caption)
+                    .font(Design.Typography.micro)
                     .foregroundStyle(.tertiary)
                     .padding(.vertical, 4)
             } else {
@@ -691,8 +942,8 @@ struct SourceDetailView: View {
     private var loadingView: some View {
         VStack(spacing: 12) {
             ProgressView()
-            Text("Loading status…")
-                .font(.caption)
+            Text("Loading status\u{2026}")
+                .font(Design.Typography.caption)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -703,13 +954,15 @@ struct SourceDetailView: View {
             Image(systemName: "wifi.exclamationmark")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
+                .symbolRenderingMode(.hierarchical)
             Text("Failed to load status")
-                .font(.headline)
+                .font(Design.Typography.bodyMedium)
             Text(message)
-                .font(.caption)
+                .font(Design.Typography.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Retry", action: onRefresh)
+                .buttonStyle(GlassButtonStyle())
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -719,8 +972,8 @@ struct SourceDetailView: View {
         HStack {
             if let last = state.lastRefresh {
                 Text("Updated \(relativeFormatter.localizedString(for: last, relativeTo: Date()))")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.quaternary)
             }
             Spacer()
             Button("Open Status Page") {
@@ -728,12 +981,12 @@ struct SourceDetailView: View {
                     NSWorkspace.shared.open(url)
                 }
             }
-            .font(.caption)
+            .font(Design.Typography.micro)
             .buttonStyle(.borderless)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .background(.ultraThinMaterial)
     }
 }
 
@@ -746,15 +999,18 @@ struct ComponentRow: View {
         HStack {
             Circle()
                 .fill(colorForComponentStatus(component.status))
-                .frame(width: 8, height: 8)
+                .frame(width: 7, height: 7)
             Text(component.name)
-                .font(.caption)
+                .font(Design.Typography.caption)
+                .foregroundStyle(.primary)
             Spacer()
             Text(labelForComponentStatus(component.status))
-                .font(.caption2)
+                .font(Design.Typography.micro)
                 .foregroundStyle(colorForComponentStatus(component.status))
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
+        .padding(.horizontal, 4)
+        .hoverHighlight()
     }
 }
 
@@ -766,86 +1022,88 @@ struct IncidentCard: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .top, spacing: 6) {
-                Circle()
-                    .fill(impactColor)
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 4)
+        GlassCard {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .top, spacing: 6) {
+                    Circle()
+                        .fill(impactColor)
+                        .frame(width: 7, height: 7)
+                        .padding(.top, 4)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(incident.name)
-                        .font(.caption.weight(.medium))
-                        .lineLimit(isExpanded ? nil : 2)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(incident.name)
+                            .font(Design.Typography.captionMedium)
+                            .lineLimit(isExpanded ? nil : 2)
 
-                    HStack(spacing: 6) {
-                        Text(statusBadge)
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1)
-                            .background(statusBadgeColor.opacity(0.15))
-                            .foregroundStyle(statusBadgeColor)
-                            .clipShape(Capsule())
+                        HStack(spacing: 6) {
+                            Text(statusBadge)
+                                .font(Design.Typography.micro.weight(.medium))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 1)
+                                .background(statusBadgeColor.opacity(0.15), in: Capsule())
+                                .foregroundStyle(statusBadgeColor)
 
-                        Text(relativeDate(incident.updatedAt))
-                            .font(.caption2)
+                            Text(relativeDate(incident.updatedAt))
+                                .font(Design.Typography.micro)
+                                .foregroundStyle(.quaternary)
+                        }
+                    }
+
+                    Spacer()
+
+                    Button {
+                        withAnimation(Design.Timing.expand) {
+                            isExpanded.toggle()
+                        }
+                    } label: {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(Design.Typography.micro)
                             .foregroundStyle(.tertiary)
                     }
+                    .buttonStyle(.borderless)
                 }
 
-                Spacer()
-
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isExpanded.toggle()
-                    }
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption2)
-                }
-                .buttonStyle(.borderless)
-            }
-
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(incident.incidentUpdates.prefix(5)) { update in
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack {
-                                Text(update.status.capitalized)
-                                    .font(.caption2.weight(.semibold))
-                                Spacer()
-                                Text(formatDate(update.createdAt))
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(incident.incidentUpdates.prefix(5)) { update in
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(update.status.capitalized)
+                                        .font(Design.Typography.micro.weight(.semibold))
+                                    Spacer()
+                                    Text(formatDate(update.createdAt))
+                                        .font(Design.Typography.micro)
+                                        .foregroundStyle(.quaternary)
+                                }
+                                Text(update.body)
+                                    .font(Design.Typography.micro)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(4)
                             }
-                            Text(update.body)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(4)
+                            .padding(6)
+                            .background(
+                                Color.primary.opacity(0.03),
+                                in: RoundedRectangle(cornerRadius: 4)
+                            )
                         }
-                        .padding(6)
-                        .background(Color.primary.opacity(0.03))
-                        .cornerRadius(4)
-                    }
 
-                    if let link = incident.shortlink, let url = URL(string: link) {
-                        Button("View on Status Page →") {
-                            NSWorkspace.shared.open(url)
+                        if let link = incident.shortlink, let url = URL(string: link) {
+                            Button("View on Status Page") {
+                                NSWorkspace.shared.open(url)
+                            }
+                            .font(Design.Typography.micro)
+                            .buttonStyle(.borderless)
                         }
-                        .font(.caption2)
-                        .buttonStyle(.borderless)
                     }
+                    .padding(.leading, 14)
+                    .transition(.opacity)
                 }
-                .padding(.leading, 14)
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
+            .padding(8)
         }
-        .padding(8)
-        .background(isActive ? impactColor.opacity(0.06) : Color.clear)
-        .cornerRadius(6)
         .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(isActive ? impactColor.opacity(0.2) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(isActive ? impactColor.opacity(0.3) : Color.clear, lineWidth: 0.5)
         )
     }
 
@@ -894,29 +1152,31 @@ struct SettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             settingsHeader
-            Divider()
+            Divider().opacity(0.5)
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("One per line:  **Name | URL**")
-                    .font(.caption)
+                    .font(Design.Typography.caption)
                     .foregroundStyle(.secondary)
 
                 Text("Lines starting with **#** are ignored.")
-                    .font(.caption)
+                    .font(Design.Typography.micro)
                     .foregroundStyle(.tertiary)
 
                 TextEditor(text: $editText)
-                    .font(.system(.caption, design: .monospaced))
+                    .font(.system(size: 11, design: .monospaced))
                     .scrollContentBackground(.hidden)
                     .padding(6)
-                    .background(Color.primary.opacity(0.04))
-                    .cornerRadius(6)
+                    .background(
+                        .ultraThinMaterial,
+                        in: RoundedRectangle(cornerRadius: 6)
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
                     )
                     .frame(minHeight: 160)
-                    .onChange(of: editText) { _ in
+                    .onChange(of: editText) {
                         parsePreview = StatusSource.parse(lines: editText)
                         hasChanges = true
                     }
@@ -924,11 +1184,11 @@ struct SettingsView: View {
                 HStack {
                     if parsePreview.isEmpty && hasChanges {
                         Label("No valid sources found", systemImage: "exclamationmark.triangle")
-                            .font(.caption2)
+                            .font(Design.Typography.micro)
                             .foregroundStyle(.red)
                     } else if hasChanges {
                         Text("\(parsePreview.count) source\(parsePreview.count == 1 ? "" : "s") detected")
-                            .font(.caption2)
+                            .font(Design.Typography.micro)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -937,7 +1197,7 @@ struct SettingsView: View {
             .padding(12)
 
             Spacer()
-            Divider()
+            Divider().opacity(0.5)
             settingsFooter
         }
         .onAppear {
@@ -951,17 +1211,19 @@ struct SettingsView: View {
         HStack(spacing: 10) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
+                    .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
 
             Image(systemName: "gear")
                 .font(.title3)
+                .symbolRenderingMode(.hierarchical)
             Text("Sources")
-                .font(.headline)
+                .font(Design.Typography.bodyMedium)
             Spacer()
         }
         .padding(12)
-        .background(.bar)
+        .background(.ultraThinMaterial)
     }
 
     private var settingsFooter: some View {
@@ -972,7 +1234,7 @@ struct SettingsView: View {
                 service.resetToDefaults()
                 hasChanges = false
             }
-            .font(.caption)
+            .font(Design.Typography.micro)
 
             Spacer()
 
@@ -981,13 +1243,13 @@ struct SettingsView: View {
                 hasChanges = false
                 onBack()
             }
-            .font(.caption)
+            .font(Design.Typography.caption)
             .buttonStyle(.borderedProminent)
             .disabled(parsePreview.isEmpty)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .background(.ultraThinMaterial)
     }
 }
 
@@ -1007,10 +1269,19 @@ struct MenuBarLabel: View {
     }
 }
 
+// MARK: - App Delegate
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NotificationManager.shared.setup()
+    }
+}
+
 // MARK: - App Entry Point
 
 @main
 struct StatusBarApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var service = StatusService()
 
     var body: some Scene {

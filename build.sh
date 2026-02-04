@@ -28,7 +28,8 @@ swiftc StatusBarApp.swift \
     -parse-as-library \
     -framework SwiftUI \
     -framework AppKit \
-    -target arm64-apple-macosx13.0 \
+    -framework UserNotifications \
+    -target arm64-apple-macosx14.0 \
     -O
 
 # Copy Info.plist
