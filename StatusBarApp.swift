@@ -13,7 +13,15 @@ import UserNotifications
 
 // MARK: - Configuration
 
-private let kRefreshInterval: TimeInterval = 300
+private let kDefaultRefreshInterval: TimeInterval = 300
+
+private let kRefreshIntervalOptions: [(label: String, seconds: TimeInterval)] = [
+    ("1 min", 60),
+    ("2 min", 120),
+    ("5 min", 300),
+    ("10 min", 600),
+    ("15 min", 900),
+]
 
 private let kDefaultSources = """
 Anthropic | https://status.anthropic.com
@@ -187,22 +195,19 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     private override init() {
         super.init()
-    }
-
-    func setup() {
+        // Set delegate and categories immediately — these don't require NSApp
         UNUserNotificationCenter.current().delegate = self
         registerCategories()
-        requestPermission()
     }
 
-    private func requestPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: [.alert, .sound, .badge]
-        ) { granted, _ in
-            if granted {
+    func requestPermission() {
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            if settings.authorizationStatus == .notDetermined {
                 DispatchQueue.main.async {
                     NSApp?.activate(ignoringOtherApps: true)
                 }
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
             }
         }
     }
@@ -222,13 +227,13 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
-    func sendStatusChange(source: String, title: String, body: String) {
+    func sendStatusChange(source: String, url: String, title: String, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
         content.sound = .default
         content.categoryIdentifier = "STATUS_CHANGE"
-        content.userInfo = ["source": source]
+        content.userInfo = ["source": source, "url": url]
 
         let request = UNNotificationRequest(
             identifier: "\(source)-\(UUID().uuidString)",
@@ -251,7 +256,10 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        NSApp.activate(ignoringOtherApps: true)
+        let userInfo = response.notification.request.content.userInfo
+        if let urlString = userInfo["url"] as? String, let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
         completionHandler()
     }
 }
@@ -264,6 +272,7 @@ final class StatusService: ObservableObject {
     @Published var states: [UUID: SourceState] = [:]
 
     @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
+    @AppStorage("refreshInterval") var refreshInterval: Double = kDefaultRefreshInterval
 
     private var refreshTimer: Timer?
     private var previousIndicators: [UUID: String] = [:]
@@ -283,6 +292,8 @@ final class StatusService: ObservableObject {
             sources = StatusSource.parse(lines: kDefaultSources)
             storedLines = kDefaultSources
         }
+        // Ensure notification delegate is wired before any refresh sends notifications
+        _ = NotificationManager.shared
         Task { await refreshAll() }
         startTimer()
     }
@@ -314,7 +325,7 @@ final class StatusService: ObservableObject {
 
     func startTimer() {
         refreshTimer?.invalidate()
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: kRefreshInterval, repeats: true) { [weak self] _ in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 await self?.refreshAll()
             }
@@ -347,24 +358,32 @@ final class StatusService: ObservableObject {
             states[source.id]?.recentIncidents = incidents
             states[source.id]?.lastRefresh = Date()
 
-            // Notify on status changes (skip initial load)
+            // Notify on status changes, including initial load if non-operational
+            let newSev = severityFor(newIndicator)
             if let old = oldIndicator, old != newIndicator {
                 let oldSev = severityFor(old)
-                let newSev = severityFor(newIndicator)
-
                 if newSev > oldSev {
                     NotificationManager.shared.sendStatusChange(
                         source: source.name,
+                        url: source.baseURL,
                         title: "\(source.name) \u{2014} Status Degraded",
                         body: summary.status.description
                     )
                 } else if newSev < oldSev && newIndicator == "none" {
                     NotificationManager.shared.sendStatusChange(
                         source: source.name,
+                        url: source.baseURL,
                         title: "\(source.name) \u{2014} Recovered",
                         body: "All systems operational"
                     )
                 }
+            } else if oldIndicator == nil && newSev > 0 {
+                NotificationManager.shared.sendStatusChange(
+                    source: source.name,
+                    url: source.baseURL,
+                    title: "\(source.name) \u{2014} Active Incident",
+                    body: summary.status.description
+                )
             }
 
             previousIndicators[source.id] = newIndicator
@@ -1196,6 +1215,27 @@ struct SettingsView: View {
             }
             .padding(12)
 
+            Divider().opacity(0.5)
+
+            HStack {
+                Text("Refresh interval")
+                    .font(Design.Typography.caption)
+                Spacer()
+                Picker("", selection: $service.refreshInterval) {
+                    ForEach(kRefreshIntervalOptions, id: \.seconds) { option in
+                        Text(option.label).tag(option.seconds)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+                .onChange(of: service.refreshInterval) {
+                    service.startTimer()
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
             Spacer()
             Divider().opacity(0.5)
             settingsFooter
@@ -1218,7 +1258,7 @@ struct SettingsView: View {
             Image(systemName: "gear")
                 .font(.title3)
                 .symbolRenderingMode(.hierarchical)
-            Text("Sources")
+            Text("Settings")
                 .font(Design.Typography.bodyMedium)
             Spacer()
         }
@@ -1273,7 +1313,7 @@ struct MenuBarLabel: View {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NotificationManager.shared.setup()
+        NotificationManager.shared.requestPermission()
     }
 }
 

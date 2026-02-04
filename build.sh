@@ -35,6 +35,9 @@ swiftc StatusBarApp.swift \
 # Copy Info.plist
 cp Info.plist "${CONTENTS}/Info.plist"
 
+# Code sign with entitlements (required for notification permissions)
+codesign --force --sign - --entitlements StatusBar.entitlements "${APP_BUNDLE}"
+
 echo "✅ Built successfully: ${APP_BUNDLE}"
 echo ""
 echo "Run with:  open ${APP_BUNDLE}"
