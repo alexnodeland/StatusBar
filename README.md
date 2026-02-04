@@ -1,9 +1,18 @@
-# StatusBar — Multi-Source macOS Menu Bar Status Monitor
+<p align="center">
+  <img src="icon.png" width="128" alt="StatusBar icon">
+</p>
 
-A single-file SwiftUI menu bar app that monitors multiple [Atlassian Statuspage](https://www.atlassian.com/software/statuspage)-powered status pages simultaneously.
+<h1 align="center">StatusBar</h1>
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue)
-![Swift 5.9+](https://img.shields.io/badge/Swift-5.9%2B-orange)
+<p align="center">
+  A single-file SwiftUI menu bar app that monitors multiple <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>-powered status pages simultaneously.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+">
+  <a href="https://github.com/alexnodeland/StatusBar/releases/latest"><img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release"></a>
+</p>
 
 ## Features
 
@@ -15,7 +24,18 @@ A single-file SwiftUI menu bar app that monitors multiple [Atlassian Statuspage]
 - **Concurrent fetching** — all sources refresh in parallel via Swift concurrency
 - **No Dock icon** — runs as a pure menu bar agent (`LSUIElement`)
 
-## Quick Start
+## Download
+
+Grab the latest release from the [Releases page](https://github.com/alexnodeland/StatusBar/releases/latest).
+
+1. Download `StatusBar-vX.Y.Z-universal.zip`
+2. Extract the ZIP
+3. Drag `StatusBar.app` to `/Applications`
+4. On first launch, right-click → **Open** to bypass Gatekeeper (the app is ad-hoc signed, not notarized)
+
+The universal binary runs natively on both Apple Silicon and Intel Macs.
+
+## Build from Source
 
 ```bash
 chmod +x build.sh
@@ -26,7 +46,7 @@ open ./build/StatusBar.app
 Or compile directly:
 
 ```bash
-swiftc StatusBarApp.swift -parse-as-library -o StatusBar -framework SwiftUI -framework AppKit -target arm64-apple-macosx13.0
+swiftc StatusBarApp.swift -parse-as-library -o StatusBar -framework SwiftUI -framework AppKit -target arm64-apple-macosx14.0
 ./StatusBar
 ```
 
@@ -67,7 +87,7 @@ Everything lives in a single `StatusBarApp.swift` (~780 lines):
 
 ```
 StatusSource          — name + URL, parsed from line-delimited text
-SourceState           — per-source fetch state (summary, incidents, loading, error)
+ SourceState           — per-source fetch state (summary, incidents, loading, error)
 StatusService         — @MainActor ObservableObject managing all sources concurrently
 RootView              — state-driven navigation: list ↔ detail ↔ settings
   ├─ SourceListView   — aggregated header + scrollable source rows
