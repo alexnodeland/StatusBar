@@ -15,12 +15,14 @@ BUILD_DIR="./build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 CONTENTS="${APP_BUNDLE}/Contents"
 MACOS="${CONTENTS}/MacOS"
+RESOURCES="${CONTENTS}/Resources"
 
 echo "🔨 Building ${APP_NAME}..."
 
 # Clean
 rm -rf "${BUILD_DIR}"
 mkdir -p "${MACOS}"
+mkdir -p "${RESOURCES}"
 
 # Compile
 swiftc StatusBarApp.swift \
@@ -34,6 +36,11 @@ swiftc StatusBarApp.swift \
 
 # Copy Info.plist
 cp Info.plist "${CONTENTS}/Info.plist"
+
+# Copy app icon if it exists
+if [ -f "${APP_NAME}.icns" ]; then
+    cp "${APP_NAME}.icns" "${RESOURCES}/"
+fi
 
 # Code sign with entitlements (required for notification permissions)
 codesign --force --sign - --entitlements StatusBar.entitlements "${APP_BUNDLE}"
