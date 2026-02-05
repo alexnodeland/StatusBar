@@ -213,6 +213,32 @@ struct IIOComponent: Codable {
     let name: String?
 }
 
+// MARK: - Instatus API Models
+
+struct InstatusSummary: Codable {
+    let page: InstatusPage
+}
+
+struct InstatusPage: Codable {
+    let name: String
+    let url: String
+    let status: String
+}
+
+struct InstatusComponentsResponse: Codable {
+    let components: [InstatusComponent]
+}
+
+struct InstatusComponent: Codable {
+    let id: String
+    let name: String
+    let description: String?
+    let status: String
+    let order: Int
+    let isParent: Bool
+    let children: [InstatusComponent]
+}
+
 // MARK: - GitHub Release Model
 
 struct GitHubRelease: Codable {
@@ -245,6 +271,7 @@ struct SourceState: Equatable {
     var isLoading: Bool = false
     var lastError: String?
     var lastRefresh: Date?
+    var provider: StatusProvider?
 
     var indicator: String { summary?.status.indicator ?? "unknown" }
     var statusDescription: String { summary?.status.description ?? "Loading\u{2026}" }
@@ -351,9 +378,10 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
 // MARK: - Status Provider
 
-enum StatusProvider {
+enum StatusProvider: Equatable {
     case atlassian
     case incidentIO
+    case instatus
 }
 
 // MARK: - Status Service
@@ -457,6 +485,9 @@ final class StatusService: ObservableObject {
                 (summary, incidents) = try await (s, i)
             case .incidentIO:
                 (summary, incidents) = try await fetchIncidentIO(baseURL: source.baseURL)
+            case .instatus:
+                summary = try await fetchInstatus(baseURL: source.baseURL)
+                incidents = []
             }
 
             let newIndicator = summary.status.indicator
@@ -464,6 +495,7 @@ final class StatusService: ObservableObject {
 
             states[source.id]?.summary = summary
             states[source.id]?.recentIncidents = incidents
+            states[source.id]?.provider = provider
             states[source.id]?.lastRefresh = Date()
 
             // Notify on status changes, including initial load if non-operational
@@ -534,8 +566,14 @@ final class StatusService: ObservableObject {
         do {
             let (data, response) = try await session.data(from: url)
             if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                _ = try JSONDecoder().decode(SPSummary.self, from: data)
-                return .atlassian
+                // Try Atlassian first (has status.indicator object)
+                if let _ = try? JSONDecoder().decode(SPSummary.self, from: data) {
+                    return .atlassian
+                }
+                // Try Instatus (has page.status as a plain string like "UP")
+                if let _ = try? JSONDecoder().decode(InstatusSummary.self, from: data) {
+                    return .instatus
+                }
             }
         } catch {}
         return .incidentIO
@@ -619,6 +657,87 @@ final class StatusService: ObservableObject {
         case "minor": return "\(incidentCount) active incident\(incidentCount == 1 ? "" : "s")"
         case "major": return "\(incidentCount) active incident\(incidentCount == 1 ? "" : "s")"
         default: return "Status unknown"
+        }
+    }
+
+    // MARK: - Instatus Fetch + Mapping
+
+    private func fetchInstatus(baseURL: String) async throws -> SPSummary {
+        let summaryURL = URL(string: "\(baseURL)/api/v2/summary.json")!
+        let (summaryData, _) = try await session.data(from: summaryURL)
+        let instatus = try JSONDecoder().decode(InstatusSummary.self, from: summaryData)
+
+        var components: [SPComponent] = []
+        if let compURL = URL(string: "\(baseURL)/api/v2/components.json") {
+            if let (compData, compResp) = try? await session.data(from: compURL),
+               let compHTTP = compResp as? HTTPURLResponse, compHTTP.statusCode == 200,
+               let parsed = try? JSONDecoder().decode(InstatusComponentsResponse.self, from: compData) {
+                components = flattenInstatusComponents(parsed.components)
+            }
+        }
+
+        let indicator = mapInstatusPageStatus(instatus.page.status)
+        let description = mapInstatusDescription(instatus.page.status)
+
+        return SPSummary(
+            page: SPPage(id: baseURL, name: instatus.page.name, url: instatus.page.url, updatedAt: ""),
+            status: SPStatus(indicator: indicator, description: description),
+            components: components,
+            incidents: []
+        )
+    }
+
+    private func flattenInstatusComponents(_ components: [InstatusComponent], position: inout Int) -> [SPComponent] {
+        var result: [SPComponent] = []
+        for comp in components {
+            let mapped = SPComponent(
+                id: comp.id,
+                name: comp.name,
+                status: mapInstatusComponentStatus(comp.status),
+                description: comp.description,
+                position: position,
+                groupId: nil
+            )
+            position += 1
+            result.append(mapped)
+            if !comp.children.isEmpty {
+                result += flattenInstatusComponents(comp.children, position: &position)
+            }
+        }
+        return result
+    }
+
+    private func flattenInstatusComponents(_ components: [InstatusComponent]) -> [SPComponent] {
+        var pos = 0
+        return flattenInstatusComponents(components, position: &pos)
+    }
+
+    private func mapInstatusPageStatus(_ status: String) -> String {
+        switch status {
+        case "UP": return "none"
+        case "HASISSUES": return "minor"
+        case "UNDERMAINTENANCE": return "minor"
+        default: return "major"
+        }
+    }
+
+    private func mapInstatusDescription(_ status: String) -> String {
+        switch status {
+        case "UP": return "All systems operational"
+        case "HASISSUES": return "Experiencing issues"
+        case "UNDERMAINTENANCE": return "Under maintenance"
+        default: return "Experiencing issues"
+        }
+    }
+
+    private func mapInstatusComponentStatus(_ status: String) -> String {
+        switch status {
+        case "OPERATIONAL": return "operational"
+        case "DEGRADEDPERFORMANCE": return "degraded_performance"
+        case "PARTIALOUTAGE": return "partial_outage"
+        case "MAJOROUTAGE": return "major_outage"
+        case "UNDERMAINTENANCE": return "degraded_performance"
+        default: return status.lowercased()
         }
     }
 
@@ -1317,7 +1436,16 @@ struct SourceDetailView: View {
                 .foregroundStyle(.secondary)
 
             let incidents = Array(state.recentIncidents.prefix(10))
-            if incidents.isEmpty {
+            if state.provider == .instatus {
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                        .font(Design.Typography.micro)
+                    Text("Incident history is not available for Instatus-powered pages")
+                        .font(Design.Typography.micro)
+                }
+                .foregroundStyle(.tertiary)
+                .padding(.vertical, 4)
+            } else if incidents.isEmpty {
                 Text("No recent incidents")
                     .font(Design.Typography.micro)
                     .foregroundStyle(.tertiary)
