@@ -616,63 +616,288 @@ section {
 .doc-layout {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 40px;
-  align-items: start;
+  gap: 32px;
+  align-items: center;
 }
 
 .doc-screenshot {
-  max-width: 280px;
+  max-width: 240px;
 }
 
 .doc-desc {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--text-secondary);
-  margin-bottom: 16px;
   line-height: 1.6;
 }
 
-.doc-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
+.doc-desc-hint {
+  margin-top: 12px;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
 }
 
-.doc-table th,
-.doc-table td {
-  text-align: left;
-  padding: 10px 16px;
+/* --- Source Directory --- */
+.source-directory {
+  margin-top: 32px;
+}
+
+.source-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.source-search {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--glass-bg);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius-small);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--timing-hover) ease-out;
+}
+
+.source-search::placeholder {
+  color: var(--text-tertiary);
+}
+
+.source-search:focus {
+  border-color: var(--accent);
+}
+
+.source-count {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.source-list {
+  max-height: 460px;
+  overflow-y: auto;
+  background: var(--glass-bg);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.source-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.source-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.source-list::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+
+.source-category {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 16px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  background: #1a1a1e;
   border-bottom: 0.5px solid var(--glass-border);
 }
 
-.doc-table th {
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+@media (prefers-color-scheme: light) {
+  .source-category {
+    background: #e8e8ec;
+  }
 }
 
-.doc-table td {
+.source-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+  border-bottom: 0.5px solid var(--glass-border);
+  transition: background var(--timing-hover) ease-out;
+}
+
+.source-item:last-child {
+  border-bottom: none;
+}
+
+.source-item:hover {
+  background: var(--glass-hover);
+}
+
+.source-item.selected {
+  background: rgba(0, 122, 255, 0.06);
+}
+
+.source-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--glass-border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--timing-hover) ease-out,
+              border-color var(--timing-hover) ease-out;
+}
+
+.source-check svg {
+  display: none;
+}
+
+.source-item.selected .source-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.source-item.selected .source-check svg {
+  display: block;
+}
+
+.source-item-name {
+  font-weight: 500;
+  white-space: nowrap;
   color: var(--text-primary);
 }
 
-.doc-table code {
+.source-item-url {
+  flex: 1;
+  min-width: 0;
   font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-copy-btn {
+  flex-shrink: 0;
+  background: var(--glass-bg);
+  border: 0.5px solid var(--glass-border);
+  border-radius: var(--radius-small);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color var(--timing-hover) ease-out,
+              background var(--timing-hover) ease-out;
+}
+
+.source-copy-btn:hover {
+  color: var(--text-primary);
+  background: var(--glass-hover);
+}
+
+.source-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.source-select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.8125rem;
-  background: var(--code-bg);
-  padding: 2px 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.source-select-all input[type="checkbox"] {
+  display: none;
+}
+
+.source-select-check {
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
+  border: 1.5px solid var(--glass-border);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--timing-hover) ease-out,
+              border-color var(--timing-hover) ease-out;
+}
+
+.source-select-check .check-icon,
+.source-select-check .minus-icon {
+  display: none;
+}
+
+.source-select-all.checked .source-select-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.source-select-all.checked .source-select-check .check-icon {
+  display: block;
+}
+
+.source-select-all.indeterminate .source-select-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.source-select-all.indeterminate .source-select-check .minus-icon {
+  display: block;
+}
+
+.source-export-btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.source-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .source-item {
+    flex-wrap: wrap;
+  }
+
+  .source-item-url {
+    width: 100%;
+    padding-left: 26px;
+  }
+
+  .source-copy-btn {
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 768px) {
   .doc-layout {
     grid-template-columns: 1fr;
-    gap: 24px;
+    text-align: center;
   }
 
   .doc-screenshot {
-    max-width: 300px;
+    max-width: 220px;
     margin: 0 auto;
+  }
+
+  .doc-content {
+    text-align: left;
   }
 }
 

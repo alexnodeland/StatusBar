@@ -210,22 +210,30 @@ open ./build/StatusBar.app</code></pre>
             <img src="screenshots/settings.png" alt="Settings view showing source management and preferences" class="screenshot">
           </div>
           <div class="doc-content">
-            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>-powered service by name and URL. Import and export source lists as TSV files to share between machines.</p>
-            <table class="doc-table">
-              <thead>
-                <tr><th>Service</th><th>URL</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>Anthropic / Claude</td><td><code>https://status.anthropic.com</code></td></tr>
-                <tr><td>GitHub</td><td><code>https://www.githubstatus.com</code></td></tr>
-                <tr><td>Cloudflare</td><td><code>https://www.cloudflarestatus.com</code></td></tr>
-                <tr><td>Atlassian</td><td><code>https://status.atlassian.com</code></td></tr>
-                <tr><td>Datadog</td><td><code>https://status.datadoghq.com</code></td></tr>
-                <tr><td>Vercel</td><td><code>https://www.vercel-status.com</code></td></tr>
-                <tr><td>Linear</td><td><code>https://linearstatus.com</code></td></tr>
-                <tr><td>Notion</td><td><code>https://status.notion.so</code></td></tr>
-              </tbody>
-            </table>
+            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>-powered service by name and URL, or import a TSV file to add many at once.</p>
+            <p class="doc-desc doc-desc-hint">Select services below, export as TSV, then import the file in StatusBar via Settings&nbsp;&rarr;&nbsp;Import.</p>
+          </div>
+        </div>
+        <div class="source-directory">
+          <div class="source-toolbar">
+            <input type="search" id="source-search" class="source-search"
+              placeholder="Search services or URLs..." aria-label="Filter status page sources" autocomplete="off">
+            <span class="source-count" id="source-count"></span>
+          </div>
+          <div class="source-list" id="source-list" role="list"></div>
+          <div class="source-actions">
+            <label class="source-select-all" id="source-select-all-label">
+              <input type="checkbox" id="source-select-all">
+              <span class="source-select-check">
+                <svg class="check-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5l2.5 2.5L8 3"/></svg>
+                <svg class="minus-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"><line x1="2.5" y1="5" x2="7.5" y2="5"/></svg>
+              </span>
+              Select all
+            </label>
+            <button class="btn btn-primary source-export-btn" id="source-export" disabled>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
+              Export TSV
+            </button>
           </div>
         </div>
       </div>
