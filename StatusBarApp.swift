@@ -220,6 +220,8 @@ struct SourceState: Equatable {
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 
+    @AppStorage("notificationsEnabled") var notificationsEnabled = true
+
     private override init() {
         super.init()
         // Set delegate and categories immediately — these don't require NSApp
@@ -255,6 +257,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func sendStatusChange(source: String, url: String, title: String, body: String) {
+        guard notificationsEnabled else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -1335,6 +1338,7 @@ struct SettingsView: View {
     @State private var parsePreview: [StatusSource] = []
     @State private var hasChanges = false
     @State private var launchAtLogin = false
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1425,6 +1429,14 @@ struct SettingsView: View {
                     launchAtLogin.toggle()
                 }
             }
+
+            Toggle(isOn: $notificationsEnabled) {
+                Text("Status change notifications")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
             Divider().opacity(0.5)
             updateSection
@@ -1549,6 +1561,18 @@ struct SettingsView: View {
                 hasChanges = false
             }
             .font(Design.Typography.micro)
+
+            Button {
+                if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
+                    NSWorkspace.shared.open(url)
+                }
+            } label: {
+                Image(systemName: "cat.fill")
+                    .font(Design.Typography.caption)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
+            .help("View on GitHub")
 
             Spacer()
 
