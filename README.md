@@ -19,9 +19,11 @@
 - **Worst-status icon** — menu bar icon reflects the worst status across all sources (green → yellow → orange → red), with a numeric badge showing how many sources have issues
 - **Source list** — overview of all monitored pages with color-coded indicators and active incident badges
 - **Drill-down detail** — tap any source to see components, active incidents, and recent incident history with expandable update timelines
-- **Configurable sources** — line-delimited `Name | URL` format, editable in the settings view
-- **Auto-refresh** — polls all sources every 5 minutes (configurable in source)
-- **Concurrent fetching** — all sources refresh in parallel via Swift concurrency
+- **Visual source management** — add sources with **+**, remove with **−**, or bulk import/export as TSV files
+- **Automatic refresh** — polls all sources on a configurable interval (1–15 min) with concurrent fetching via Swift concurrency
+- **Check for updates** — queries GitHub Releases for new versions, with optional automatic daily checks
+- **Status change notifications** — native macOS notifications when a source's status changes, with a toggle to disable
+- **Launch at login** — toggle in Settings, backed by `SMAppService`
 - **No Dock icon** — runs as a pure menu bar agent (`LSUIElement`)
 
 ## Download
@@ -60,13 +62,9 @@ Cloudflare | https://www.cloudflarestatus.com
 
 ## Adding Sources
 
-Click the **gear icon** → edit the source list. Format is one source per line:
+Open **Settings** and click the **+** button to add a source by name and URL. Remove any source with the red **−** button. You can also import and export source lists as TSV files.
 
-```
-Name | URL
-```
-
-Lines starting with `#` are treated as comments and ignored. Any Atlassian Statuspage-powered URL works. Some examples:
+Any Atlassian Statuspage-powered URL works:
 
 | Service | URL |
 |---------|-----|
@@ -83,16 +81,18 @@ Sources are persisted via `@AppStorage` (UserDefaults) and survive restarts.
 
 ## Architecture
 
-Everything lives in a single `StatusBarApp.swift` (~780 lines):
+Everything lives in a single `StatusBarApp.swift`:
 
 ```
-StatusSource          — name + URL, parsed from line-delimited text
+StatusSource          — name + URL model with TSV serialization
  SourceState           — per-source fetch state (summary, incidents, loading, error)
 StatusService         — @MainActor ObservableObject managing all sources concurrently
+UpdateChecker         — checks GitHub Releases API for app updates (daily)
+NotificationManager   — macOS notification delivery and permission handling
 RootView              — state-driven navigation: list ↔ detail ↔ settings
   ├─ SourceListView   — aggregated header + scrollable source rows
   ├─ SourceDetailView — components, active incidents, recent incidents
-  └─ SettingsView     — TextEditor for line-delimited source config
+  └─ SettingsView     — visual source management, preferences, updates
 MenuBarLabel          — worst-status icon + issue count badge
 ```
 
