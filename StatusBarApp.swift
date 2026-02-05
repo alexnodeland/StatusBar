@@ -10,6 +10,7 @@
 
 import ServiceManagement
 import SwiftUI
+import UniformTypeIdentifiers
 import UserNotifications
 
 // MARK: - Configuration
@@ -475,6 +476,25 @@ final class StatusService: ObservableObject {
         states.removeValue(forKey: id)
         previousIndicators.removeValue(forKey: id)
         storedLines = StatusSource.serialize(sources)
+    }
+
+    func exportSourcesTSV() -> String {
+        sources.map { "\($0.name)\t\($0.baseURL)" }.joined(separator: "\n")
+    }
+
+    func importSourcesTSV(_ tsv: String) {
+        let lines = tsv.split(separator: "\n", omittingEmptySubsequences: true)
+        var imported: [StatusSource] = []
+        for line in lines {
+            let cols = line.split(separator: "\t", maxSplits: 1)
+            guard cols.count == 2 else { continue }
+            let name = cols[0].trimmingCharacters(in: .whitespaces)
+            let url = cols[1].trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty, url.hasPrefix("http") else { continue }
+            imported.append(StatusSource(name: name, baseURL: url))
+        }
+        guard !imported.isEmpty else { return }
+        applySources(from: StatusSource.serialize(imported))
     }
 
     func resetToDefaults() {
@@ -1426,11 +1446,32 @@ struct SettingsView: View {
 
     private var sourceListSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
+            HStack(spacing: 6) {
                 Text("Status Pages")
                     .font(Design.Typography.captionSemibold)
                     .foregroundStyle(.secondary)
                 Spacer()
+
+                Button {
+                    importSources()
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(Design.Typography.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Import from TSV")
+
+                Button {
+                    exportSources()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(Design.Typography.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Export as TSV")
+
                 Button {
                     withAnimation(Design.Timing.expand) {
                         showingAddSource.toggle()
@@ -1526,6 +1567,33 @@ struct SettingsView: View {
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
         .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func exportSources() {
+        let panel = NSSavePanel()
+        panel.title = "Export Status Pages"
+        panel.nameFieldStringValue = "status-pages.tsv"
+        panel.allowedContentTypes = [.tabSeparatedText]
+        panel.canCreateDirectories = true
+
+        if panel.runModal() == .OK, let url = panel.url {
+            let tsv = service.exportSourcesTSV()
+            try? tsv.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private func importSources() {
+        let panel = NSOpenPanel()
+        panel.title = "Import Status Pages"
+        panel.allowedContentTypes = [.tabSeparatedText, .plainText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if let tsv = try? String(contentsOf: url, encoding: .utf8) {
+                service.importSourcesTSV(tsv)
+            }
+        }
     }
 
     private var updateSection: some View {
