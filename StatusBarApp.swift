@@ -483,10 +483,13 @@ final class UpdateChecker: ObservableObject {
     @Published var isChecking = false
     @Published var lastCheckError: String?
     @Published var lastCheckDate: Date?
+    @AppStorage("autoCheckForUpdates") var autoCheckEnabled = true
 
     var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
+
+    private var nightlyTimer: Timer?
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -497,6 +500,23 @@ final class UpdateChecker: ObservableObject {
 
     init() {
         Task { await checkForUpdates() }
+        if autoCheckEnabled {
+            startNightlyTimer()
+        }
+    }
+
+    func startNightlyTimer() {
+        nightlyTimer?.invalidate()
+        nightlyTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.checkForUpdates()
+            }
+        }
+    }
+
+    func stopNightlyTimer() {
+        nightlyTimer?.invalidate()
+        nightlyTimer = nil
     }
 
     func checkForUpdates() async {
@@ -1450,6 +1470,19 @@ struct SettingsView: View {
                     Text("Checked \(relativeFormatter.localizedString(for: date, relativeTo: Date()))")
                         .font(Design.Typography.micro)
                         .foregroundStyle(.quaternary)
+                }
+            }
+
+            Toggle(isOn: $updateChecker.autoCheckEnabled) {
+                Text("Automatically check for updates daily")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .onChange(of: updateChecker.autoCheckEnabled) {
+                if updateChecker.autoCheckEnabled {
+                    updateChecker.startNightlyTimer()
+                } else {
+                    updateChecker.stopNightlyTimer()
                 }
             }
 
