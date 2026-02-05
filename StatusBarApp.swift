@@ -152,11 +152,65 @@ struct SPSummary: Codable, Equatable {
     let status: SPStatus
     let components: [SPComponent]
     let incidents: [SPIncident]
+
+    init(page: SPPage, status: SPStatus, components: [SPComponent], incidents: [SPIncident]) {
+        self.page = page
+        self.status = status
+        self.components = components
+        self.incidents = incidents
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        page = try container.decode(SPPage.self, forKey: .page)
+        status = try container.decode(SPStatus.self, forKey: .status)
+        components = try container.decodeIfPresent([SPComponent].self, forKey: .components) ?? []
+        incidents = try container.decodeIfPresent([SPIncident].self, forKey: .incidents) ?? []
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case page, status, components, incidents
+    }
 }
 
 struct SPIncidentsResponse: Codable {
     let page: SPPage
     let incidents: [SPIncident]
+}
+
+// MARK: - incident.io API Models
+
+struct IIOWidgetResponse: Codable {
+    let ongoingIncidents: [IIOIncident]?
+    let inProgressMaintenances: [IIOIncident]?
+    let scheduledMaintenances: [IIOIncident]?
+    enum CodingKeys: String, CodingKey {
+        case ongoingIncidents = "ongoing_incidents"
+        case inProgressMaintenances = "in_progress_maintenances"
+        case scheduledMaintenances = "scheduled_maintenances"
+    }
+}
+
+struct IIOIncident: Codable {
+    let id: String?
+    let name: String?
+    let status: String?
+    let lastUpdateMessage: String?
+    let affectedComponents: [IIOComponent]?
+    let createdAt: String?
+    let updatedAt: String?
+    enum CodingKeys: String, CodingKey {
+        case id, name, status
+        case lastUpdateMessage = "last_update_message"
+        case affectedComponents = "affected_components"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct IIOComponent: Codable {
+    let id: String?
+    let name: String?
 }
 
 // MARK: - GitHub Release Model
@@ -295,6 +349,13 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 }
 
+// MARK: - Status Provider
+
+enum StatusProvider {
+    case atlassian
+    case incidentIO
+}
+
 // MARK: - Status Service
 
 @MainActor
@@ -307,6 +368,7 @@ final class StatusService: ObservableObject {
 
     private var refreshTimer: Timer?
     private var previousIndicators: [UUID: String] = [:]
+    private var providerCache: [UUID: StatusProvider] = [:]
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -378,9 +440,24 @@ final class StatusService: ObservableObject {
         states[source.id]?.lastError = nil
 
         do {
-            async let s = fetchSummary(baseURL: source.baseURL)
-            async let i = fetchIncidents(baseURL: source.baseURL)
-            let (summary, incidents) = try await (s, i)
+            let provider: StatusProvider
+            if let cached = providerCache[source.id] {
+                provider = cached
+            } else {
+                provider = await detectProvider(baseURL: source.baseURL)
+                providerCache[source.id] = provider
+            }
+
+            let summary: SPSummary
+            let incidents: [SPIncident]
+            switch provider {
+            case .atlassian:
+                async let s = fetchSummary(baseURL: source.baseURL)
+                async let i = fetchIncidents(baseURL: source.baseURL)
+                (summary, incidents) = try await (s, i)
+            case .incidentIO:
+                (summary, incidents) = try await fetchIncidentIO(baseURL: source.baseURL)
+            }
 
             let newIndicator = summary.status.indicator
             let oldIndicator = previousIndicators[source.id]
@@ -419,6 +496,7 @@ final class StatusService: ObservableObject {
 
             previousIndicators[source.id] = newIndicator
         } catch {
+            providerCache.removeValue(forKey: source.id)
             states[source.id]?.lastError = error.localizedDescription
         }
 
@@ -447,6 +525,103 @@ final class StatusService: ObservableObject {
         }
     }
 
+    // MARK: - Provider Detection
+
+    private func detectProvider(baseURL: String) async -> StatusProvider {
+        guard let url = URL(string: "\(baseURL)/api/v2/summary.json") else {
+            return .incidentIO
+        }
+        do {
+            let (data, response) = try await session.data(from: url)
+            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                _ = try JSONDecoder().decode(SPSummary.self, from: data)
+                return .atlassian
+            }
+        } catch {}
+        return .incidentIO
+    }
+
+    // MARK: - incident.io Fetch + Mapping
+
+    private func fetchIncidentIO(baseURL: String) async throws -> (SPSummary, [SPIncident]) {
+        let url = URL(string: "\(baseURL)/proxy/widget")!
+        let (data, _) = try await session.data(from: url)
+        let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: data)
+
+        let allIncidents = (widget.ongoingIncidents ?? [])
+            + (widget.inProgressMaintenances ?? [])
+
+        let mappedIncidents = allIncidents.map { inc -> SPIncident in
+            let id = inc.id ?? UUID().uuidString
+            let name = inc.name ?? "Unknown incident"
+            let status = inc.status ?? "investigating"
+            let impact = deriveImpact(from: status)
+            let created = inc.createdAt ?? ""
+            let updated = inc.updatedAt ?? ""
+
+            var updates: [SPIncidentUpdate] = []
+            if let msg = inc.lastUpdateMessage, !msg.isEmpty {
+                updates.append(SPIncidentUpdate(
+                    id: "\(id)-update",
+                    status: status,
+                    body: msg,
+                    createdAt: updated,
+                    updatedAt: updated
+                ))
+            }
+
+            return SPIncident(
+                id: id,
+                name: name,
+                status: status,
+                impact: impact,
+                createdAt: created,
+                updatedAt: updated,
+                shortlink: nil,
+                incidentUpdates: updates
+            )
+        }
+
+        let indicator = deriveIndicator(from: allIncidents)
+        let description = deriveDescription(from: indicator, incidentCount: allIncidents.count)
+
+        let summary = SPSummary(
+            page: SPPage(id: baseURL, name: baseURL, url: baseURL, updatedAt: ""),
+            status: SPStatus(indicator: indicator, description: description),
+            components: [],
+            incidents: mappedIncidents
+        )
+
+        return (summary, mappedIncidents)
+    }
+
+    private func deriveImpact(from status: String) -> String {
+        switch status.lowercased() {
+        case "investigating", "identified": return "major"
+        case "monitoring": return "minor"
+        case "resolved", "postmortem": return "none"
+        default: return "minor"
+        }
+    }
+
+    private func deriveIndicator(from incidents: [IIOIncident]) -> String {
+        if incidents.isEmpty { return "none" }
+        for inc in incidents {
+            let s = (inc.status ?? "").lowercased()
+            if s == "investigating" || s == "identified" { return "major" }
+        }
+        return "minor"
+    }
+
+    private func deriveDescription(from indicator: String, incidentCount: Int) -> String {
+        switch indicator {
+        case "none": return "All systems operational"
+        case "minor": return "\(incidentCount) active incident\(incidentCount == 1 ? "" : "s")"
+        case "major": return "\(incidentCount) active incident\(incidentCount == 1 ? "" : "s")"
+        default: return "Status unknown"
+        }
+    }
+
     // MARK: - Source Management
 
     func applySources(from lines: String) {
@@ -457,6 +632,7 @@ final class StatusService: ObservableObject {
         for oldID in states.keys where !newIDs.contains(oldID) {
             states.removeValue(forKey: oldID)
             previousIndicators.removeValue(forKey: oldID)
+            providerCache.removeValue(forKey: oldID)
         }
 
         sources = parsed
@@ -475,6 +651,7 @@ final class StatusService: ObservableObject {
         sources.removeAll { $0.id == id }
         states.removeValue(forKey: id)
         previousIndicators.removeValue(forKey: id)
+        providerCache.removeValue(forKey: id)
         storedLines = StatusSource.serialize(sources)
     }
 
