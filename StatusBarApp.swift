@@ -759,8 +759,6 @@ struct GlassButtonStyle: ButtonStyle {
                           Color.primary.opacity(0.1) :
                           Color.primary.opacity(0.05))
             )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
@@ -1403,6 +1401,8 @@ struct SettingsView: View {
                         }
                     }
 
+                    Divider().opacity(0.5)
+
                     Toggle(isOn: $notificationsEnabled) {
                         Text("Status change notifications")
                             .font(Design.Typography.caption)
@@ -1495,29 +1495,11 @@ struct SettingsView: View {
         VStack(spacing: 6) {
             TextField("Name", text: $newSourceName)
                 .font(Design.Typography.caption)
-                .textFieldStyle(.plain)
-                .padding(6)
-                .background(
-                    .ultraThinMaterial,
-                    in: RoundedRectangle(cornerRadius: 5)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                )
+                .textFieldStyle(.roundedBorder)
 
             TextField("URL (e.g. https://status.example.com)", text: $newSourceURL)
                 .font(Design.Typography.caption)
-                .textFieldStyle(.plain)
-                .padding(6)
-                .background(
-                    .ultraThinMaterial,
-                    in: RoundedRectangle(cornerRadius: 5)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                )
+                .textFieldStyle(.roundedBorder)
 
             HStack {
                 Spacer()
@@ -1533,7 +1515,8 @@ struct SettingsView: View {
                     }
                 }
                 .font(Design.Typography.caption)
-                .buttonStyle(GlassButtonStyle())
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
                 .disabled(
                     newSourceName.trimmingCharacters(in: .whitespaces).isEmpty ||
                     !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
@@ -1650,7 +1633,7 @@ struct SettingsView: View {
             Button("Reset to Defaults") {
                 service.resetToDefaults()
             }
-            .font(Design.Typography.micro)
+            .font(Design.Typography.caption)
 
             Button {
                 if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
