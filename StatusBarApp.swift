@@ -8,7 +8,9 @@
 //   ./build.sh
 //   open ./build/StatusBar.app
 
+import ServiceManagement
 import SwiftUI
+import UniformTypeIdentifiers
 import UserNotifications
 
 // MARK: - Configuration
@@ -24,10 +26,12 @@ private let kRefreshIntervalOptions: [(label: String, seconds: TimeInterval)] = 
 ]
 
 private let kDefaultSources = """
-Anthropic | https://status.anthropic.com
-GitHub | https://www.githubstatus.com
-Cloudflare | https://www.cloudflarestatus.com
+Anthropic\thttps://status.anthropic.com
+GitHub\thttps://www.githubstatus.com
+Cloudflare\thttps://www.cloudflarestatus.com
 """
+
+private let kGitHubRepo = "alexnodeland/StatusBar"
 
 // MARK: - Design System
 
@@ -68,7 +72,7 @@ struct StatusSource: Identifiable, Equatable {
             .compactMap { line -> StatusSource? in
                 let raw = String(line).trimmingCharacters(in: .whitespaces)
                 guard !raw.isEmpty, !raw.hasPrefix("#") else { return nil }
-                let parts = raw.split(separator: "|", maxSplits: 1)
+                let parts = raw.split(separator: "\t", maxSplits: 1)
                 guard parts.count == 2 else { return nil }
                 let name = parts[0].trimmingCharacters(in: .whitespaces)
                 let url = parts[1].trimmingCharacters(in: .whitespaces)
@@ -78,7 +82,7 @@ struct StatusSource: Identifiable, Equatable {
     }
 
     static func serialize(_ sources: [StatusSource]) -> String {
-        sources.map { "\($0.name) | \($0.baseURL)" }.joined(separator: "\n")
+        sources.map { "\($0.name)\t\($0.baseURL)" }.joined(separator: "\n")
     }
 }
 
@@ -155,6 +159,30 @@ struct SPIncidentsResponse: Codable {
     let incidents: [SPIncident]
 }
 
+// MARK: - GitHub Release Model
+
+struct GitHubRelease: Codable {
+    let tagName: String
+    let name: String?
+    let htmlUrl: String
+    let assets: [GitHubAsset]
+    enum CodingKeys: String, CodingKey {
+        case tagName = "tag_name"
+        case name
+        case htmlUrl = "html_url"
+        case assets
+    }
+}
+
+struct GitHubAsset: Codable {
+    let name: String
+    let browserDownloadUrl: String
+    enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadUrl = "browser_download_url"
+    }
+}
+
 // MARK: - Per-Source State
 
 struct SourceState: Equatable {
@@ -193,6 +221,8 @@ struct SourceState: Equatable {
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 
+    @AppStorage("notificationsEnabled") var notificationsEnabled = true
+
     private override init() {
         super.init()
         // Set delegate and categories immediately — these don't require NSApp
@@ -228,6 +258,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func sendStatusChange(source: String, url: String, title: String, body: String) {
+        guard notificationsEnabled else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -433,6 +464,30 @@ final class StatusService: ObservableObject {
         Task { await refreshAll() }
     }
 
+    func addSource(name: String, baseURL: String) {
+        let source = StatusSource(name: name, baseURL: baseURL)
+        sources.append(source)
+        storedLines = StatusSource.serialize(sources)
+        Task { await refresh(source: source) }
+    }
+
+    func removeSource(id: UUID) {
+        sources.removeAll { $0.id == id }
+        states.removeValue(forKey: id)
+        previousIndicators.removeValue(forKey: id)
+        storedLines = StatusSource.serialize(sources)
+    }
+
+    func exportSourcesTSV() -> String {
+        StatusSource.serialize(sources)
+    }
+
+    func importSourcesTSV(_ tsv: String) {
+        let parsed = StatusSource.parse(lines: tsv)
+        guard !parsed.isEmpty else { return }
+        applySources(from: StatusSource.serialize(parsed))
+    }
+
     func resetToDefaults() {
         applySources(from: kDefaultSources)
     }
@@ -443,6 +498,118 @@ final class StatusService: ObservableObject {
 
     func state(for source: StatusSource) -> SourceState {
         states[source.id] ?? SourceState()
+    }
+}
+
+// MARK: - Update Checker
+
+@MainActor
+final class UpdateChecker: ObservableObject {
+    @Published var latestVersion: String?
+    @Published var isUpdateAvailable = false
+    @Published var downloadURL: String?
+    @Published var releaseURL: String?
+    @Published var isChecking = false
+    @Published var lastCheckError: String?
+    @Published var lastCheckDate: Date?
+    @AppStorage("autoCheckForUpdates") var autoCheckEnabled = true
+
+    var currentVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+    }
+
+    private var nightlyTimer: Timer?
+
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
+
+    init() {
+        Task { await checkForUpdates() }
+        if autoCheckEnabled {
+            startNightlyTimer()
+        }
+    }
+
+    func startNightlyTimer() {
+        nightlyTimer?.invalidate()
+        nightlyTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                await self?.checkForUpdates()
+            }
+        }
+    }
+
+    func stopNightlyTimer() {
+        nightlyTimer?.invalidate()
+        nightlyTimer = nil
+    }
+
+    func checkForUpdates() async {
+        isChecking = true
+        lastCheckError = nil
+
+        do {
+            let url = URL(string: "https://api.github.com/repos/\(kGitHubRepo)/releases/latest")!
+            var request = URLRequest(url: url)
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+            let (data, response) = try await session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                lastCheckError = "Server returned status \(code)"
+                isChecking = false
+                return
+            }
+
+            let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
+            let remoteVersion = release.tagName.hasPrefix("v")
+                ? String(release.tagName.dropFirst())
+                : release.tagName
+
+            latestVersion = remoteVersion
+            releaseURL = release.htmlUrl
+
+            if let asset = release.assets.first(where: { $0.name.hasSuffix(".zip") }) {
+                downloadURL = asset.browserDownloadUrl
+            }
+
+            let wasAvailable = isUpdateAvailable
+            isUpdateAvailable = compareVersions(currentVersion, remoteVersion) == .orderedAscending
+            lastCheckDate = Date()
+
+            if isUpdateAvailable && !wasAvailable {
+                NotificationManager.shared.sendStatusChange(
+                    source: "StatusBar",
+                    url: releaseURL ?? "https://github.com/\(kGitHubRepo)/releases/latest",
+                    title: "StatusBar Update Available",
+                    body: "Version \(remoteVersion) is available (current: \(currentVersion))"
+                )
+            }
+        } catch {
+            lastCheckError = error.localizedDescription
+        }
+
+        isChecking = false
+    }
+
+    func openReleasePage() {
+        let urlString = releaseURL ?? "https://github.com/\(kGitHubRepo)/releases/latest"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func openDownload() {
+        if let urlString = downloadURL ?? releaseURL,
+           let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
     }
 }
 
@@ -529,6 +696,21 @@ private func labelForComponentStatus(_ status: String) -> String {
     }
 }
 
+// MARK: - Version Comparison
+
+private func compareVersions(_ a: String, _ b: String) -> ComparisonResult {
+    let aParts = a.split(separator: ".").compactMap { Int($0) }
+    let bParts = b.split(separator: ".").compactMap { Int($0) }
+    let count = max(aParts.count, bParts.count)
+    for i in 0..<count {
+        let aVal = i < aParts.count ? aParts[i] : 0
+        let bVal = i < bParts.count ? bParts[i] : 0
+        if aVal < bVal { return .orderedAscending }
+        if aVal > bVal { return .orderedDescending }
+    }
+    return .orderedSame
+}
+
 // MARK: - Visual Effect Background
 
 struct VisualEffectBackground: NSViewRepresentable {
@@ -588,8 +770,6 @@ struct GlassButtonStyle: ButtonStyle {
                           Color.primary.opacity(0.1) :
                           Color.primary.opacity(0.05))
             )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
@@ -619,6 +799,7 @@ struct GlassCard<Content: View>: View {
 
 struct RootView: View {
     @ObservedObject var service: StatusService
+    @ObservedObject var updateChecker: UpdateChecker
     @State private var selectedSourceID: UUID?
     @State private var showSettings = false
 
@@ -638,11 +819,13 @@ struct RootView: View {
                 } else if showSettings {
                     SettingsView(
                         service: service,
+                        updateChecker: updateChecker,
                         onBack: { withAnimation(Design.Timing.transition) { showSettings = false } }
                     )
                 } else {
                     SourceListView(
                         service: service,
+                        updateChecker: updateChecker,
                         onSelect: { id in withAnimation(Design.Timing.transition) { selectedSourceID = id } },
                         onSettings: { withAnimation(Design.Timing.transition) { showSettings = true } }
                     )
@@ -657,6 +840,7 @@ struct RootView: View {
 
 struct SourceListView: View {
     @ObservedObject var service: StatusService
+    @ObservedObject var updateChecker: UpdateChecker
     let onSelect: (UUID) -> Void
     let onSettings: () -> Void
 
@@ -735,11 +919,19 @@ struct SourceListView: View {
             Spacer()
 
             Button(action: onSettings) {
-                Image(systemName: "gear")
-                    .font(Design.Typography.caption)
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "gear")
+                        .font(Design.Typography.caption)
+                    if updateChecker.isUpdateAvailable {
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 2, y: -2)
+                    }
+                }
             }
             .buttonStyle(.borderless)
-            .help("Settings")
+            .help(updateChecker.isUpdateAvailable ? "Settings — Update available" : "Settings")
 
             Button {
                 NSApplication.shared.terminate(nil)
@@ -749,6 +941,7 @@ struct SourceListView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.tertiary)
+            .help("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -776,7 +969,7 @@ struct SourceRow: View {
                     .lineLimit(1)
 
                 if let error = state.lastError {
-                    Text("Error: \(error)")
+                    Text(error)
                         .font(Design.Typography.micro)
                         .foregroundStyle(.red)
                         .lineLimit(1)
@@ -865,6 +1058,7 @@ struct SourceDetailView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
+            .help("Back")
 
             Image(systemName: iconForIndicator(state.indicator))
                 .font(.title3)
@@ -892,6 +1086,7 @@ struct SourceDetailView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
+            .help("Refresh")
         }
         .padding(12)
         .background(.ultraThinMaterial)
@@ -981,7 +1176,8 @@ struct SourceDetailView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Retry", action: onRefresh)
-                .buttonStyle(GlassButtonStyle())
+                .buttonStyle(.bordered)
+                .controlSize(.small)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -995,12 +1191,14 @@ struct SourceDetailView: View {
                     .foregroundStyle(.quaternary)
             }
             Spacer()
-            Button("Open Status Page") {
+            Button {
                 if let url = URL(string: source.baseURL) {
                     NSWorkspace.shared.open(url)
                 }
+            } label: {
+                Label("Open Status Page", systemImage: "arrow.up.forward")
+                    .font(Design.Typography.caption)
             }
-            .font(Design.Typography.micro)
             .buttonStyle(.borderless)
         }
         .padding(.horizontal, 12)
@@ -1163,58 +1361,20 @@ struct IncidentCard: View {
 
 struct SettingsView: View {
     @ObservedObject var service: StatusService
+    @ObservedObject var updateChecker: UpdateChecker
     let onBack: () -> Void
-    @State private var editText: String = ""
-    @State private var parsePreview: [StatusSource] = []
-    @State private var hasChanges = false
+    @State private var launchAtLogin = false
+    @State private var showingAddSource = false
+    @State private var newSourceName = ""
+    @State private var newSourceURL = ""
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             settingsHeader
             Divider().opacity(0.5)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("One per line:  **Name | URL**")
-                    .font(Design.Typography.caption)
-                    .foregroundStyle(.secondary)
-
-                Text("Lines starting with **#** are ignored.")
-                    .font(Design.Typography.micro)
-                    .foregroundStyle(.tertiary)
-
-                TextEditor(text: $editText)
-                    .font(.system(size: 11, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .padding(6)
-                    .background(
-                        .ultraThinMaterial,
-                        in: RoundedRectangle(cornerRadius: 6)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                    )
-                    .frame(minHeight: 160)
-                    .onChange(of: editText) {
-                        parsePreview = StatusSource.parse(lines: editText)
-                        hasChanges = true
-                    }
-
-                HStack {
-                    if parsePreview.isEmpty && hasChanges {
-                        Label("No valid sources found", systemImage: "exclamationmark.triangle")
-                            .font(Design.Typography.micro)
-                            .foregroundStyle(.red)
-                    } else if hasChanges {
-                        Text("\(parsePreview.count) source\(parsePreview.count == 1 ? "" : "s") detected")
-                            .font(Design.Typography.micro)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
-            }
-            .padding(12)
-
+            sourceListSection
+            Spacer()
             Divider().opacity(0.5)
 
             HStack {
@@ -1236,14 +1396,304 @@ struct SettingsView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
-            Spacer()
+            Divider().opacity(0.5)
+
+            Toggle(isOn: $launchAtLogin) {
+                Text("Launch at login")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .onChange(of: launchAtLogin) {
+                do {
+                    if launchAtLogin {
+                        try SMAppService.mainApp.register()
+                    } else {
+                        try SMAppService.mainApp.unregister()
+                    }
+                } catch {
+                    launchAtLogin.toggle()
+                }
+            }
+
+            Divider().opacity(0.5)
+
+            Toggle(isOn: $notificationsEnabled) {
+                Text("Notifications")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            Divider().opacity(0.5)
+            updateSection
             Divider().opacity(0.5)
             settingsFooter
         }
         .onAppear {
-            editText = service.serializedSources
-            parsePreview = service.sources
-            hasChanges = false
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
+    }
+
+    private var sourceListSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text("Status Pages")
+                    .font(Design.Typography.captionSemibold)
+                    .foregroundStyle(.secondary)
+                Spacer()
+
+                Button {
+                    importSources()
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(Design.Typography.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Import from TSV")
+
+                Button {
+                    exportSources()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(Design.Typography.caption)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Export as TSV")
+
+                Button {
+                    withAnimation(Design.Timing.expand) {
+                        showingAddSource.toggle()
+                        newSourceName = ""
+                        newSourceURL = ""
+                    }
+                } label: {
+                    Image(systemName: showingAddSource ? "xmark.circle.fill" : "plus.circle.fill")
+                        .font(Design.Typography.body)
+                        .foregroundStyle(showingAddSource ? .secondary : Color.accentColor)
+                }
+                .buttonStyle(.borderless)
+                .help(showingAddSource ? "Cancel" : "Add source")
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
+
+            if showingAddSource {
+                addSourceForm
+            }
+
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(service.sources) { source in
+                        HStack(spacing: 8) {
+                            Button {
+                                withAnimation(Design.Timing.expand) {
+                                    service.removeSource(id: source.id)
+                                }
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(.red)
+                                    .font(Design.Typography.body)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Remove source")
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(source.name)
+                                    .font(Design.Typography.captionMedium)
+                                    .lineLimit(1)
+                                Text(source.baseURL)
+                                    .font(Design.Typography.micro)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .hoverHighlight()
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+            .frame(maxHeight: .infinity)
+        }
+    }
+
+    private var addSourceForm: some View {
+        VStack(spacing: 6) {
+            TextField("Name", text: $newSourceName)
+                .font(Design.Typography.caption)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("URL (e.g. https://status.example.com)", text: $newSourceURL)
+                .font(Design.Typography.caption)
+                .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Spacer()
+                Button("Add") {
+                    let name = newSourceName.trimmingCharacters(in: .whitespaces)
+                    let url = newSourceURL.trimmingCharacters(in: .whitespaces)
+                    guard !name.isEmpty, url.hasPrefix("http") else { return }
+                    withAnimation(Design.Timing.expand) {
+                        service.addSource(name: name, baseURL: url)
+                        showingAddSource = false
+                        newSourceName = ""
+                        newSourceURL = ""
+                    }
+                }
+                .font(Design.Typography.caption)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(
+                    newSourceName.trimmingCharacters(in: .whitespaces).isEmpty ||
+                    !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
+                )
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func exportSources() {
+        let panel = NSSavePanel()
+        panel.title = "Export Status Pages"
+        panel.nameFieldStringValue = "status-pages.tsv"
+        panel.allowedContentTypes = [.tabSeparatedText]
+        panel.canCreateDirectories = true
+
+        if panel.runModal() == .OK, let url = panel.url {
+            let tsv = service.exportSourcesTSV()
+            try? tsv.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private func importSources() {
+        let panel = NSOpenPanel()
+        panel.title = "Import Status Pages"
+        panel.allowedContentTypes = [.tabSeparatedText, .plainText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if let tsv = try? String(contentsOf: url, encoding: .utf8) {
+                service.importSourcesTSV(tsv)
+            }
+        }
+    }
+
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Button {
+                    if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    if let img = NSImage(contentsOfFile: Bundle.main.path(forResource: "github", ofType: "png") ?? "") {
+                        Image(nsImage: { img.isTemplate = true; return img }())
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+                .buttonStyle(.borderless)
+                .help("View on GitHub")
+
+                Text("Version")
+                    .font(Design.Typography.caption)
+                Text(updateChecker.currentVersion)
+                    .font(Design.Typography.mono)
+                    .foregroundStyle(.secondary)
+
+                if updateChecker.isUpdateAvailable {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                        .font(.caption2)
+                    Text("Update available")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(Color.accentColor)
+                } else if updateChecker.lastCheckDate != nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.caption2)
+                    Text("Up to date")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(.green)
+                }
+
+                Button {
+                    Task { await updateChecker.checkForUpdates() }
+                } label: {
+                    if updateChecker.isChecking {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                            .frame(width: 12, height: 12)
+                    } else {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.caption2)
+                    }
+                }
+                .buttonStyle(.borderless)
+                .disabled(updateChecker.isChecking)
+
+                Spacer()
+
+                Toggle(isOn: $updateChecker.autoCheckEnabled) {
+                    Text("Check automatically")
+                        .font(Design.Typography.micro)
+                }
+                    .toggleStyle(.checkbox)
+                    .onChange(of: updateChecker.autoCheckEnabled) {
+                        if updateChecker.autoCheckEnabled {
+                            updateChecker.startNightlyTimer()
+                        } else {
+                            updateChecker.stopNightlyTimer()
+                        }
+                    }
+                .help("Check for Updates")
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                    Text("Version \(latest) available")
+                        .font(Design.Typography.caption)
+                        .foregroundStyle(Color.accentColor)
+                    Spacer()
+                    Button("Download") {
+                        updateChecker.openDownload()
+                    }
+                    .font(Design.Typography.caption)
+                    .buttonStyle(GlassButtonStyle())
+                }
+                .padding(8)
+                .padding(.horizontal, 4)
+                .background(
+                    Color.accentColor.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 6)
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+            }
+
+            if let error = updateChecker.lastCheckError {
+                Text(error)
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            }
         }
     }
 
@@ -1254,6 +1704,7 @@ struct SettingsView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
+            .help("Back")
 
             Image(systemName: "gear")
                 .font(.title3)
@@ -1269,23 +1720,21 @@ struct SettingsView: View {
     private var settingsFooter: some View {
         HStack {
             Button("Reset to Defaults") {
-                editText = kDefaultSources
-                parsePreview = StatusSource.parse(lines: kDefaultSources)
                 service.resetToDefaults()
-                hasChanges = false
             }
-            .font(Design.Typography.micro)
+            .font(Design.Typography.caption)
 
             Spacer()
 
-            Button("Apply") {
-                service.applySources(from: editText)
-                hasChanges = false
-                onBack()
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(Design.Typography.micro)
             }
-            .font(Design.Typography.caption)
-            .buttonStyle(.borderedProminent)
-            .disabled(parsePreview.isEmpty)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.tertiary)
+            .help("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -1323,10 +1772,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 struct StatusBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var service = StatusService()
+    @StateObject private var updateChecker = UpdateChecker()
 
     var body: some Scene {
         MenuBarExtra {
-            RootView(service: service)
+            RootView(service: service, updateChecker: updateChecker)
         } label: {
             MenuBarLabel(service: service)
         }

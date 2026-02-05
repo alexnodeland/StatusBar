@@ -24,7 +24,7 @@
   // --- Smooth scroll for anchor links ---
   document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener('click', function (e) {
-      var target = document.querySelector(this.getAttribute('href'));
+      const target = document.querySelector(this.getAttribute('href'));
       if (target) {
         e.preventDefault();
         target.scrollIntoView({ behavior: 'smooth' });
@@ -35,10 +35,15 @@
   // --- Copy-to-clipboard on code blocks ---
   document.querySelectorAll('.copy-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var code = this.parentElement.querySelector('code');
+      const code = this.parentElement.querySelector('code');
       if (!code) return;
       navigator.clipboard.writeText(code.textContent).then(function () {
         btn.textContent = 'Copied!';
+        setTimeout(function () {
+          btn.textContent = 'Copy';
+        }, 1500);
+      }).catch(function () {
+        btn.textContent = 'Failed';
         setTimeout(function () {
           btn.textContent = 'Copy';
         }, 1500);
@@ -47,8 +52,8 @@
   });
 
   // --- Collapsible sections ---
-  var trigger = document.getElementById('build-trigger');
-  var content = document.getElementById('build-content');
+  const trigger = document.getElementById('build-trigger');
+  const content = document.getElementById('build-content');
 
   if (trigger && content) {
     trigger.addEventListener('click', function () {
@@ -58,15 +63,15 @@
   }
 
   // --- IntersectionObserver for active nav link ---
-  var sections = document.querySelectorAll('section[id]');
-  var navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
 
   if (sections.length && navLinks.length && 'IntersectionObserver' in window) {
-    var observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            var id = entry.target.getAttribute('id');
+            const id = entry.target.getAttribute('id');
             navLinks.forEach(function (link) {
               link.classList.toggle(
                 'active',

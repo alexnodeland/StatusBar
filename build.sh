@@ -103,6 +103,11 @@ if [ -f "${APP_NAME}.icns" ]; then
     cp "${APP_NAME}.icns" "${RESOURCES}/"
 fi
 
+# Copy bundled images
+for img in *.png; do
+    [ -f "$img" ] && [ "$img" != "icon.png" ] && cp "$img" "${RESOURCES}/"
+done
+
 # Code sign with entitlements (required for notification permissions)
 codesign --force --sign - --entitlements StatusBar.entitlements "${APP_BUNDLE}"
 
