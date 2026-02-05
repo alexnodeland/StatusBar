@@ -23,8 +23,13 @@ Everything lives in a single `StatusBarApp.swift`:
 
 ```
 StatusSource          — name + URL model with TSV serialization
- SourceState           — per-source fetch state (summary, incidents, loading, error)
+SourceState           — per-source fetch state (summary, incidents, loading, error, provider)
+StatusProvider        — enum: .atlassian, .incidentIOCompat, .incidentIO, .instatus
 StatusService         — @MainActor ObservableObject managing all sources concurrently
+  ├─ detectProvider   — auto-detects provider by probing /api/v2/summary.json
+  ├─ fetchSummary     — Atlassian Statuspage API
+  ├─ fetchIncidentIO  — incident.io /proxy/widget fallback
+  └─ fetchInstatus    — Instatus summary + components mapping
 UpdateChecker         — checks GitHub Releases API for app updates (daily)
 NotificationManager   — macOS notification delivery and permission handling
 RootView              — state-driven navigation: list ↔ detail ↔ settings
@@ -34,12 +39,36 @@ RootView              — state-driven navigation: list ↔ detail ↔ settings
 MenuBarLabel          — worst-status icon + issue count badge
 ```
 
-## API
+## Supported Providers
 
-Uses the public [Statuspage API v2](https://developer.statuspage.io/) endpoints per source — no API key required:
+The app auto-detects the provider for each source URL. No configuration needed.
+
+| Provider | Detection | Status | Components | Incident History |
+|----------|-----------|--------|------------|------------------|
+| **Atlassian Statuspage** | `time_zone` in page object | Full | Full | Full with update timelines |
+| **incident.io** (compat) | Atlassian-format API, no `time_zone` | Full | Full | Names and dates only (no details) |
+| **incident.io** (fallback) | `/proxy/widget` | Derived from incidents | None | Ongoing only |
+| **Instatus** | Page status as plain string (`UP`, `HASISSUES`) | Mapped | Full | Not available (requires auth) |
+
+## API Endpoints
+
+### Atlassian Statuspage
+
+Uses the public [Statuspage API v2](https://developer.statuspage.io/) — no API key required:
 
 - `GET /api/v2/summary.json` — overall status, components, active incidents
 - `GET /api/v2/incidents.json` — full incident history
+
+### incident.io
+
+incident.io pages serve Atlassian-compatible endpoints (same as above). Falls back to:
+
+- `GET /proxy/widget` — ongoing incidents and maintenances
+
+### Instatus
+
+- `GET /api/v2/summary.json` — page name and status (`UP`, `HASISSUES`, `UNDERMAINTENANCE`)
+- `GET /api/v2/components.json` — component tree with status
 
 ## Roadmap — WidgetKit
 
