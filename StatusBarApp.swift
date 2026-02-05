@@ -29,6 +29,8 @@ GitHub | https://www.githubstatus.com
 Cloudflare | https://www.cloudflarestatus.com
 """
 
+private let kGitHubRepo = "alexnodeland/StatusBar"
+
 // MARK: - Design System
 
 enum Design {
@@ -153,6 +155,30 @@ struct SPSummary: Codable, Equatable {
 struct SPIncidentsResponse: Codable {
     let page: SPPage
     let incidents: [SPIncident]
+}
+
+// MARK: - GitHub Release Model
+
+struct GitHubRelease: Codable {
+    let tagName: String
+    let name: String?
+    let htmlUrl: String
+    let assets: [GitHubAsset]
+    enum CodingKeys: String, CodingKey {
+        case tagName = "tag_name"
+        case name
+        case htmlUrl = "html_url"
+        case assets
+    }
+}
+
+struct GitHubAsset: Codable {
+    let name: String
+    let browserDownloadUrl: String
+    enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadUrl = "browser_download_url"
+    }
 }
 
 // MARK: - Per-Source State
@@ -446,6 +472,98 @@ final class StatusService: ObservableObject {
     }
 }
 
+// MARK: - Update Checker
+
+@MainActor
+final class UpdateChecker: ObservableObject {
+    @Published var latestVersion: String?
+    @Published var isUpdateAvailable = false
+    @Published var downloadURL: String?
+    @Published var releaseURL: String?
+    @Published var isChecking = false
+    @Published var lastCheckError: String?
+    @Published var lastCheckDate: Date?
+
+    var currentVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
+
+    init() {
+        Task { await checkForUpdates() }
+    }
+
+    func checkForUpdates() async {
+        isChecking = true
+        lastCheckError = nil
+
+        do {
+            let url = URL(string: "https://api.github.com/repos/\(kGitHubRepo)/releases/latest")!
+            var request = URLRequest(url: url)
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+            let (data, response) = try await session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                lastCheckError = "Server returned status \(code)"
+                isChecking = false
+                return
+            }
+
+            let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
+            let remoteVersion = release.tagName.hasPrefix("v")
+                ? String(release.tagName.dropFirst())
+                : release.tagName
+
+            latestVersion = remoteVersion
+            releaseURL = release.htmlUrl
+
+            if let asset = release.assets.first(where: { $0.name.hasSuffix(".zip") }) {
+                downloadURL = asset.browserDownloadUrl
+            }
+
+            let wasAvailable = isUpdateAvailable
+            isUpdateAvailable = compareVersions(currentVersion, remoteVersion) == .orderedAscending
+            lastCheckDate = Date()
+
+            if isUpdateAvailable && !wasAvailable {
+                NotificationManager.shared.sendStatusChange(
+                    source: "StatusBar",
+                    url: releaseURL ?? "https://github.com/\(kGitHubRepo)/releases/latest",
+                    title: "StatusBar Update Available",
+                    body: "Version \(remoteVersion) is available (current: \(currentVersion))"
+                )
+            }
+        } catch {
+            lastCheckError = error.localizedDescription
+        }
+
+        isChecking = false
+    }
+
+    func openReleasePage() {
+        let urlString = releaseURL ?? "https://github.com/\(kGitHubRepo)/releases/latest"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func openDownload() {
+        if let urlString = downloadURL ?? releaseURL,
+           let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
 // MARK: - Date Helpers
 
 private let isoFormatter: ISO8601DateFormatter = {
@@ -527,6 +645,21 @@ private func labelForComponentStatus(_ status: String) -> String {
     case "major_outage": return "Major Outage"
     default: return status
     }
+}
+
+// MARK: - Version Comparison
+
+private func compareVersions(_ a: String, _ b: String) -> ComparisonResult {
+    let aParts = a.split(separator: ".").compactMap { Int($0) }
+    let bParts = b.split(separator: ".").compactMap { Int($0) }
+    let count = max(aParts.count, bParts.count)
+    for i in 0..<count {
+        let aVal = i < aParts.count ? aParts[i] : 0
+        let bVal = i < bParts.count ? bParts[i] : 0
+        if aVal < bVal { return .orderedAscending }
+        if aVal > bVal { return .orderedDescending }
+    }
+    return .orderedSame
 }
 
 // MARK: - Visual Effect Background
@@ -619,6 +752,7 @@ struct GlassCard<Content: View>: View {
 
 struct RootView: View {
     @ObservedObject var service: StatusService
+    @ObservedObject var updateChecker: UpdateChecker
     @State private var selectedSourceID: UUID?
     @State private var showSettings = false
 
@@ -638,11 +772,13 @@ struct RootView: View {
                 } else if showSettings {
                     SettingsView(
                         service: service,
+                        updateChecker: updateChecker,
                         onBack: { withAnimation(Design.Timing.transition) { showSettings = false } }
                     )
                 } else {
                     SourceListView(
                         service: service,
+                        updateChecker: updateChecker,
                         onSelect: { id in withAnimation(Design.Timing.transition) { selectedSourceID = id } },
                         onSettings: { withAnimation(Design.Timing.transition) { showSettings = true } }
                     )
@@ -657,6 +793,7 @@ struct RootView: View {
 
 struct SourceListView: View {
     @ObservedObject var service: StatusService
+    @ObservedObject var updateChecker: UpdateChecker
     let onSelect: (UUID) -> Void
     let onSettings: () -> Void
 
@@ -735,11 +872,19 @@ struct SourceListView: View {
             Spacer()
 
             Button(action: onSettings) {
-                Image(systemName: "gear")
-                    .font(Design.Typography.caption)
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "gear")
+                        .font(Design.Typography.caption)
+                    if updateChecker.isUpdateAvailable {
+                        Circle()
+                            .fill(.blue)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 2, y: -2)
+                    }
+                }
             }
             .buttonStyle(.borderless)
-            .help("Settings")
+            .help(updateChecker.isUpdateAvailable ? "Settings — Update available" : "Settings")
 
             Button {
                 NSApplication.shared.terminate(nil)
@@ -1163,6 +1308,7 @@ struct IncidentCard: View {
 
 struct SettingsView: View {
     @ObservedObject var service: StatusService
+    @ObservedObject var updateChecker: UpdateChecker
     let onBack: () -> Void
     @State private var editText: String = ""
     @State private var parsePreview: [StatusSource] = []
@@ -1236,6 +1382,8 @@ struct SettingsView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
+            Divider().opacity(0.5)
+            updateSection
             Spacer()
             Divider().opacity(0.5)
             settingsFooter
@@ -1245,6 +1393,74 @@ struct SettingsView: View {
             parsePreview = service.sources
             hasChanges = false
         }
+    }
+
+    private var updateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Version")
+                    .font(Design.Typography.caption)
+                Spacer()
+                Text(updateChecker.currentVersion)
+                    .font(Design.Typography.mono)
+                    .foregroundStyle(.secondary)
+            }
+
+            if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundStyle(.blue)
+                    Text("Version \(latest) available")
+                        .font(Design.Typography.caption)
+                        .foregroundStyle(.blue)
+                    Spacer()
+                    Button("Download") {
+                        updateChecker.openDownload()
+                    }
+                    .font(Design.Typography.caption)
+                    .buttonStyle(GlassButtonStyle())
+                }
+                .padding(8)
+                .background(
+                    Color.blue.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 6)
+                )
+            }
+
+            HStack {
+                Button {
+                    Task { await updateChecker.checkForUpdates() }
+                } label: {
+                    HStack(spacing: 4) {
+                        if updateChecker.isChecking {
+                            ProgressView()
+                                .scaleEffect(0.5)
+                                .frame(width: 10, height: 10)
+                        }
+                        Text("Check for Updates")
+                    }
+                }
+                .font(Design.Typography.caption)
+                .buttonStyle(GlassButtonStyle())
+                .disabled(updateChecker.isChecking)
+
+                Spacer()
+
+                if let date = updateChecker.lastCheckDate {
+                    Text("Checked \(relativeFormatter.localizedString(for: date, relativeTo: Date()))")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(.quaternary)
+                }
+            }
+
+            if let error = updateChecker.lastCheckError {
+                Text(error)
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.red)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     private var settingsHeader: some View {
@@ -1323,10 +1539,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 struct StatusBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var service = StatusService()
+    @StateObject private var updateChecker = UpdateChecker()
 
     var body: some Scene {
         MenuBarExtra {
-            RootView(service: service)
+            RootView(service: service, updateChecker: updateChecker)
         } label: {
             MenuBarLabel(service: service)
         }
