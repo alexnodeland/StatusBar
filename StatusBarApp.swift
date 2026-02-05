@@ -1191,12 +1191,14 @@ struct SourceListView: View {
     @State private var sortOrder: SourceSortOrder = .alphabetical
     @State private var statusFilter: SourceStatusFilter = .all
     @State private var sortAscending: Bool = true
+    @State private var filterExcludes: Bool = false
 
     private var filteredAndSortedSources: [StatusSource] {
         let filtered: [StatusSource]
         if let indicator = statusFilter.indicator {
             filtered = service.sources.filter { source in
-                service.state(for: source).indicator == indicator
+                let matches = service.state(for: source).indicator == indicator
+                return filterExcludes ? !matches : matches
             }
         } else {
             filtered = service.sources
@@ -1210,8 +1212,8 @@ struct SourceListView: View {
             }
         case .latest:
             return filtered.sorted { a, b in
-                let dateA = service.state(for: a).lastRefresh ?? .distantPast
-                let dateB = service.state(for: b).lastRefresh ?? .distantPast
+                let dateA = service.state(for: a).recentIncidents.compactMap({ parseDate($0.updatedAt) }).max() ?? .distantPast
+                let dateB = service.state(for: b).recentIncidents.compactMap({ parseDate($0.updatedAt) }).max() ?? .distantPast
                 let ascending = dateA > dateB
                 return sortAscending ? ascending : !ascending
             }
@@ -1285,7 +1287,7 @@ struct SourceListView: View {
     }
 
     private var isSortActive: Bool { sortOrder != .alphabetical || !sortAscending }
-    private var isFilterActive: Bool { statusFilter != .all }
+    private var isFilterActive: Bool { statusFilter != .all || filterExcludes }
 
     private var sortMenuButton: some View {
         Menu {
@@ -1329,6 +1331,14 @@ struct SourceListView: View {
                     Label(filter.rawValue, systemImage: filter.systemImage)
                         .tag(filter)
                 }
+            }
+            .pickerStyle(.inline)
+
+            Divider()
+
+            Picker("Mode", selection: $filterExcludes) {
+                Label("Include", systemImage: "checkmark.circle").tag(false)
+                Label("Exclude", systemImage: "minus.circle").tag(true)
             }
             .pickerStyle(.inline)
         } label: {
