@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StatusBar — Monitor Status Pages from Your Menu Bar</title>
-  <meta name="description" content="A single-file SwiftUI menu bar app that monitors multiple Atlassian Statuspage-powered status pages simultaneously.">
+  <meta name="description" content="A native macOS menu bar app that monitors multiple Atlassian Statuspage-powered status pages simultaneously.">
   <meta property="og:title" content="StatusBar">
   <meta property="og:description" content="Monitor multiple Atlassian Statuspage-powered status pages from your macOS menu bar.">
   <meta property="og:image" content="icon.png">
@@ -44,7 +44,7 @@
     <div class="container">
       <img src="icon.png" alt="StatusBar app icon" class="hero-icon" width="128" height="128">
       <h1>StatusBar</h1>
-      <p class="hero-tagline">A single-file SwiftUI menu bar app that monitors multiple Atlassian Statuspage-powered status pages simultaneously.</p>
+      <p class="hero-tagline">A native macOS menu bar app that monitors all your Atlassian Statuspage-powered services in one place. No Dock icon. No Electron. Just a single icon that tells you everything.</p>
       <div class="hero-ctas">
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
@@ -67,70 +67,43 @@
   <section id="features">
     <div class="container">
       <p class="section-label">Features</p>
-      <h2>Everything you need, nothing you don't</h2>
-      <div class="features-grid">
+      <h2>See it in action</h2>
 
-        <div class="glass-card feature-card">
-          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="20" cy="20" r="14"/>
-            <circle cx="20" cy="20" r="4" fill="currentColor"/>
-            <line x1="20" y1="2" x2="20" y2="6"/><line x1="20" y1="34" x2="20" y2="38"/>
-            <line x1="2" y1="20" x2="6" y2="20"/><line x1="34" y1="20" x2="38" y2="20"/>
-          </svg>
-          <h3>Status at a Glance</h3>
-          <p>Menu bar icon reflects the worst status across all sources with a numeric badge showing issues.</p>
+      <!-- Showcase 1: The app overview -->
+      <div class="showcase">
+        <div class="showcase-image">
+          <img src="screenshots/source_list.png" alt="StatusBar popover showing monitored services with color-coded statuses" class="screenshot">
         </div>
-
-        <div class="glass-card feature-card">
-          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="6" width="14" height="12" rx="3"/>
-            <rect x="22" y="6" width="14" height="12" rx="3"/>
-            <rect x="4" y="22" width="14" height="12" rx="3"/>
-            <rect x="22" y="22" width="14" height="12" rx="3"/>
-          </svg>
-          <h3>Multi-Source Monitoring</h3>
-          <p>Monitor any number of Atlassian Statuspage-powered services simultaneously.</p>
+        <div class="showcase-text">
+          <h3>All Your Services, One Icon</h3>
+          <p>Click the menu bar icon to see every service at once. Color-coded indicators show what&rsquo;s healthy and what needs attention. A badge on the icon tells you how many sources have issues &mdash; without opening the popover.</p>
         </div>
+      </div>
 
-        <div class="glass-card feature-card">
-          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 8h16M12 16h16M12 24h10"/>
-            <circle cx="7" cy="8" r="2" fill="currentColor"/><circle cx="7" cy="16" r="2" fill="currentColor"/><circle cx="7" cy="24" r="2" fill="currentColor"/>
-            <path d="M28 22l4 4-4 4"/>
-          </svg>
-          <h3>Drill-Down Detail</h3>
-          <p>Tap any source to see components, active incidents, and recent history with expandable timelines.</p>
+      <!-- Showcase 2: Drill-down detail -->
+      <div class="showcase showcase-reverse">
+        <div class="showcase-image">
+          <img src="screenshots/event_details.png" alt="Expanded incident timeline showing investigation through resolution updates" class="screenshot">
         </div>
-
-        <div class="glass-card feature-card">
-          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="20" cy="20" r="14"/>
-            <path d="M14 20l4 4 8-8"/>
-          </svg>
-          <h3>Visual Source Management</h3>
-          <p>Add sources with the <strong>+</strong> button, remove with <strong>&minus;</strong>. Import and export lists as TSV files.</p>
+        <div class="showcase-text">
+          <h3>Drill Into the Details</h3>
+          <p>Tap any source to see individual components and active incidents. Expand an incident to follow the full timeline &mdash; from investigation through resolution &mdash; without leaving the menu bar.</p>
         </div>
+      </div>
 
-        <div class="glass-card feature-card">
-          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="20" cy="20" r="14"/>
-            <polyline points="20,10 20,20 26,24"/>
-          </svg>
-          <h3>Automatic Refresh</h3>
-          <p>Polls all sources on a configurable interval (1&ndash;15 min) with concurrent fetching via Swift concurrency.</p>
+      <!-- Showcase 3: Native macOS integration -->
+      <div class="showcase">
+        <div class="showcase-image native-stack">
+          <div class="native-icons">
+            <img src="screenshots/status_bar_icon_check.png" alt="Menu bar icon showing all systems operational" class="native-menubar-icon">
+            <img src="screenshots/status_bar_icon_badge.png" alt="Menu bar icon with issue count badge" class="native-menubar-icon">
+          </div>
+          <img src="screenshots/notification.png" alt="macOS notification showing a Cloudflare active incident alert" class="native-notification">
         </div>
-
-        <div class="glass-card feature-card">
-          <svg class="feature-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="6" y="4" width="28" height="32" rx="4"/>
-            <path d="M14 14h12M14 20h8"/>
-            <circle cx="28" cy="30" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M26 30h4M28 28v4"/>
-          </svg>
-          <h3>Native &amp; Minimal</h3>
-          <p>Single-file SwiftUI app. No Dock icon, no Electron, no overhead. Runs as a pure menu bar agent.</p>
+        <div class="showcase-text">
+          <h3>Native macOS Integration</h3>
+          <p>Lives in the menu bar as a checkmark when all clear, or a warning with a badge count when issues arise. Enable notifications to get native macOS alerts the moment a service status changes.</p>
         </div>
-
       </div>
     </div>
   </section>
@@ -229,76 +202,33 @@ open ./build/StatusBar.app</code></pre>
   <section id="docs">
     <div class="container">
       <p class="section-label">Documentation</p>
-      <h2>Reference</h2>
+      <h2>Adding Sources</h2>
 
-      <!-- Adding Sources -->
       <div class="doc-section">
-        <h3>Adding Sources</h3>
-        <p class="doc-desc">Open Settings and click the <strong>+</strong> button to add a source by name and URL. Remove any source with the red <strong>&minus;</strong> button. You can also import and export source lists as TSV files. Any Atlassian Statuspage-powered URL works:</p>
-        <table class="doc-table">
-          <thead>
-            <tr><th>Service</th><th>URL</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Anthropic / Claude</td><td><code>https://status.anthropic.com</code></td></tr>
-            <tr><td>GitHub</td><td><code>https://www.githubstatus.com</code></td></tr>
-            <tr><td>Cloudflare</td><td><code>https://www.cloudflarestatus.com</code></td></tr>
-            <tr><td>Atlassian</td><td><code>https://status.atlassian.com</code></td></tr>
-            <tr><td>Datadog</td><td><code>https://status.datadoghq.com</code></td></tr>
-            <tr><td>Vercel</td><td><code>https://www.vercel-status.com</code></td></tr>
-            <tr><td>Linear</td><td><code>https://linearstatus.com</code></td></tr>
-            <tr><td>Notion</td><td><code>https://status.notion.so</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Architecture -->
-      <div class="doc-section">
-        <h3>Architecture</h3>
-        <p class="doc-desc">Everything lives in a single <code>StatusBarApp.swift</code>:</p>
-        <div class="glass-card doc-tree-card">
-          <div class="doc-tree">
-StatusSource          &mdash; name + URL model with TSV serialization<br>
-&nbsp;SourceState           &mdash; per-source fetch state (summary, incidents, loading, error)<br>
-StatusService         &mdash; @MainActor ObservableObject managing all sources concurrently<br>
-UpdateChecker         &mdash; checks GitHub Releases API for app updates (daily)<br>
-NotificationManager   &mdash; macOS notification delivery and permission handling<br>
-RootView              &mdash; state-driven navigation: list &harr; detail &harr; settings<br>
-&nbsp;&nbsp;&boxvr;&mdash; SourceListView   &mdash; aggregated header + scrollable source rows<br>
-&nbsp;&nbsp;&boxvr;&mdash; SourceDetailView &mdash; components, active incidents, recent incidents<br>
-&nbsp;&nbsp;&boxur;&mdash; SettingsView     &mdash; visual source management, preferences, updates<br>
-MenuBarLabel          &mdash; worst-status icon + issue count badge
+        <div class="doc-layout">
+          <div class="doc-screenshot">
+            <img src="screenshots/settings.png" alt="Settings view showing source management and preferences" class="screenshot">
+          </div>
+          <div class="doc-content">
+            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>-powered service by name and URL. Import and export source lists as TSV files to share between machines.</p>
+            <table class="doc-table">
+              <thead>
+                <tr><th>Service</th><th>URL</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Anthropic / Claude</td><td><code>https://status.anthropic.com</code></td></tr>
+                <tr><td>GitHub</td><td><code>https://www.githubstatus.com</code></td></tr>
+                <tr><td>Cloudflare</td><td><code>https://www.cloudflarestatus.com</code></td></tr>
+                <tr><td>Atlassian</td><td><code>https://status.atlassian.com</code></td></tr>
+                <tr><td>Datadog</td><td><code>https://status.datadoghq.com</code></td></tr>
+                <tr><td>Vercel</td><td><code>https://www.vercel-status.com</code></td></tr>
+                <tr><td>Linear</td><td><code>https://linearstatus.com</code></td></tr>
+                <tr><td>Notion</td><td><code>https://status.notion.so</code></td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-
-      <!-- API -->
-      <div class="doc-section">
-        <h3>API</h3>
-        <p class="doc-desc">Uses the public <a href="https://developer.statuspage.io/">Statuspage API v2</a> endpoints per source. No API key required.</p>
-        <div class="glass-card api-endpoint">
-          <span class="api-method">GET</span>
-          <span class="api-path">/api/v2/summary.json</span>
-          <span class="api-desc">Overall status, components, active incidents</span>
-        </div>
-        <div class="glass-card api-endpoint api-endpoint-next">
-          <span class="api-method">GET</span>
-          <span class="api-path">/api/v2/incidents.json</span>
-          <span class="api-desc">Full incident history</span>
-        </div>
-      </div>
-
-      <!-- Roadmap -->
-      <div class="doc-section">
-        <h3>Roadmap (v2 &mdash; WidgetKit)</h3>
-        <ul class="roadmap-list">
-          <li>WidgetKit extension showing aggregated status or per-source widgets</li>
-          <li>TimelineProvider with IntentConfiguration for source selection</li>
-          <li>Shared data via App Groups between host app and widget extension</li>
-          <li>Desktop widget with compact component grid</li>
-        </ul>
-      </div>
-
     </div>
   </section>
 
