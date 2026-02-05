@@ -107,8 +107,8 @@
             <circle cx="20" cy="20" r="14"/>
             <path d="M14 20l4 4 8-8"/>
           </svg>
-          <h3>Easy Configuration</h3>
-          <p>Simple <code>Name | URL</code> format. Add, remove, or comment out sources in seconds.</p>
+          <h3>Visual Source Management</h3>
+          <p>Add sources with the <strong>+</strong> button, remove with <strong>&minus;</strong>. Import and export lists as TSV files.</p>
         </div>
 
         <div class="glass-card feature-card">
@@ -117,7 +117,7 @@
             <polyline points="20,10 20,20 26,24"/>
           </svg>
           <h3>Automatic Refresh</h3>
-          <p>Polls all sources every 5 minutes with concurrent fetching via Swift concurrency.</p>
+          <p>Polls all sources on a configurable interval (1&ndash;15 min) with concurrent fetching via Swift concurrency.</p>
         </div>
 
         <div class="glass-card feature-card">
@@ -212,7 +212,7 @@
 open ./build/StatusBar.app</code></pre>
             <button class="copy-btn" aria-label="Copy code">Copy</button>
           </div>
-          <p style="margin-top: 12px; font-size: 0.875rem; color: var(--text-secondary);">Or compile directly:</p>
+          <p class="doc-desc collapsible-note">Or compile directly:</p>
           <div class="code-block-wrapper">
             <pre><code>swiftc StatusBarApp.swift -parse-as-library \
   -o StatusBar -framework SwiftUI -framework AppKit \
@@ -234,7 +234,7 @@ open ./build/StatusBar.app</code></pre>
       <!-- Adding Sources -->
       <div class="doc-section">
         <h3>Adding Sources</h3>
-        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Click the gear icon and edit the source list. Format: one source per line, <code>Name | URL</code>. Lines starting with <code>#</code> are comments. Any Atlassian Statuspage-powered URL works:</p>
+        <p class="doc-desc">Open Settings and click the <strong>+</strong> button to add a source by name and URL. Remove any source with the red <strong>&minus;</strong> button. You can also import and export source lists as TSV files. Any Atlassian Statuspage-powered URL works:</p>
         <table class="doc-table">
           <thead>
             <tr><th>Service</th><th>URL</th></tr>
@@ -255,16 +255,18 @@ open ./build/StatusBar.app</code></pre>
       <!-- Architecture -->
       <div class="doc-section">
         <h3>Architecture</h3>
-        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Everything lives in a single <code>StatusBarApp.swift</code> (~780 lines):</p>
-        <div class="glass-card" style="padding: 16px 20px;">
+        <p class="doc-desc">Everything lives in a single <code>StatusBarApp.swift</code>:</p>
+        <div class="glass-card doc-tree-card">
           <div class="doc-tree">
-StatusSource          &mdash; name + URL, parsed from line-delimited text<br>
+StatusSource          &mdash; name + URL model with TSV serialization<br>
 &nbsp;SourceState           &mdash; per-source fetch state (summary, incidents, loading, error)<br>
 StatusService         &mdash; @MainActor ObservableObject managing all sources concurrently<br>
+UpdateChecker         &mdash; checks GitHub Releases API for app updates (daily)<br>
+NotificationManager   &mdash; macOS notification delivery and permission handling<br>
 RootView              &mdash; state-driven navigation: list &harr; detail &harr; settings<br>
 &nbsp;&nbsp;&boxvr;&mdash; SourceListView   &mdash; aggregated header + scrollable source rows<br>
 &nbsp;&nbsp;&boxvr;&mdash; SourceDetailView &mdash; components, active incidents, recent incidents<br>
-&nbsp;&nbsp;&boxur;&mdash; SettingsView     &mdash; TextEditor for line-delimited source config<br>
+&nbsp;&nbsp;&boxur;&mdash; SettingsView     &mdash; visual source management, preferences, updates<br>
 MenuBarLabel          &mdash; worst-status icon + issue count badge
           </div>
         </div>
@@ -273,13 +275,13 @@ MenuBarLabel          &mdash; worst-status icon + issue count badge
       <!-- API -->
       <div class="doc-section">
         <h3>API</h3>
-        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 8px;">Uses the public <a href="https://developer.statuspage.io/">Statuspage API v2</a> endpoints per source. No API key required.</p>
+        <p class="doc-desc">Uses the public <a href="https://developer.statuspage.io/">Statuspage API v2</a> endpoints per source. No API key required.</p>
         <div class="glass-card api-endpoint">
           <span class="api-method">GET</span>
           <span class="api-path">/api/v2/summary.json</span>
           <span class="api-desc">Overall status, components, active incidents</span>
         </div>
-        <div class="glass-card api-endpoint" style="margin-top: 4px;">
+        <div class="glass-card api-endpoint api-endpoint-next">
           <span class="api-method">GET</span>
           <span class="api-path">/api/v2/incidents.json</span>
           <span class="api-desc">Full incident history</span>

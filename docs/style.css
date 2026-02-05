@@ -39,6 +39,13 @@
   --timing-transition: 0.15s;
   --timing-expand: 0.2s;
 
+  /* Depth */
+  --hero-shadow: rgba(0, 0, 0, 0.3);
+  --glow-green: rgba(52, 199, 89, 0.6);
+  --glow-yellow: rgba(255, 214, 10, 0.6);
+  --glow-orange: rgba(255, 159, 10, 0.6);
+  --glow-red: rgba(255, 59, 48, 0.6);
+
   /* Layout */
   --max-width: 960px;
   --nav-height: 56px;
@@ -57,6 +64,11 @@
     --text-secondary: rgba(0, 0, 0, 0.55);
     --text-tertiary: rgba(0, 0, 0, 0.35);
     --code-bg: rgba(0, 0, 0, 0.04);
+    --hero-shadow: rgba(0, 0, 0, 0.1);
+    --glow-green: rgba(52, 199, 89, 0.25);
+    --glow-yellow: rgba(255, 214, 10, 0.25);
+    --glow-orange: rgba(255, 159, 10, 0.25);
+    --glow-red: rgba(255, 59, 48, 0.25);
   }
 }
 
@@ -93,6 +105,14 @@ a {
 
 a:hover {
   color: var(--accent-hover);
+}
+
+/* Focus styles for keyboard accessibility */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 img {
@@ -142,7 +162,11 @@ section {
               transform var(--timing-hover) ease-out;
 }
 
-.glass-card:hover {
+/* Only apply hover to interactive cards (features, steps, status items) */
+.feature-card:hover,
+.status-item:hover,
+.step:hover,
+.api-endpoint:hover {
   background: var(--glass-hover);
 }
 
@@ -226,9 +250,7 @@ section {
     flex-direction: column;
     padding: 16px 24px;
     gap: 16px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    background: var(--bg);
     border-bottom: 0.5px solid var(--glass-border);
   }
 
@@ -249,7 +271,7 @@ section {
   height: 128px;
   border-radius: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px var(--hero-shadow);
 }
 
 .hero h1 {
@@ -294,12 +316,7 @@ section {
   font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: background var(--timing-hover) ease-out,
-              transform 0.1s ease-out;
-}
-
-.btn:active {
-  transform: scale(0.98);
+  transition: background var(--timing-hover) ease-out;
 }
 
 .btn-primary {
@@ -389,10 +406,10 @@ section {
   flex-shrink: 0;
 }
 
-.status-dot.green  { background: var(--status-green); box-shadow: 0 0 8px var(--status-green); }
-.status-dot.yellow { background: var(--status-yellow); box-shadow: 0 0 8px var(--status-yellow); }
-.status-dot.orange { background: var(--status-orange); box-shadow: 0 0 8px var(--status-orange); }
-.status-dot.red    { background: var(--status-red); box-shadow: 0 0 8px var(--status-red); }
+.status-dot.green  { background: var(--status-green); box-shadow: 0 0 8px var(--glow-green); }
+.status-dot.yellow { background: var(--status-yellow); box-shadow: 0 0 8px var(--glow-yellow); }
+.status-dot.orange { background: var(--status-orange); box-shadow: 0 0 8px var(--glow-orange); }
+.status-dot.red    { background: var(--status-red); box-shadow: 0 0 8px var(--glow-red); }
 
 .status-label {
   font-size: 0.875rem;
@@ -480,6 +497,10 @@ section {
   display: block;
 }
 
+.collapsible-note {
+  margin-top: 12px;
+}
+
 /* --- Code Blocks --- */
 .code-block-wrapper {
   position: relative;
@@ -562,12 +583,21 @@ section {
   border-radius: 4px;
 }
 
+.doc-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.doc-tree-card {
+  padding: 16px 20px;
+}
+
 .doc-tree {
   font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, monospace;
   font-size: 0.8125rem;
   line-height: 1.8;
   color: var(--text-secondary);
-  margin-top: 16px;
 }
 
 .api-endpoint {
@@ -598,6 +628,10 @@ section {
   font-size: 0.8125rem;
   color: var(--text-secondary);
   margin-left: auto;
+}
+
+.api-endpoint-next {
+  margin-top: 4px;
 }
 
 /* --- Roadmap --- */
