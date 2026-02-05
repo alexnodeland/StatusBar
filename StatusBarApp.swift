@@ -8,6 +8,7 @@
 //   ./build.sh
 //   open ./build/StatusBar.app
 
+import ServiceManagement
 import SwiftUI
 import UserNotifications
 
@@ -1333,6 +1334,7 @@ struct SettingsView: View {
     @State private var editText: String = ""
     @State private var parsePreview: [StatusSource] = []
     @State private var hasChanges = false
+    @State private var launchAtLogin = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1403,6 +1405,28 @@ struct SettingsView: View {
             .padding(.vertical, 8)
 
             Divider().opacity(0.5)
+
+            Toggle(isOn: $launchAtLogin) {
+                Text("Launch at login")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .onChange(of: launchAtLogin) {
+                do {
+                    if launchAtLogin {
+                        try SMAppService.mainApp.register()
+                    } else {
+                        try SMAppService.mainApp.unregister()
+                    }
+                } catch {
+                    // Revert on failure
+                    launchAtLogin.toggle()
+                }
+            }
+
+            Divider().opacity(0.5)
             updateSection
             Spacer()
             Divider().opacity(0.5)
@@ -1412,6 +1436,7 @@ struct SettingsView: View {
             editText = service.serializedSources
             parsePreview = service.sources
             hasChanges = false
+            launchAtLogin = SMAppService.mainApp.status == .enabled
         }
     }
 
