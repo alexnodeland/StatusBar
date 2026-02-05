@@ -265,6 +265,32 @@ struct GitHubAsset: Codable {
     }
 }
 
+// MARK: - Sort & Filter
+
+enum SourceSortOrder: String, CaseIterable {
+    case alphabetical = "Name"
+    case latest = "Latest"
+    case status = "Status"
+}
+
+enum SourceStatusFilter: String, CaseIterable {
+    case all = "All"
+    case operational = "Operational"
+    case minor = "Minor"
+    case major = "Major"
+    case critical = "Critical"
+
+    var indicator: String? {
+        switch self {
+        case .all: return nil
+        case .operational: return "none"
+        case .minor: return "minor"
+        case .major: return "major"
+        case .critical: return "critical"
+        }
+    }
+}
+
 // MARK: - Per-Source State
 
 struct SourceState: Equatable {
@@ -1144,9 +1170,43 @@ struct SourceListView: View {
     let onSelect: (UUID) -> Void
     let onSettings: () -> Void
 
+    @State private var sortOrder: SourceSortOrder = .alphabetical
+    @State private var statusFilter: SourceStatusFilter = .all
+
+    private var filteredAndSortedSources: [StatusSource] {
+        let filtered: [StatusSource]
+        if let indicator = statusFilter.indicator {
+            filtered = service.sources.filter { source in
+                service.state(for: source).indicator == indicator
+            }
+        } else {
+            filtered = service.sources
+        }
+
+        switch sortOrder {
+        case .alphabetical:
+            return filtered.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .latest:
+            return filtered.sorted { a, b in
+                let dateA = service.state(for: a).lastRefresh ?? .distantPast
+                let dateB = service.state(for: b).lastRefresh ?? .distantPast
+                return dateA > dateB
+            }
+        case .status:
+            return filtered.sorted { a, b in
+                let sevA = service.state(for: a).indicatorSeverity
+                let sevB = service.state(for: b).indicatorSeverity
+                if sevA != sevB { return sevA > sevB }
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+            }
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             headerSection
+            Divider().opacity(0.5)
+            filterSortBar
             Divider().opacity(0.5)
             sourceList
             Divider().opacity(0.5)
@@ -1197,24 +1257,81 @@ struct SourceListView: View {
         .background(.ultraThinMaterial)
     }
 
+    private var filterSortBar: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.secondary)
+                Picker("Sort", selection: $sortOrder) {
+                    ForEach(SourceSortOrder.allCases, id: \.self) { order in
+                        Text(order.rawValue).tag(order)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+            }
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.secondary)
+                Picker("Filter", selection: $statusFilter) {
+                    ForEach(SourceStatusFilter.allCases, id: \.self) { filter in
+                        Text(filter.rawValue).tag(filter)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .fixedSize()
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial)
+    }
+
     private var sourceList: some View {
         ScrollView {
-            LazyVStack(spacing: 2) {
-                ForEach(service.sources) { source in
-                    SourceRow(source: source, state: service.state(for: source))
-                        .contentShape(Rectangle())
-                        .onTapGesture { onSelect(source.id) }
+            let sources = filteredAndSortedSources
+            if sources.isEmpty {
+                VStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.title3)
+                        .foregroundStyle(.tertiary)
+                    Text("No sources match filter")
+                        .font(Design.Typography.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+            } else {
+                LazyVStack(spacing: 2) {
+                    ForEach(sources) { source in
+                        SourceRow(source: source, state: service.state(for: source))
+                            .contentShape(Rectangle())
+                            .onTapGesture { onSelect(source.id) }
+                    }
+                }
+                .padding(8)
             }
-            .padding(8)
         }
     }
 
     private var footerSection: some View {
         HStack {
-            Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
-                .font(Design.Typography.micro)
-                .foregroundStyle(.quaternary)
+            Group {
+                if statusFilter == .all {
+                    Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                } else {
+                    Text("\(filteredAndSortedSources.count) of \(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                }
+            }
+            .font(Design.Typography.micro)
+            .foregroundStyle(.quaternary)
 
             Spacer()
 
