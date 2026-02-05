@@ -1190,6 +1190,7 @@ struct SourceListView: View {
 
     @State private var sortOrder: SourceSortOrder = .alphabetical
     @State private var statusFilter: SourceStatusFilter = .all
+    @State private var sortAscending: Bool = true
 
     private var filteredAndSortedSources: [StatusSource] {
         let filtered: [StatusSource]
@@ -1203,18 +1204,25 @@ struct SourceListView: View {
 
         switch sortOrder {
         case .alphabetical:
-            return filtered.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            return filtered.sorted {
+                let ascending = $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                return sortAscending ? ascending : !ascending
+            }
         case .latest:
             return filtered.sorted { a, b in
                 let dateA = service.state(for: a).lastRefresh ?? .distantPast
                 let dateB = service.state(for: b).lastRefresh ?? .distantPast
-                return dateA > dateB
+                let ascending = dateA > dateB
+                return sortAscending ? ascending : !ascending
             }
         case .status:
             return filtered.sorted { a, b in
                 let sevA = service.state(for: a).indicatorSeverity
                 let sevB = service.state(for: b).indicatorSeverity
-                if sevA != sevB { return sevA > sevB }
+                if sevA != sevB {
+                    let ascending = sevA > sevB
+                    return sortAscending ? ascending : !ascending
+                }
                 return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
             }
         }
@@ -1223,8 +1231,6 @@ struct SourceListView: View {
     var body: some View {
         VStack(spacing: 0) {
             headerSection
-            Divider().opacity(0.5)
-            filterSortBar
             Divider().opacity(0.5)
             sourceList
             Divider().opacity(0.5)
@@ -1262,6 +1268,9 @@ struct SourceListView: View {
                     .frame(width: 16, height: 16)
             }
 
+            sortMenuButton
+            filterMenuButton
+
             Button {
                 Task { await service.refreshAll() }
             } label: {
@@ -1275,45 +1284,69 @@ struct SourceListView: View {
         .background(.ultraThinMaterial)
     }
 
-    private var filterSortBar: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 4) {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(Design.Typography.caption)
-                    .foregroundStyle(.secondary)
-                    .symbolRenderingMode(.hierarchical)
-                Picker("Sort", selection: $sortOrder) {
-                    ForEach(SourceSortOrder.allCases, id: \.self) { order in
-                        Label(order.rawValue, systemImage: order.systemImage)
-                            .tag(order)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .fixedSize()
-            }
+    private var isSortActive: Bool { sortOrder != .alphabetical || !sortAscending }
+    private var isFilterActive: Bool { statusFilter != .all }
 
-            Spacer()
-
-            HStack(spacing: 4) {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .font(Design.Typography.caption)
-                    .foregroundStyle(.secondary)
-                    .symbolRenderingMode(.hierarchical)
-                Picker("Filter", selection: $statusFilter) {
-                    ForEach(SourceStatusFilter.allCases, id: \.self) { filter in
-                        Label(filter.rawValue, systemImage: filter.systemImage)
-                            .tag(filter)
-                    }
+    private var sortMenuButton: some View {
+        Menu {
+            Picker("Sort By", selection: $sortOrder) {
+                ForEach(SourceSortOrder.allCases, id: \.self) { order in
+                    Label(order.rawValue, systemImage: order.systemImage)
+                        .tag(order)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .fixedSize()
             }
+            .pickerStyle(.inline)
+
+            Divider()
+
+            Picker("Direction", selection: $sortAscending) {
+                Label("Ascending", systemImage: "arrow.up").tag(true)
+                Label("Descending", systemImage: "arrow.down").tag(false)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(Design.Typography.caption)
+                .frame(width: 22, height: 22)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.ultraThinMaterial)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(isSortActive ? .white : .secondary)
+        .background(
+            Circle()
+                .fill(isSortActive ? Color.accentColor : Color.clear)
+                .frame(width: 22, height: 22)
+        )
+        .contentShape(Circle())
+        .help("Sort options")
+    }
+
+    private var filterMenuButton: some View {
+        Menu {
+            Picker("Filter", selection: $statusFilter) {
+                ForEach(SourceStatusFilter.allCases, id: \.self) { filter in
+                    Label(filter.rawValue, systemImage: filter.systemImage)
+                        .tag(filter)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(Design.Typography.caption)
+                .frame(width: 22, height: 22)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(isFilterActive ? .white : .secondary)
+        .background(
+            Circle()
+                .fill(isFilterActive ? Color.accentColor : Color.clear)
+                .frame(width: 22, height: 22)
+        )
+        .contentShape(Circle())
+        .help("Filter options")
     }
 
     private var sourceList: some View {
