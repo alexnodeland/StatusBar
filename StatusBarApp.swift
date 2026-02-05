@@ -515,7 +515,7 @@ final class UpdateChecker: ObservableObject {
     @AppStorage("autoCheckForUpdates") var autoCheckEnabled = true
 
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
     }
 
     private var nightlyTimer: Timer?
@@ -1374,65 +1374,61 @@ struct SettingsView: View {
             settingsHeader
             Divider().opacity(0.5)
             sourceListSection
+            Spacer()
             Divider().opacity(0.5)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("Refresh interval")
-                            .font(Design.Typography.caption)
-                        Spacer()
-                        Picker("", selection: $service.refreshInterval) {
-                            ForEach(kRefreshIntervalOptions, id: \.seconds) { option in
-                                Text(option.label).tag(option.seconds)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .fixedSize()
-                        .onChange(of: service.refreshInterval) {
-                            service.startTimer()
-                        }
+            HStack {
+                Text("Refresh interval")
+                    .font(Design.Typography.caption)
+                Spacer()
+                Picker("", selection: $service.refreshInterval) {
+                    ForEach(kRefreshIntervalOptions, id: \.seconds) { option in
+                        Text(option.label).tag(option.seconds)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+                .onChange(of: service.refreshInterval) {
+                    service.startTimer()
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
-                    Divider().opacity(0.5)
+            Divider().opacity(0.5)
 
-                    Toggle(isOn: $launchAtLogin) {
-                        Text("Launch at login")
-                            .font(Design.Typography.caption)
+            Toggle(isOn: $launchAtLogin) {
+                Text("Launch at login")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .onChange(of: launchAtLogin) {
+                do {
+                    if launchAtLogin {
+                        try SMAppService.mainApp.register()
+                    } else {
+                        try SMAppService.mainApp.unregister()
                     }
-                    .toggleStyle(.checkbox)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .onChange(of: launchAtLogin) {
-                        do {
-                            if launchAtLogin {
-                                try SMAppService.mainApp.register()
-                            } else {
-                                try SMAppService.mainApp.unregister()
-                            }
-                        } catch {
-                            launchAtLogin.toggle()
-                        }
-                    }
-
-                    Divider().opacity(0.5)
-
-                    Toggle(isOn: $notificationsEnabled) {
-                        Text("Status change notifications")
-                            .font(Design.Typography.caption)
-                    }
-                    .toggleStyle(.checkbox)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-
-                    Divider().opacity(0.5)
-                    updateSection
+                } catch {
+                    launchAtLogin.toggle()
                 }
             }
 
+            Divider().opacity(0.5)
+
+            Toggle(isOn: $notificationsEnabled) {
+                Text("Notifications")
+                    .font(Design.Typography.caption)
+            }
+            .toggleStyle(.checkbox)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            Divider().opacity(0.5)
+            updateSection
             Divider().opacity(0.5)
             settingsFooter
         }
@@ -1525,7 +1521,7 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .frame(maxHeight: 140)
+            .frame(maxHeight: .infinity)
         }
     }
 
@@ -1594,15 +1590,78 @@ struct SettingsView: View {
     }
 
     private var updateSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Button {
+                    if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    if let img = NSImage(contentsOfFile: Bundle.main.path(forResource: "github", ofType: "png") ?? "") {
+                        Image(nsImage: { img.isTemplate = true; return img }())
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+                .buttonStyle(.borderless)
+                .help("View on GitHub")
+
                 Text("Version")
                     .font(Design.Typography.caption)
-                Spacer()
                 Text(updateChecker.currentVersion)
                     .font(Design.Typography.mono)
                     .foregroundStyle(.secondary)
+
+                if updateChecker.isUpdateAvailable {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                        .font(.caption2)
+                    Text("Update available")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(Color.accentColor)
+                } else if updateChecker.lastCheckDate != nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.caption2)
+                    Text("Up to date")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(.green)
+                }
+
+                Button {
+                    Task { await updateChecker.checkForUpdates() }
+                } label: {
+                    if updateChecker.isChecking {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                            .frame(width: 12, height: 12)
+                    } else {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.caption2)
+                    }
+                }
+                .buttonStyle(.borderless)
+                .disabled(updateChecker.isChecking)
+
+                Spacer()
+
+                Toggle(isOn: $updateChecker.autoCheckEnabled) {
+                    Text("Check automatically")
+                        .font(Design.Typography.micro)
+                }
+                    .toggleStyle(.checkbox)
+                    .onChange(of: updateChecker.autoCheckEnabled) {
+                        if updateChecker.autoCheckEnabled {
+                            updateChecker.startNightlyTimer()
+                        } else {
+                            updateChecker.stopNightlyTimer()
+                        }
+                    }
+                .help("Check for Updates")
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
             if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
                 HStack(spacing: 6) {
@@ -1619,59 +1678,23 @@ struct SettingsView: View {
                     .buttonStyle(GlassButtonStyle())
                 }
                 .padding(8)
+                .padding(.horizontal, 4)
                 .background(
                     Color.accentColor.opacity(0.08),
                     in: RoundedRectangle(cornerRadius: 6)
                 )
-            }
-
-            HStack {
-                Button {
-                    Task { await updateChecker.checkForUpdates() }
-                } label: {
-                    HStack(spacing: 4) {
-                        if updateChecker.isChecking {
-                            ProgressView()
-                                .scaleEffect(0.5)
-                                .frame(width: 10, height: 10)
-                        }
-                        Text("Check for Updates")
-                    }
-                }
-                .font(Design.Typography.caption)
-                .buttonStyle(GlassButtonStyle())
-                .disabled(updateChecker.isChecking)
-
-                Spacer()
-
-                if let date = updateChecker.lastCheckDate {
-                    Text("Checked \(relativeFormatter.localizedString(for: date, relativeTo: Date()))")
-                        .font(Design.Typography.micro)
-                        .foregroundStyle(.quaternary)
-                }
-            }
-
-            Toggle(isOn: $updateChecker.autoCheckEnabled) {
-                Text("Automatically check for updates daily")
-                    .font(Design.Typography.caption)
-            }
-            .toggleStyle(.checkbox)
-            .onChange(of: updateChecker.autoCheckEnabled) {
-                if updateChecker.autoCheckEnabled {
-                    updateChecker.startNightlyTimer()
-                } else {
-                    updateChecker.stopNightlyTimer()
-                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
 
             if let error = updateChecker.lastCheckError {
                 Text(error)
                     .font(Design.Typography.micro)
                     .foregroundStyle(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
     }
 
     private var settingsHeader: some View {
@@ -1701,19 +1724,17 @@ struct SettingsView: View {
             }
             .font(Design.Typography.caption)
 
+            Spacer()
+
             Button {
-                if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
-                    NSWorkspace.shared.open(url)
-                }
+                NSApplication.shared.terminate(nil)
             } label: {
-                Image(systemName: "cat.fill")
-                    .font(Design.Typography.caption)
+                Text("Quit")
+                    .font(Design.Typography.micro)
             }
             .buttonStyle(.borderless)
-            .foregroundStyle(.secondary)
-            .help("View on GitHub")
-
-            Spacer()
+            .foregroundStyle(.tertiary)
+            .help("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
