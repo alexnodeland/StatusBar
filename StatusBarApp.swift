@@ -93,9 +93,11 @@ struct SPPage: Codable, Equatable {
     let name: String
     let url: String
     let updatedAt: String
+    let timeZone: String?
     enum CodingKeys: String, CodingKey {
         case id, name, url
         case updatedAt = "updated_at"
+        case timeZone = "time_zone"
     }
 }
 
@@ -380,7 +382,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
 enum StatusProvider: Equatable {
     case atlassian
-    case incidentIO
+    case incidentIOCompat  // incident.io pages serving Atlassian-compatible API (no update details)
+    case incidentIO        // pure incident.io fallback via /proxy/widget
     case instatus
 }
 
@@ -479,7 +482,7 @@ final class StatusService: ObservableObject {
             let summary: SPSummary
             let incidents: [SPIncident]
             switch provider {
-            case .atlassian:
+            case .atlassian, .incidentIOCompat:
                 async let s = fetchSummary(baseURL: source.baseURL)
                 async let i = fetchIncidents(baseURL: source.baseURL)
                 (summary, incidents) = try await (s, i)
@@ -566,9 +569,10 @@ final class StatusService: ObservableObject {
         do {
             let (data, response) = try await session.data(from: url)
             if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                // Try Atlassian first (has status.indicator object)
-                if let _ = try? JSONDecoder().decode(SPSummary.self, from: data) {
-                    return .atlassian
+                // Try Atlassian-format first (has status.indicator object)
+                if let summary = try? JSONDecoder().decode(SPSummary.self, from: data) {
+                    // Atlassian pages include time_zone; incident.io compat pages don't
+                    return summary.page.timeZone != nil ? .atlassian : .incidentIOCompat
                 }
                 // Try Instatus (has page.status as a plain string like "UP")
                 if let _ = try? JSONDecoder().decode(InstatusSummary.self, from: data) {
@@ -624,7 +628,7 @@ final class StatusService: ObservableObject {
         let description = deriveDescription(from: indicator, incidentCount: allIncidents.count)
 
         let summary = SPSummary(
-            page: SPPage(id: baseURL, name: baseURL, url: baseURL, updatedAt: ""),
+            page: SPPage(id: baseURL, name: baseURL, url: baseURL, updatedAt: "", timeZone: nil),
             status: SPStatus(indicator: indicator, description: description),
             components: [],
             incidents: mappedIncidents
@@ -680,7 +684,7 @@ final class StatusService: ObservableObject {
         let description = mapInstatusDescription(instatus.page.status)
 
         return SPSummary(
-            page: SPPage(id: baseURL, name: instatus.page.name, url: instatus.page.url, updatedAt: ""),
+            page: SPPage(id: baseURL, name: instatus.page.name, url: instatus.page.url, updatedAt: "", timeZone: nil),
             status: SPStatus(indicator: indicator, description: description),
             components: components,
             incidents: []
@@ -1429,6 +1433,17 @@ struct SourceDetailView: View {
         }
     }
 
+    private var providerLimitationNotice: String? {
+        switch state.provider {
+        case .instatus:
+            return "Incident history is not available for this status page provider"
+        case .incidentIO, .incidentIOCompat:
+            return "Incident details are not available for this status page provider"
+        default:
+            return nil
+        }
+    }
+
     private var recentIncidentsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Recent Incidents")
@@ -1436,20 +1451,24 @@ struct SourceDetailView: View {
                 .foregroundStyle(.secondary)
 
             let incidents = Array(state.recentIncidents.prefix(10))
-            if state.provider == .instatus {
+            if let notice = providerLimitationNotice {
                 HStack(spacing: 4) {
                     Image(systemName: "info.circle")
                         .font(Design.Typography.micro)
-                    Text("Incident history is not available for Instatus-powered pages")
+                    Text(notice)
                         .font(Design.Typography.micro)
                 }
                 .foregroundStyle(.tertiary)
                 .padding(.vertical, 4)
-            } else if incidents.isEmpty {
-                Text("No recent incidents")
-                    .font(Design.Typography.micro)
-                    .foregroundStyle(.tertiary)
-                    .padding(.vertical, 4)
+            }
+
+            if incidents.isEmpty {
+                if providerLimitationNotice == nil {
+                    Text("No recent incidents")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(.tertiary)
+                        .padding(.vertical, 4)
+                }
             } else {
                 ForEach(incidents) { incident in
                     IncidentCard(incident: incident, isActive: false)
