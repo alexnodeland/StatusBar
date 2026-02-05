@@ -5,7 +5,7 @@
 <h1 align="center">StatusBar</h1>
 
 <p align="center">
-  A single-file SwiftUI menu bar app that monitors multiple <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>-powered status pages simultaneously.
+  A single-file SwiftUI menu bar app that monitors multiple status pages simultaneously. Supports <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, and <a href="https://instatus.com">Instatus</a>-powered pages with automatic provider detection.
 </p>
 
 <p align="center">
@@ -43,20 +43,23 @@ The app ships with three default sources:
 | GitHub | `https://www.githubstatus.com` |
 | Cloudflare | `https://www.cloudflarestatus.com` |
 
-Open **Settings** and click **+** to add more. Any Atlassian Statuspage-powered URL works:
+Open **Settings** and click **+** to add more. The app auto-detects the provider — no configuration needed.
 
 <details>
 <summary>Example sources</summary>
 
-| Service | URL |
-|---------|-----|
-| Atlassian | `https://status.atlassian.com` |
-| Datadog | `https://status.datadoghq.com` |
-| Vercel | `https://www.vercel-status.com` |
-| Linear | `https://linearstatus.com` |
-| Notion | `https://status.notion.so` |
+| Service | Provider | URL |
+|---------|----------|-----|
+| Atlassian | Atlassian Statuspage | `https://status.atlassian.com` |
+| Datadog | Atlassian Statuspage | `https://status.datadoghq.com` |
+| Linear | incident.io | `https://linearstatus.com` |
+| Notion | Atlassian Statuspage | `https://status.notion.so` |
+| Zed | Instatus | `https://status.zed.dev` |
+| Deno | Instatus | `https://denostatus.com` |
 
 </details>
+
+> **Note:** Incident history detail varies by provider. Atlassian Statuspage sources include full incident timelines. incident.io and Instatus sources may have limited or unavailable incident details due to provider API restrictions.
 
 Sources are persisted via `@AppStorage` and survive restarts.
 

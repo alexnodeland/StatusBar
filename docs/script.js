@@ -82,6 +82,8 @@
     { name: 'Netlify', url: 'https://www.netlifystatus.com', category: 'Developer Platforms' },
     { name: 'Render', url: 'https://status.render.com', category: 'Developer Platforms' },
     { name: 'Railway', url: 'https://status.railway.com', category: 'Developer Platforms' },
+    { name: 'Zed', url: 'https://status.zed.dev', category: 'Developer Platforms' },
+    { name: 'Deno', url: 'https://denostatus.com', category: 'Developer Platforms' },
     { name: 'Fly.io', url: 'https://status.flyio.net', category: 'Developer Platforms' },
     { name: 'Heroku', url: 'https://status.heroku.com', category: 'Developer Platforms' },
     { name: 'npm', url: 'https://status.npmjs.org', category: 'Developer Platforms' },
@@ -106,6 +108,7 @@
     { name: 'Twilio', url: 'https://status.twilio.com', category: 'Communication' },
     { name: 'Loom', url: 'https://www.loomstatus.com', category: 'Communication' },
     // Productivity
+    { name: 'Todoist', url: 'https://status.todoist.net', category: 'Productivity' },
     { name: 'Notion', url: 'https://status.notion.so', category: 'Productivity' },
     { name: 'Figma', url: 'https://status.figma.com', category: 'Productivity' },
     { name: 'Miro', url: 'https://status.miro.com', category: 'Productivity' },

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StatusBar — Monitor Status Pages from Your Menu Bar</title>
-  <meta name="description" content="A native macOS menu bar app that monitors multiple Atlassian Statuspage-powered status pages simultaneously.">
+  <meta name="description" content="A native macOS menu bar app that monitors multiple status pages simultaneously. Supports Atlassian Statuspage, incident.io, and Instatus with automatic provider detection.">
   <meta property="og:title" content="StatusBar">
-  <meta property="og:description" content="Monitor multiple Atlassian Statuspage-powered status pages from your macOS menu bar.">
+  <meta property="og:description" content="Monitor multiple status pages from your macOS menu bar. Supports Atlassian Statuspage, incident.io, and Instatus.">
   <meta property="og:image" content="icon.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
@@ -44,7 +44,7 @@
     <div class="container">
       <img src="icon.png" alt="StatusBar app icon" class="hero-icon" width="128" height="128">
       <h1>StatusBar</h1>
-      <p class="hero-tagline">A native macOS menu bar app that monitors all your Atlassian Statuspage-powered services in one place. No Dock icon. No Electron. Just a single icon that tells you everything.</p>
+      <p class="hero-tagline">A native macOS menu bar app that monitors all your status pages in one place. Supports Atlassian Statuspage, incident.io, and Instatus with automatic provider detection. No Dock icon. No Electron. Just a single icon that tells you everything.</p>
       <div class="hero-ctas">
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
@@ -210,7 +210,7 @@ open ./build/StatusBar.app</code></pre>
             <img src="screenshots/settings.png" alt="Settings view showing source management and preferences" class="screenshot">
           </div>
           <div class="doc-content">
-            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>-powered service by name and URL, or import a TSV file to add many at once.</p>
+            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any status page by name and URL. The app auto-detects the provider &mdash; <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, or <a href="https://instatus.com">Instatus</a>. You can also import a TSV file to add many at once.</p>
             <p class="doc-desc doc-desc-hint">Select services below, export as TSV, then import the file in StatusBar via Settings&nbsp;&rarr;&nbsp;Import.</p>
           </div>
         </div>
