@@ -265,6 +265,50 @@ struct GitHubAsset: Codable {
     }
 }
 
+// MARK: - Sort & Filter
+
+enum SourceSortOrder: String, CaseIterable {
+    case alphabetical = "Name"
+    case latest = "Latest"
+    case status = "Status"
+
+    var systemImage: String {
+        switch self {
+        case .alphabetical: return "textformat.abc"
+        case .latest: return "clock"
+        case .status: return "circle.fill"
+        }
+    }
+}
+
+enum SourceStatusFilter: String, CaseIterable {
+    case all = "All"
+    case operational = "Operational"
+    case minor = "Minor"
+    case major = "Major"
+    case critical = "Critical"
+
+    var indicator: String? {
+        switch self {
+        case .all: return nil
+        case .operational: return "none"
+        case .minor: return "minor"
+        case .major: return "major"
+        case .critical: return "critical"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .all: return "circle.grid.2x2"
+        case .operational: return "checkmark.circle.fill"
+        case .minor: return "exclamationmark.triangle.fill"
+        case .major: return "exclamationmark.octagon.fill"
+        case .critical: return "xmark.octagon.fill"
+        }
+    }
+}
+
 // MARK: - Per-Source State
 
 struct SourceState: Equatable {
@@ -815,7 +859,7 @@ final class UpdateChecker: ObservableObject {
     @AppStorage("autoCheckForUpdates") var autoCheckEnabled = true
 
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     }
 
     private var nightlyTimer: Timer?
@@ -1144,6 +1188,48 @@ struct SourceListView: View {
     let onSelect: (UUID) -> Void
     let onSettings: () -> Void
 
+    @State private var sortOrder: SourceSortOrder = .alphabetical
+    @State private var statusFilter: SourceStatusFilter = .all
+    @State private var sortAscending: Bool = true
+    @State private var filterExcludes: Bool = false
+
+    private var filteredAndSortedSources: [StatusSource] {
+        let filtered: [StatusSource]
+        if let indicator = statusFilter.indicator {
+            filtered = service.sources.filter { source in
+                let matches = service.state(for: source).indicator == indicator
+                return filterExcludes ? !matches : matches
+            }
+        } else {
+            filtered = service.sources
+        }
+
+        switch sortOrder {
+        case .alphabetical:
+            return filtered.sorted {
+                let ascending = $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                return sortAscending ? ascending : !ascending
+            }
+        case .latest:
+            return filtered.sorted { a, b in
+                let dateA = service.state(for: a).recentIncidents.compactMap({ parseDate($0.updatedAt) }).max() ?? .distantPast
+                let dateB = service.state(for: b).recentIncidents.compactMap({ parseDate($0.updatedAt) }).max() ?? .distantPast
+                let ascending = dateA > dateB
+                return sortAscending ? ascending : !ascending
+            }
+        case .status:
+            return filtered.sorted { a, b in
+                let sevA = service.state(for: a).indicatorSeverity
+                let sevB = service.state(for: b).indicatorSeverity
+                if sevA != sevB {
+                    let ascending = sevA > sevB
+                    return sortAscending ? ascending : !ascending
+                }
+                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+            }
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             headerSection
@@ -1184,6 +1270,9 @@ struct SourceListView: View {
                     .frame(width: 16, height: 16)
             }
 
+            sortMenuButton
+            filterMenuButton
+
             Button {
                 Task { await service.refreshAll() }
             } label: {
@@ -1197,24 +1286,118 @@ struct SourceListView: View {
         .background(.ultraThinMaterial)
     }
 
-    private var sourceList: some View {
-        ScrollView {
-            LazyVStack(spacing: 2) {
-                ForEach(service.sources) { source in
-                    SourceRow(source: source, state: service.state(for: source))
-                        .contentShape(Rectangle())
-                        .onTapGesture { onSelect(source.id) }
+    private var isSortActive: Bool { sortOrder != .alphabetical || !sortAscending }
+    private var isFilterActive: Bool { statusFilter != .all || filterExcludes }
+
+    private var sortMenuButton: some View {
+        Menu {
+            Picker("Sort By", selection: $sortOrder) {
+                ForEach(SourceSortOrder.allCases, id: \.self) { order in
+                    Label(order.rawValue, systemImage: order.systemImage)
+                        .tag(order)
                 }
             }
-            .padding(8)
+            .pickerStyle(.inline)
+
+            Divider()
+
+            Picker("Direction", selection: $sortAscending) {
+                Label("Ascending", systemImage: "arrow.up").tag(true)
+                Label("Descending", systemImage: "arrow.down").tag(false)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(Design.Typography.caption)
+                .frame(width: 22, height: 22)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(isSortActive ? .white : .secondary)
+        .background(
+            Circle()
+                .fill(isSortActive ? Color.accentColor : Color.clear)
+                .frame(width: 22, height: 22)
+        )
+        .contentShape(Circle())
+        .help("Sort options")
+    }
+
+    private var filterMenuButton: some View {
+        Menu {
+            Picker("Filter", selection: $statusFilter) {
+                ForEach(SourceStatusFilter.allCases, id: \.self) { filter in
+                    Label(filter.rawValue, systemImage: filter.systemImage)
+                        .tag(filter)
+                }
+            }
+            .pickerStyle(.inline)
+
+            Divider()
+
+            Picker("Mode", selection: $filterExcludes) {
+                Label("Include", systemImage: "checkmark.circle").tag(false)
+                Label("Exclude", systemImage: "minus.circle").tag(true)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(Design.Typography.caption)
+                .frame(width: 22, height: 22)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(isFilterActive ? .white : .secondary)
+        .background(
+            Circle()
+                .fill(isFilterActive ? Color.accentColor : Color.clear)
+                .frame(width: 22, height: 22)
+        )
+        .contentShape(Circle())
+        .help("Filter options")
+    }
+
+    private var sourceList: some View {
+        ScrollView {
+            let sources = filteredAndSortedSources
+            if sources.isEmpty {
+                VStack(spacing: 6) {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.title3)
+                        .foregroundStyle(.tertiary)
+                        .symbolRenderingMode(.hierarchical)
+                    Text("No sources match filter")
+                        .font(Design.Typography.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+            } else {
+                LazyVStack(spacing: 2) {
+                    ForEach(sources) { source in
+                        SourceRow(source: source, state: service.state(for: source))
+                            .contentShape(Rectangle())
+                            .onTapGesture { onSelect(source.id) }
+                    }
+                }
+                .padding(8)
+            }
         }
     }
 
     private var footerSection: some View {
         HStack {
-            Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
-                .font(Design.Typography.micro)
-                .foregroundStyle(.quaternary)
+            Group {
+                if statusFilter == .all {
+                    Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                } else {
+                    Text("\(filteredAndSortedSources.count) of \(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                }
+            }
+            .font(Design.Typography.micro)
+            .foregroundStyle(.quaternary)
 
             Spacer()
 
@@ -1524,6 +1707,16 @@ struct SourceDetailView: View {
                     .font(Design.Typography.caption)
             }
             .buttonStyle(.borderless)
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(Design.Typography.micro)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.tertiary)
+            .help("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

@@ -89,6 +89,11 @@ fi
 # Copy Info.plist
 cp Info.plist "${CONTENTS}/Info.plist"
 
+# Determine version: explicit --version flag > latest git tag > Info.plist default
+if [ -z "$VERSION" ]; then
+    VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
+fi
+
 # Inject version into the copied Info.plist (source file untouched)
 if [ -n "$VERSION" ]; then
     # Strip leading 'v' if present (v1.0.0 → 1.0.0)
