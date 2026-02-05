@@ -271,6 +271,14 @@ enum SourceSortOrder: String, CaseIterable {
     case alphabetical = "Name"
     case latest = "Latest"
     case status = "Status"
+
+    var systemImage: String {
+        switch self {
+        case .alphabetical: return "textformat.abc"
+        case .latest: return "clock"
+        case .status: return "circle.fill"
+        }
+    }
 }
 
 enum SourceStatusFilter: String, CaseIterable {
@@ -287,6 +295,16 @@ enum SourceStatusFilter: String, CaseIterable {
         case .minor: return "minor"
         case .major: return "major"
         case .critical: return "critical"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .all: return "circle.grid.2x2"
+        case .operational: return "checkmark.circle.fill"
+        case .minor: return "exclamationmark.triangle.fill"
+        case .major: return "exclamationmark.octagon.fill"
+        case .critical: return "xmark.octagon.fill"
         }
     }
 }
@@ -1261,11 +1279,13 @@ struct SourceListView: View {
         HStack(spacing: 8) {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.up.arrow.down")
-                    .font(Design.Typography.micro)
+                    .font(Design.Typography.caption)
                     .foregroundStyle(.secondary)
+                    .symbolRenderingMode(.hierarchical)
                 Picker("Sort", selection: $sortOrder) {
                     ForEach(SourceSortOrder.allCases, id: \.self) { order in
-                        Text(order.rawValue).tag(order)
+                        Label(order.rawValue, systemImage: order.systemImage)
+                            .tag(order)
                     }
                 }
                 .pickerStyle(.menu)
@@ -1277,11 +1297,13 @@ struct SourceListView: View {
 
             HStack(spacing: 4) {
                 Image(systemName: "line.3.horizontal.decrease")
-                    .font(Design.Typography.micro)
+                    .font(Design.Typography.caption)
                     .foregroundStyle(.secondary)
+                    .symbolRenderingMode(.hierarchical)
                 Picker("Filter", selection: $statusFilter) {
                     ForEach(SourceStatusFilter.allCases, id: \.self) { filter in
-                        Text(filter.rawValue).tag(filter)
+                        Label(filter.rawValue, systemImage: filter.systemImage)
+                            .tag(filter)
                     }
                 }
                 .pickerStyle(.menu)
@@ -1299,9 +1321,10 @@ struct SourceListView: View {
             let sources = filteredAndSortedSources
             if sources.isEmpty {
                 VStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass")
+                    Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.title3)
                         .foregroundStyle(.tertiary)
+                        .symbolRenderingMode(.hierarchical)
                     Text("No sources match filter")
                         .font(Design.Typography.caption)
                         .foregroundStyle(.secondary)
