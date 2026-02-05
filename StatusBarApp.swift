@@ -859,7 +859,7 @@ final class UpdateChecker: ObservableObject {
     @AppStorage("autoCheckForUpdates") var autoCheckEnabled = true
 
     var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
     }
 
     private var nightlyTimer: Timer?
@@ -1707,6 +1707,16 @@ struct SourceDetailView: View {
                     .font(Design.Typography.caption)
             }
             .buttonStyle(.borderless)
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Text("Quit")
+                    .font(Design.Typography.micro)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.tertiary)
+            .help("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
