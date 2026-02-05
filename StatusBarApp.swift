@@ -463,6 +463,20 @@ final class StatusService: ObservableObject {
         Task { await refreshAll() }
     }
 
+    func addSource(name: String, baseURL: String) {
+        let source = StatusSource(name: name, baseURL: baseURL)
+        sources.append(source)
+        storedLines = StatusSource.serialize(sources)
+        Task { await refresh(source: source) }
+    }
+
+    func removeSource(id: UUID) {
+        sources.removeAll { $0.id == id }
+        states.removeValue(forKey: id)
+        previousIndicators.removeValue(forKey: id)
+        storedLines = StatusSource.serialize(sources)
+    }
+
     func resetToDefaults() {
         applySources(from: kDefaultSources)
     }
@@ -1334,122 +1348,201 @@ struct SettingsView: View {
     @ObservedObject var service: StatusService
     @ObservedObject var updateChecker: UpdateChecker
     let onBack: () -> Void
-    @State private var editText: String = ""
-    @State private var parsePreview: [StatusSource] = []
-    @State private var hasChanges = false
     @State private var launchAtLogin = false
+    @State private var showingAddSource = false
+    @State private var newSourceName = ""
+    @State private var newSourceURL = ""
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             settingsHeader
             Divider().opacity(0.5)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("One per line:  **Name | URL**")
-                    .font(Design.Typography.caption)
-                    .foregroundStyle(.secondary)
-
-                Text("Lines starting with **#** are ignored.")
-                    .font(Design.Typography.micro)
-                    .foregroundStyle(.tertiary)
-
-                TextEditor(text: $editText)
-                    .font(.system(size: 11, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .padding(6)
-                    .background(
-                        .ultraThinMaterial,
-                        in: RoundedRectangle(cornerRadius: 6)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                    )
-                    .frame(minHeight: 160)
-                    .onChange(of: editText) {
-                        parsePreview = StatusSource.parse(lines: editText)
-                        hasChanges = true
-                    }
-
-                HStack {
-                    if parsePreview.isEmpty && hasChanges {
-                        Label("No valid sources found", systemImage: "exclamationmark.triangle")
-                            .font(Design.Typography.micro)
-                            .foregroundStyle(.red)
-                    } else if hasChanges {
-                        Text("\(parsePreview.count) source\(parsePreview.count == 1 ? "" : "s") detected")
-                            .font(Design.Typography.micro)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
-            }
-            .padding(12)
-
+            sourceListSection
             Divider().opacity(0.5)
 
-            HStack {
-                Text("Refresh interval")
-                    .font(Design.Typography.caption)
-                Spacer()
-                Picker("", selection: $service.refreshInterval) {
-                    ForEach(kRefreshIntervalOptions, id: \.seconds) { option in
-                        Text(option.label).tag(option.seconds)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("Refresh interval")
+                            .font(Design.Typography.caption)
+                        Spacer()
+                        Picker("", selection: $service.refreshInterval) {
+                            ForEach(kRefreshIntervalOptions, id: \.seconds) { option in
+                                Text(option.label).tag(option.seconds)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .fixedSize()
+                        .onChange(of: service.refreshInterval) {
+                            service.startTimer()
+                        }
                     }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .fixedSize()
-                .onChange(of: service.refreshInterval) {
-                    service.startTimer()
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
 
-            Divider().opacity(0.5)
+                    Divider().opacity(0.5)
 
-            Toggle(isOn: $launchAtLogin) {
-                Text("Launch at login")
-                    .font(Design.Typography.caption)
-            }
-            .toggleStyle(.checkbox)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .onChange(of: launchAtLogin) {
-                do {
-                    if launchAtLogin {
-                        try SMAppService.mainApp.register()
-                    } else {
-                        try SMAppService.mainApp.unregister()
+                    Toggle(isOn: $launchAtLogin) {
+                        Text("Launch at login")
+                            .font(Design.Typography.caption)
                     }
-                } catch {
-                    // Revert on failure
-                    launchAtLogin.toggle()
+                    .toggleStyle(.checkbox)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .onChange(of: launchAtLogin) {
+                        do {
+                            if launchAtLogin {
+                                try SMAppService.mainApp.register()
+                            } else {
+                                try SMAppService.mainApp.unregister()
+                            }
+                        } catch {
+                            launchAtLogin.toggle()
+                        }
+                    }
+
+                    Toggle(isOn: $notificationsEnabled) {
+                        Text("Status change notifications")
+                            .font(Design.Typography.caption)
+                    }
+                    .toggleStyle(.checkbox)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+
+                    Divider().opacity(0.5)
+                    updateSection
                 }
             }
 
-            Toggle(isOn: $notificationsEnabled) {
-                Text("Status change notifications")
-                    .font(Design.Typography.caption)
-            }
-            .toggleStyle(.checkbox)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-
-            Divider().opacity(0.5)
-            updateSection
-            Spacer()
             Divider().opacity(0.5)
             settingsFooter
         }
         .onAppear {
-            editText = service.serializedSources
-            parsePreview = service.sources
-            hasChanges = false
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
+    }
+
+    private var sourceListSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Status Pages")
+                    .font(Design.Typography.captionSemibold)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    withAnimation(Design.Timing.expand) {
+                        showingAddSource.toggle()
+                        newSourceName = ""
+                        newSourceURL = ""
+                    }
+                } label: {
+                    Image(systemName: showingAddSource ? "xmark.circle.fill" : "plus.circle.fill")
+                        .font(Design.Typography.body)
+                        .foregroundStyle(showingAddSource ? .secondary : .blue)
+                }
+                .buttonStyle(.borderless)
+                .help(showingAddSource ? "Cancel" : "Add source")
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 6)
+
+            if showingAddSource {
+                addSourceForm
+            }
+
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(service.sources) { source in
+                        HStack(spacing: 8) {
+                            Button {
+                                withAnimation(Design.Timing.expand) {
+                                    service.removeSource(id: source.id)
+                                }
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(.red)
+                                    .font(Design.Typography.body)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Remove source")
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(source.name)
+                                    .font(Design.Typography.captionMedium)
+                                    .lineLimit(1)
+                                Text(source.baseURL)
+                                    .font(Design.Typography.micro)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .hoverHighlight()
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+            .frame(maxHeight: 140)
+        }
+    }
+
+    private var addSourceForm: some View {
+        VStack(spacing: 6) {
+            TextField("Name", text: $newSourceName)
+                .font(Design.Typography.caption)
+                .textFieldStyle(.plain)
+                .padding(6)
+                .background(
+                    .ultraThinMaterial,
+                    in: RoundedRectangle(cornerRadius: 5)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                )
+
+            TextField("URL (e.g. https://status.example.com)", text: $newSourceURL)
+                .font(Design.Typography.caption)
+                .textFieldStyle(.plain)
+                .padding(6)
+                .background(
+                    .ultraThinMaterial,
+                    in: RoundedRectangle(cornerRadius: 5)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                )
+
+            HStack {
+                Spacer()
+                Button("Add") {
+                    let name = newSourceName.trimmingCharacters(in: .whitespaces)
+                    let url = newSourceURL.trimmingCharacters(in: .whitespaces)
+                    guard !name.isEmpty, url.hasPrefix("http") else { return }
+                    withAnimation(Design.Timing.expand) {
+                        service.addSource(name: name, baseURL: url)
+                        showingAddSource = false
+                        newSourceName = ""
+                        newSourceURL = ""
+                    }
+                }
+                .font(Design.Typography.caption)
+                .buttonStyle(GlassButtonStyle())
+                .disabled(
+                    newSourceName.trimmingCharacters(in: .whitespaces).isEmpty ||
+                    !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
+                )
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     private var updateSection: some View {
@@ -1555,10 +1648,7 @@ struct SettingsView: View {
     private var settingsFooter: some View {
         HStack {
             Button("Reset to Defaults") {
-                editText = kDefaultSources
-                parsePreview = StatusSource.parse(lines: kDefaultSources)
                 service.resetToDefaults()
-                hasChanges = false
             }
             .font(Design.Typography.micro)
 
@@ -1575,15 +1665,6 @@ struct SettingsView: View {
             .help("View on GitHub")
 
             Spacer()
-
-            Button("Apply") {
-                service.applySources(from: editText)
-                hasChanges = false
-                onBack()
-            }
-            .font(Design.Typography.caption)
-            .buttonStyle(.borderedProminent)
-            .disabled(parsePreview.isEmpty)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
