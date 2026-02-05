@@ -933,7 +933,7 @@ struct SourceListView: View {
                         .font(Design.Typography.caption)
                     if updateChecker.isUpdateAvailable {
                         Circle()
-                            .fill(.blue)
+                            .fill(Color.accentColor)
                             .frame(width: 6, height: 6)
                             .offset(x: 2, y: -2)
                     }
@@ -950,6 +950,7 @@ struct SourceListView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.tertiary)
+            .help("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -977,7 +978,7 @@ struct SourceRow: View {
                     .lineLimit(1)
 
                 if let error = state.lastError {
-                    Text("Error: \(error)")
+                    Text(error)
                         .font(Design.Typography.micro)
                         .foregroundStyle(.red)
                         .lineLimit(1)
@@ -1066,6 +1067,7 @@ struct SourceDetailView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
+            .help("Back")
 
             Image(systemName: iconForIndicator(state.indicator))
                 .font(.title3)
@@ -1093,6 +1095,7 @@ struct SourceDetailView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
+            .help("Refresh")
         }
         .padding(12)
         .background(.ultraThinMaterial)
@@ -1182,7 +1185,8 @@ struct SourceDetailView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Retry", action: onRefresh)
-                .buttonStyle(GlassButtonStyle())
+                .buttonStyle(.bordered)
+                .controlSize(.small)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1196,12 +1200,14 @@ struct SourceDetailView: View {
                     .foregroundStyle(.quaternary)
             }
             Spacer()
-            Button("Open Status Page") {
+            Button {
                 if let url = URL(string: source.baseURL) {
                     NSWorkspace.shared.open(url)
                 }
+            } label: {
+                Label("Open Status Page", systemImage: "arrow.up.forward")
+                    .font(Design.Typography.caption)
             }
-            .font(Design.Typography.micro)
             .buttonStyle(.borderless)
         }
         .padding(.horizontal, 12)
@@ -1481,7 +1487,7 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: showingAddSource ? "xmark.circle.fill" : "plus.circle.fill")
                         .font(Design.Typography.body)
-                        .foregroundStyle(showingAddSource ? .secondary : .blue)
+                        .foregroundStyle(showingAddSource ? .secondary : Color.accentColor)
                 }
                 .buttonStyle(.borderless)
                 .help(showingAddSource ? "Cancel" : "Add source")
@@ -1610,10 +1616,10 @@ struct SettingsView: View {
             if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text("Version \(latest) available")
                         .font(Design.Typography.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Spacer()
                     Button("Download") {
                         updateChecker.openDownload()
@@ -1623,7 +1629,7 @@ struct SettingsView: View {
                 }
                 .padding(8)
                 .background(
-                    Color.blue.opacity(0.08),
+                    Color.accentColor.opacity(0.08),
                     in: RoundedRectangle(cornerRadius: 6)
                 )
             }
@@ -1684,6 +1690,7 @@ struct SettingsView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
+            .help("Back")
 
             Image(systemName: "gear")
                 .font(.title3)
