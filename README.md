@@ -54,11 +54,11 @@ swiftc StatusBarApp.swift -parse-as-library -o StatusBar -framework SwiftUI -fra
 
 ## Default Sources
 
-```
-Anthropic | https://status.anthropic.com
-GitHub | https://www.githubstatus.com
-Cloudflare | https://www.cloudflarestatus.com
-```
+| Name | URL |
+|------|-----|
+| Anthropic | `https://status.anthropic.com` |
+| GitHub | `https://www.githubstatus.com` |
+| Cloudflare | `https://www.cloudflarestatus.com` |
 
 ## Adding Sources
 

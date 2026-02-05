@@ -26,9 +26,9 @@ private let kRefreshIntervalOptions: [(label: String, seconds: TimeInterval)] = 
 ]
 
 private let kDefaultSources = """
-Anthropic | https://status.anthropic.com
-GitHub | https://www.githubstatus.com
-Cloudflare | https://www.cloudflarestatus.com
+Anthropic\thttps://status.anthropic.com
+GitHub\thttps://www.githubstatus.com
+Cloudflare\thttps://www.cloudflarestatus.com
 """
 
 private let kGitHubRepo = "alexnodeland/StatusBar"
@@ -72,7 +72,7 @@ struct StatusSource: Identifiable, Equatable {
             .compactMap { line -> StatusSource? in
                 let raw = String(line).trimmingCharacters(in: .whitespaces)
                 guard !raw.isEmpty, !raw.hasPrefix("#") else { return nil }
-                let parts = raw.split(separator: "|", maxSplits: 1)
+                let parts = raw.split(separator: "\t", maxSplits: 1)
                 guard parts.count == 2 else { return nil }
                 let name = parts[0].trimmingCharacters(in: .whitespaces)
                 let url = parts[1].trimmingCharacters(in: .whitespaces)
@@ -82,7 +82,7 @@ struct StatusSource: Identifiable, Equatable {
     }
 
     static func serialize(_ sources: [StatusSource]) -> String {
-        sources.map { "\($0.name) | \($0.baseURL)" }.joined(separator: "\n")
+        sources.map { "\($0.name)\t\($0.baseURL)" }.joined(separator: "\n")
     }
 }
 
@@ -479,22 +479,13 @@ final class StatusService: ObservableObject {
     }
 
     func exportSourcesTSV() -> String {
-        sources.map { "\($0.name)\t\($0.baseURL)" }.joined(separator: "\n")
+        StatusSource.serialize(sources)
     }
 
     func importSourcesTSV(_ tsv: String) {
-        let lines = tsv.split(separator: "\n", omittingEmptySubsequences: true)
-        var imported: [StatusSource] = []
-        for line in lines {
-            let cols = line.split(separator: "\t", maxSplits: 1)
-            guard cols.count == 2 else { continue }
-            let name = cols[0].trimmingCharacters(in: .whitespaces)
-            let url = cols[1].trimmingCharacters(in: .whitespaces)
-            guard !name.isEmpty, url.hasPrefix("http") else { continue }
-            imported.append(StatusSource(name: name, baseURL: url))
-        }
-        guard !imported.isEmpty else { return }
-        applySources(from: StatusSource.serialize(imported))
+        let parsed = StatusSource.parse(lines: tsv)
+        guard !parsed.isEmpty else { return }
+        applySources(from: StatusSource.serialize(parsed))
     }
 
     func resetToDefaults() {
