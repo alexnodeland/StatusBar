@@ -3,40 +3,87 @@
 ## Build from Source
 
 ```bash
-chmod +x build.sh
+make build
+open ./build/StatusBar.app
+```
+
+Or directly via the build script:
+
+```bash
 ./build.sh
 open ./build/StatusBar.app
 ```
 
-Or compile directly:
+## Development
+
+All common tasks are available via `make`:
 
 ```bash
-swiftc StatusBarApp.swift -parse-as-library -o StatusBar \
-  -framework SwiftUI -framework AppKit \
-  -target arm64-apple-macosx14.0
-./StatusBar
+make help          # Show all targets
+make build         # Dev build (arm64, fast)
+make release       # Release build (universal binary + ZIP)
+make test          # Run unit tests
+make lint          # Run SwiftLint
+make format        # Auto-format code with swift-format
+make format-check  # Check formatting without modifying files
+make check         # Run lint + format check + tests (CI target)
+make clean         # Remove build artifacts
+make install       # Build and copy .app to /Applications
+```
+
+### Prerequisites
+
+- macOS 14+ with Xcode Command Line Tools
+- [SwiftLint](https://github.com/realm/SwiftLint): `brew install swiftlint`
+- [swift-format](https://github.com/swiftlang/swift-format): `brew install swift-format`
+
+### Running Tests
+
+Tests are compiled with `swiftc` into an XCTest bundle and run via `xcrun xctest`. The test suite covers models, helpers, and constants — no running app or network access required.
+
+```bash
+make test
+```
+
+Test files live in `Tests/` alongside JSON fixtures in `Tests/Fixtures/`. Test discovery is automatic via `xcrun xctest`.
+
+### Code Quality
+
+The project uses SwiftLint for style enforcement and swift-format for consistent formatting. CI runs `make check` on every push to `main` and every pull request.
+
+Before submitting a PR:
+
+```bash
+make check         # Runs lint, format check, and tests
+```
+
+To auto-fix formatting:
+
+```bash
+make format        # Applies swift-format changes in-place
 ```
 
 ## Architecture
 
-Everything lives in a single `StatusBarApp.swift`:
+Source code lives in `Sources/`, split by responsibility:
 
 ```
-StatusSource          — name + URL model with TSV serialization
-SourceState           — per-source fetch state (summary, incidents, loading, error, provider)
-StatusProvider        — enum: .atlassian, .incidentIOCompat, .incidentIO, .instatus
-StatusService         — @MainActor ObservableObject managing all sources concurrently
-  ├─ detectProvider   — auto-detects provider by probing /api/v2/summary.json
-  ├─ fetchSummary     — Atlassian Statuspage API
-  ├─ fetchIncidentIO  — incident.io /proxy/widget fallback
-  └─ fetchInstatus    — Instatus summary + components mapping
-UpdateChecker         — checks GitHub Releases API for app updates (daily)
-NotificationManager   — macOS notification delivery and permission handling
-RootView              — state-driven navigation: list ↔ detail ↔ settings
-  ├─ SourceListView   — aggregated header + scrollable source rows
-  ├─ SourceDetailView — components, active incidents, recent incidents
-  └─ SettingsView     — visual source management, preferences, updates
-MenuBarLabel          — worst-status icon + issue count badge
+Sources/
+├── StatusBarApp.swift        — @main entry point, AppDelegate, MenuBarLabel
+├── Constants.swift           — config values, Design enum (typography + timing)
+├── Models.swift              — StatusSource, API models, StatusProvider, sort/filter enums, SourceState
+├── Helpers.swift             — date formatters/functions, indicator color/icon mappers, compareVersions
+├── StatusService.swift       — @MainActor ObservableObject managing all sources concurrently
+│   ├─ detectProvider         — auto-detects provider by probing /api/v2/summary.json
+│   ├─ fetchSummary           — Atlassian Statuspage API
+│   ├─ fetchIncidentIO        — incident.io /proxy/widget fallback
+│   └─ fetchInstatus          — Instatus summary + components mapping
+├── NotificationManager.swift — macOS notification delivery and permission handling
+├── UpdateChecker.swift       — checks GitHub Releases API for app updates (daily)
+├── SharedComponents.swift    — VisualEffectBackground, HoverEffect, GlassButtonStyle, GlassCard
+├── SourceListView.swift      — RootView, SourceListView, SourceRow
+├── SourceDetailView.swift    — SourceDetailView, ComponentRow, IncidentCard
+└── SettingsView.swift        — visual source management, preferences, updates
 ```
 
 ## Supported Providers

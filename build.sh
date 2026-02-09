@@ -47,7 +47,7 @@ mkdir -p "${MACOS}"
 mkdir -p "${RESOURCES}"
 
 SWIFT_FLAGS=(
-    StatusBarApp.swift
+    Sources/*.swift
     -parse-as-library
     -framework SwiftUI
     -framework AppKit
