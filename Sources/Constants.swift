@@ -23,6 +23,12 @@ let kDefaultSources = """
 
 let kGitHubRepo = "alexnodeland/StatusBar"
 
+// MARK: - Retry Configuration
+
+let kMaxRetries = 3
+let kRetryBaseDelay: TimeInterval = 1.0
+let kRetryMaxDelay: TimeInterval = 8.0
+
 // MARK: - Design System
 
 enum Design {

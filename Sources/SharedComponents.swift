@@ -63,6 +63,42 @@ struct GlassButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Sparkline View
+
+struct SparklineView: View {
+    let checkpoints: [StatusCheckpoint]
+
+    private let barWidth: CGFloat = 2
+    private let barGap: CGFloat = 1
+    private let maxHeight: CGFloat = 12
+
+    private func barHeight(for indicator: String) -> CGFloat {
+        switch indicator {
+        case "none": return 4
+        case "minor": return 7
+        case "major": return 10
+        case "critical": return 12
+        default: return 4
+        }
+    }
+
+    private var issueCount: Int {
+        checkpoints.filter { $0.indicator != "none" }.count
+    }
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: barGap) {
+            ForEach(Array(checkpoints.suffix(30).enumerated()), id: \.offset) { _, checkpoint in
+                RoundedRectangle(cornerRadius: 0.5)
+                    .fill(colorForIndicator(checkpoint.indicator))
+                    .frame(width: barWidth, height: barHeight(for: checkpoint.indicator))
+            }
+        }
+        .frame(height: maxHeight, alignment: .center)
+        .help("Last \(checkpoints.suffix(30).count) checks: \(issueCount) with issues")
+    }
+}
+
 // MARK: - Glass Card
 
 struct GlassCard<Content: View>: View {

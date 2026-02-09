@@ -20,9 +20,22 @@ struct SourceDetailView: View {
                 loadingView
             } else if let error = state.lastError, state.summary == nil {
                 errorView(error)
-            } else {
+            } else if state.summary != nil {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
+                        if state.isStale, let error = state.lastError {
+                            HStack(spacing: 6) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(Design.Typography.caption)
+                                Text("Showing cached data — \(error)")
+                                    .font(Design.Typography.micro)
+                            }
+                            .foregroundStyle(.white)
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.orange.opacity(0.85), in: RoundedRectangle(cornerRadius: 6))
+                        }
+
                         if !state.activeIncidents.isEmpty {
                             activeIncidentsSection
                         }
@@ -45,7 +58,8 @@ struct SourceDetailView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
-            .help("Back")
+            .keyboardShortcut(.escape, modifiers: [])
+            .help("Back (Esc)")
 
             Image(systemName: iconForIndicator(state.indicator))
                 .font(.title3)
@@ -197,9 +211,9 @@ struct SourceDetailView: View {
     private var detailFooter: some View {
         HStack {
             if let last = state.lastRefresh {
-                Text("Updated \(relativeFormatter.localizedString(for: last, relativeTo: Date()))")
+                Text("Updated \(relativeFormatter.localizedString(for: last, relativeTo: Date()))\(state.isStale ? " (stale)" : "")")
                     .font(Design.Typography.micro)
-                    .foregroundStyle(.quaternary)
+                    .foregroundStyle(state.isStale ? Color.orange : Color.secondary.opacity(0.3))
             }
             Spacer()
             Button {

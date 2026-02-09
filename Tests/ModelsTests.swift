@@ -255,6 +255,49 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - SourceState
 
+    // MARK: - StatusCheckpoint
+
+    func testStatusCheckpointCodableRoundTrip() throws {
+        let checkpoint = StatusCheckpoint(date: Date(timeIntervalSince1970: 1700000000), indicator: "minor")
+        let data = try JSONEncoder().encode(checkpoint)
+        let decoded = try JSONDecoder().decode(StatusCheckpoint.self, from: data)
+        XCTAssertEqual(checkpoint, decoded)
+    }
+
+    func testStatusCheckpointEquatable() {
+        let date = Date(timeIntervalSince1970: 1700000000)
+        let a = StatusCheckpoint(date: date, indicator: "none")
+        let b = StatusCheckpoint(date: date, indicator: "none")
+        let c = StatusCheckpoint(date: date, indicator: "major")
+        XCTAssertEqual(a, b)
+        XCTAssertNotEqual(a, c)
+    }
+
+    // MARK: - SourceState Staleness
+
+    func testSourceStateDefaultIsStaleIsFalse() {
+        let state = SourceState()
+        XCTAssertFalse(state.isStale)
+        XCTAssertNil(state.lastSuccessfulRefresh)
+    }
+
+    func testSourceStateStaleRetainsSummary() {
+        let summary = SPSummary(
+            page: SPPage(id: "p", name: "P", url: "https://p.com", updatedAt: "", timeZone: nil),
+            status: SPStatus(indicator: "none", description: "All good"),
+            components: [],
+            incidents: []
+        )
+        var state = SourceState()
+        state.summary = summary
+        state.isStale = true
+        state.lastError = "Network error"
+        XCTAssertTrue(state.isStale)
+        XCTAssertNotNil(state.summary)
+        XCTAssertEqual(state.indicator, "none")
+        XCTAssertNotNil(state.lastError)
+    }
+
     func testSourceStateDefaultIndicator() {
         let state = SourceState()
         XCTAssertEqual(state.indicator, "unknown")

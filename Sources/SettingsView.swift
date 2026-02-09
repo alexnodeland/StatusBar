@@ -173,6 +173,10 @@ struct SettingsView: View {
         }
     }
 
+    private var urlValidation: URLValidationResult {
+        validateSourceURL(newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
     private var addSourceForm: some View {
         VStack(spacing: 6) {
             TextField("Name", text: $newSourceName)
@@ -183,12 +187,24 @@ struct SettingsView: View {
                 .font(Design.Typography.caption)
                 .textFieldStyle(.roundedBorder)
 
+            if !newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               let message = urlValidation.message {
+                HStack(spacing: 4) {
+                    Image(systemName: urlValidation.isAcceptable ? "exclamationmark.triangle.fill" : "xmark.circle.fill")
+                        .font(Design.Typography.micro)
+                    Text(message)
+                        .font(Design.Typography.micro)
+                }
+                .foregroundStyle(urlValidation.isAcceptable ? .orange : .red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             HStack {
                 Spacer()
                 Button("Add") {
                     let name = newSourceName.trimmingCharacters(in: .whitespaces)
-                    let url = newSourceURL.trimmingCharacters(in: .whitespaces)
-                    guard !name.isEmpty, url.hasPrefix("http") else { return }
+                    let url = newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !name.isEmpty, urlValidation.isAcceptable else { return }
                     withAnimation(Design.Timing.expand) {
                         service.addSource(name: name, baseURL: url)
                         showingAddSource = false
@@ -201,7 +217,7 @@ struct SettingsView: View {
                 .controlSize(.small)
                 .disabled(
                     newSourceName.trimmingCharacters(in: .whitespaces).isEmpty
-                        || !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
+                        || !urlValidation.isAcceptable
                 )
             }
         }
@@ -357,7 +373,8 @@ struct SettingsView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
-            .help("Back")
+            .keyboardShortcut(.escape, modifiers: [])
+            .help("Back (Esc)")
 
             Image(systemName: "gear")
                 .font(.title3)

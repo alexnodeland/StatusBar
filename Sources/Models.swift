@@ -26,7 +26,7 @@ struct StatusSource: Identifiable, Equatable {
                 guard parts.count == 2 else { return nil }
                 let name = parts[0].trimmingCharacters(in: .whitespaces)
                 let url = parts[1].trimmingCharacters(in: .whitespaces)
-                guard !name.isEmpty, url.hasPrefix("http") else { return nil }
+                guard !name.isEmpty, validateSourceURL(url).isAcceptable else { return nil }
                 return StatusSource(name: name, baseURL: url)
             }
     }
@@ -268,6 +268,13 @@ enum StatusProvider: Equatable {
     case instatus
 }
 
+// MARK: - Status History
+
+struct StatusCheckpoint: Codable, Equatable {
+    let date: Date
+    let indicator: String
+}
+
 // MARK: - Per-Source State
 
 struct SourceState: Equatable {
@@ -277,6 +284,8 @@ struct SourceState: Equatable {
     var lastError: String?
     var lastRefresh: Date?
     var provider: StatusProvider?
+    var isStale: Bool = false
+    var lastSuccessfulRefresh: Date?
 
     var indicator: String { summary?.status.indicator ?? "unknown" }
     var statusDescription: String { summary?.status.description ?? "Loading\u{2026}" }

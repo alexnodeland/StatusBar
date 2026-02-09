@@ -9,6 +9,7 @@ import SwiftUI
 final class StatusService: ObservableObject {
     @Published var sources: [StatusSource] = []
     @Published var states: [UUID: SourceState] = [:]
+    @Published var history: [UUID: [StatusCheckpoint]] = [:]
 
     @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
     @AppStorage("refreshInterval") var refreshInterval: Double = kDefaultRefreshInterval
@@ -16,6 +17,8 @@ final class StatusService: ObservableObject {
     private var refreshTimer: Timer?
     private var previousIndicators: [UUID: String] = [:]
     private var providerCache: [UUID: StatusProvider] = [:]
+
+    @AppStorage("statusHistory") private var storedHistory: String = "{}"
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -27,6 +30,7 @@ final class StatusService: ObservableObject {
     }()
 
     init() {
+        loadHistory()
         sources = StatusSource.parse(lines: storedLines)
         if sources.isEmpty {
             sources = StatusSource.parse(lines: kDefaultSources)
@@ -116,6 +120,8 @@ final class StatusService: ObservableObject {
             states[source.id]?.recentIncidents = incidents
             states[source.id]?.provider = provider
             states[source.id]?.lastRefresh = Date()
+            states[source.id]?.isStale = false
+            states[source.id]?.lastSuccessfulRefresh = Date()
 
             // Notify on status changes, including initial load if non-operational
             let newSev = severityFor(newIndicator)
@@ -146,24 +152,32 @@ final class StatusService: ObservableObject {
             }
 
             previousIndicators[source.id] = newIndicator
+            recordCheckpoint(sourceID: source.id, indicator: newIndicator)
         } catch {
             providerCache.removeValue(forKey: source.id)
             states[source.id]?.lastError = error.localizedDescription
+            if states[source.id]?.summary != nil {
+                states[source.id]?.isStale = true
+            }
         }
 
         states[source.id]?.isLoading = false
     }
 
     private func fetchSummary(baseURL: String) async throws -> SPSummary {
-        let url = URL(string: "\(baseURL)/api/v2/summary.json")!
-        let (data, _) = try await session.data(from: url)
-        return try JSONDecoder().decode(SPSummary.self, from: data)
+        try await withRetry {
+            let url = URL(string: "\(baseURL)/api/v2/summary.json")!
+            let (data, _) = try await self.session.data(from: url)
+            return try JSONDecoder().decode(SPSummary.self, from: data)
+        }
     }
 
     private func fetchIncidents(baseURL: String) async throws -> [SPIncident] {
-        let url = URL(string: "\(baseURL)/api/v2/incidents.json")!
-        let (data, _) = try await session.data(from: url)
-        return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
+        try await withRetry {
+            let url = URL(string: "\(baseURL)/api/v2/incidents.json")!
+            let (data, _) = try await self.session.data(from: url)
+            return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
+        }
     }
 
     private func severityFor(_ indicator: String) -> Int {
@@ -183,7 +197,9 @@ final class StatusService: ObservableObject {
             return .incidentIO
         }
         do {
-            let (data, response) = try await session.data(from: url)
+            let (data, response) = try await withRetry {
+                try await self.session.data(from: url)
+            }
             if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                 // Try Atlassian-format first (has status.indicator object)
                 if let summary = try? JSONDecoder().decode(SPSummary.self, from: data) {
@@ -202,8 +218,10 @@ final class StatusService: ObservableObject {
     // MARK: - incident.io Fetch + Mapping
 
     private func fetchIncidentIO(baseURL: String) async throws -> (SPSummary, [SPIncident]) {
-        let url = URL(string: "\(baseURL)/proxy/widget")!
-        let (data, _) = try await session.data(from: url)
+        let (data, _) = try await withRetry {
+            let url = URL(string: "\(baseURL)/proxy/widget")!
+            return try await self.session.data(from: url)
+        }
         let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: data)
 
         let allIncidents =
@@ -285,8 +303,10 @@ final class StatusService: ObservableObject {
     // MARK: - Instatus Fetch + Mapping
 
     private func fetchInstatus(baseURL: String) async throws -> SPSummary {
-        let summaryURL = URL(string: "\(baseURL)/api/v2/summary.json")!
-        let (summaryData, _) = try await session.data(from: summaryURL)
+        let (summaryData, _) = try await withRetry {
+            let summaryURL = URL(string: "\(baseURL)/api/v2/summary.json")!
+            return try await self.session.data(from: summaryURL)
+        }
         let instatus = try JSONDecoder().decode(InstatusSummary.self, from: summaryData)
 
         var components: [SPComponent] = []
@@ -375,7 +395,9 @@ final class StatusService: ObservableObject {
             states.removeValue(forKey: oldID)
             previousIndicators.removeValue(forKey: oldID)
             providerCache.removeValue(forKey: oldID)
+            history.removeValue(forKey: oldID)
         }
+        saveHistory()
 
         sources = parsed
         storedLines = lines
@@ -394,6 +416,8 @@ final class StatusService: ObservableObject {
         states.removeValue(forKey: id)
         previousIndicators.removeValue(forKey: id)
         providerCache.removeValue(forKey: id)
+        history.removeValue(forKey: id)
+        saveHistory()
         storedLines = StatusSource.serialize(sources)
     }
 
@@ -417,5 +441,40 @@ final class StatusService: ObservableObject {
 
     func state(for source: StatusSource) -> SourceState {
         states[source.id] ?? SourceState()
+    }
+
+    // MARK: - Status History
+
+    private func loadHistory() {
+        guard let data = storedHistory.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: [StatusCheckpoint]].self, from: data)
+        else { return }
+        history = [:]
+        for (key, value) in decoded {
+            if let uuid = UUID(uuidString: key) {
+                history[uuid] = value
+            }
+        }
+    }
+
+    private func saveHistory() {
+        var stringKeyed: [String: [StatusCheckpoint]] = [:]
+        for (key, value) in history {
+            stringKeyed[key.uuidString] = value
+        }
+        if let data = try? JSONEncoder().encode(stringKeyed),
+           let json = String(data: data, encoding: .utf8) {
+            storedHistory = json
+        }
+    }
+
+    private func recordCheckpoint(sourceID: UUID, indicator: String) {
+        var checkpoints = history[sourceID] ?? []
+        checkpoints.append(StatusCheckpoint(date: Date(), indicator: indicator))
+        if checkpoints.count > 30 {
+            checkpoints = Array(checkpoints.suffix(30))
+        }
+        history[sourceID] = checkpoints
+        saveHistory()
     }
 }

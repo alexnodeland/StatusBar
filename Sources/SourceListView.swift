@@ -40,6 +40,20 @@ struct RootView: View {
                     )
                 }
             }
+
+            // Hidden buttons for global keyboard shortcuts
+            Button("") { Task { await service.refreshAll() } }
+                .keyboardShortcut("r", modifiers: .command)
+                .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
+
+            Button("") {
+                withAnimation(Design.Timing.transition) {
+                    selectedSourceID = nil
+                    showSettings = true
+                }
+            }
+            .keyboardShortcut(",", modifiers: .command)
+            .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
         }
         .frame(width: 380, height: 520)
     }
@@ -145,7 +159,7 @@ struct SourceListView: View {
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
-            .help("Refresh all")
+            .help("Refresh all (Cmd+R)")
         }
         .padding(12)
         .background(.ultraThinMaterial)
@@ -242,7 +256,11 @@ struct SourceListView: View {
             } else {
                 LazyVStack(spacing: 2) {
                     ForEach(sources) { source in
-                        SourceRow(source: source, state: service.state(for: source))
+                        SourceRow(
+                            source: source,
+                            state: service.state(for: source),
+                            checkpoints: service.history[source.id] ?? []
+                        )
                             .contentShape(Rectangle())
                             .onTapGesture { onSelect(source.id) }
                     }
@@ -279,7 +297,7 @@ struct SourceListView: View {
                 }
             }
             .buttonStyle(.borderless)
-            .help(updateChecker.isUpdateAvailable ? "Settings — Update available" : "Settings")
+            .help(updateChecker.isUpdateAvailable ? "Settings — Update available (Cmd+,)" : "Settings (Cmd+,)")
 
             Button {
                 NSApplication.shared.terminate(nil)
@@ -302,30 +320,51 @@ struct SourceListView: View {
 struct SourceRow: View {
     let source: StatusSource
     let state: SourceState
+    var checkpoints: [StatusCheckpoint] = []
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: iconForIndicator(state.indicator))
-                .font(Design.Typography.body)
-                .foregroundStyle(colorForIndicator(state.indicator))
-                .symbolRenderingMode(.hierarchical)
-                .frame(width: 20)
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: iconForIndicator(state.indicator))
+                    .font(Design.Typography.body)
+                    .foregroundStyle(colorForIndicator(state.indicator))
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(width: 20)
+
+                if state.isStale {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 7))
+                        .foregroundStyle(.orange)
+                        .offset(x: 4, y: 4)
+                }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.name)
                     .font(Design.Typography.bodyMedium)
                     .lineLimit(1)
 
-                if let error = state.lastError {
-                    Text(error)
-                        .font(Design.Typography.micro)
-                        .foregroundStyle(.red)
-                        .lineLimit(1)
-                } else {
-                    Text(state.statusDescription)
-                        .font(Design.Typography.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                HStack(spacing: 6) {
+                    if !checkpoints.isEmpty {
+                        SparklineView(checkpoints: checkpoints)
+                    }
+
+                    if state.isStale, state.lastError != nil {
+                        Text("\(state.statusDescription) (stale)")
+                            .font(Design.Typography.caption)
+                            .foregroundStyle(.orange)
+                            .lineLimit(1)
+                    } else if let error = state.lastError {
+                        Text(error)
+                            .font(Design.Typography.micro)
+                            .foregroundStyle(.red)
+                            .lineLimit(1)
+                    } else {
+                        Text(state.statusDescription)
+                            .font(Design.Typography.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
 
