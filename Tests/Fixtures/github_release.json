@@ -1,0 +1,15 @@
+{
+  "tag_name": "v1.2.3",
+  "name": "Release v1.2.3",
+  "html_url": "https://github.com/alexnodeland/StatusBar/releases/tag/v1.2.3",
+  "assets": [
+    {
+      "name": "StatusBar-v1.2.3.zip",
+      "browser_download_url": "https://github.com/alexnodeland/StatusBar/releases/download/v1.2.3/StatusBar-v1.2.3.zip"
+    },
+    {
+      "name": "checksums.txt",
+      "browser_download_url": "https://github.com/alexnodeland/StatusBar/releases/download/v1.2.3/checksums.txt"
+    }
+  ]
+}

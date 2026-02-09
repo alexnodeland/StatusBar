@@ -11,7 +11,7 @@ open ./build/StatusBar.app
 Or compile directly:
 
 ```bash
-swiftc StatusBarApp.swift -parse-as-library -o StatusBar \
+swiftc Sources/*.swift -parse-as-library -o StatusBar \
   -framework SwiftUI -framework AppKit \
   -target arm64-apple-macosx14.0
 ./StatusBar
@@ -19,24 +19,25 @@ swiftc StatusBarApp.swift -parse-as-library -o StatusBar \
 
 ## Architecture
 
-Everything lives in a single `StatusBarApp.swift`:
+Source code lives in `Sources/`, split by responsibility:
 
 ```
-StatusSource          — name + URL model with TSV serialization
-SourceState           — per-source fetch state (summary, incidents, loading, error, provider)
-StatusProvider        — enum: .atlassian, .incidentIOCompat, .incidentIO, .instatus
-StatusService         — @MainActor ObservableObject managing all sources concurrently
-  ├─ detectProvider   — auto-detects provider by probing /api/v2/summary.json
-  ├─ fetchSummary     — Atlassian Statuspage API
-  ├─ fetchIncidentIO  — incident.io /proxy/widget fallback
-  └─ fetchInstatus    — Instatus summary + components mapping
-UpdateChecker         — checks GitHub Releases API for app updates (daily)
-NotificationManager   — macOS notification delivery and permission handling
-RootView              — state-driven navigation: list ↔ detail ↔ settings
-  ├─ SourceListView   — aggregated header + scrollable source rows
-  ├─ SourceDetailView — components, active incidents, recent incidents
-  └─ SettingsView     — visual source management, preferences, updates
-MenuBarLabel          — worst-status icon + issue count badge
+Sources/
+├── StatusBarApp.swift        — @main entry point, AppDelegate, MenuBarLabel
+├── Constants.swift           — config values, Design enum (typography + timing)
+├── Models.swift              — StatusSource, API models, StatusProvider, sort/filter enums, SourceState
+├── Helpers.swift             — date formatters/functions, indicator color/icon mappers, compareVersions
+├── StatusService.swift       — @MainActor ObservableObject managing all sources concurrently
+│   ├─ detectProvider         — auto-detects provider by probing /api/v2/summary.json
+│   ├─ fetchSummary           — Atlassian Statuspage API
+│   ├─ fetchIncidentIO        — incident.io /proxy/widget fallback
+│   └─ fetchInstatus          — Instatus summary + components mapping
+├── NotificationManager.swift — macOS notification delivery and permission handling
+├── UpdateChecker.swift       — checks GitHub Releases API for app updates (daily)
+├── SharedComponents.swift    — VisualEffectBackground, HoverEffect, GlassButtonStyle, GlassCard
+├── SourceListView.swift      — RootView, SourceListView, SourceRow
+├── SourceDetailView.swift    — SourceDetailView, ComponentRow, IncidentCard
+└── SettingsView.swift        — visual source management, preferences, updates
 ```
 
 ## Supported Providers

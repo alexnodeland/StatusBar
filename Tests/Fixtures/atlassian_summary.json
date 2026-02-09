@@ -1,0 +1,59 @@
+{
+  "page": {
+    "id": "kctbh9vrtdwd",
+    "name": "GitHub",
+    "url": "https://www.githubstatus.com",
+    "updated_at": "2024-01-15T10:30:00.000Z",
+    "time_zone": "Etc/UTC"
+  },
+  "status": {
+    "indicator": "minor",
+    "description": "Minor Service Outage"
+  },
+  "components": [
+    {
+      "id": "br0l2tvcx85d",
+      "name": "Git Operations",
+      "status": "operational",
+      "description": "Performance of git operations",
+      "position": 1,
+      "group_id": null
+    },
+    {
+      "id": "st3j5cjs7p13",
+      "name": "API Requests",
+      "status": "degraded_performance",
+      "description": null,
+      "position": 2,
+      "group_id": null
+    },
+    {
+      "id": "child1",
+      "name": "Child Component",
+      "status": "operational",
+      "description": null,
+      "position": 3,
+      "group_id": "br0l2tvcx85d"
+    }
+  ],
+  "incidents": [
+    {
+      "id": "inc1",
+      "name": "Elevated error rates",
+      "status": "investigating",
+      "impact": "minor",
+      "created_at": "2024-01-15T09:00:00.000Z",
+      "updated_at": "2024-01-15T10:00:00.000Z",
+      "shortlink": "https://stspg.io/abc123",
+      "incident_updates": [
+        {
+          "id": "upd1",
+          "status": "investigating",
+          "body": "We are investigating elevated error rates.",
+          "created_at": "2024-01-15T09:00:00.000Z",
+          "updated_at": "2024-01-15T09:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

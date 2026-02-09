@@ -1,0 +1,7 @@
+{
+  "page": {
+    "name": "Acme Status",
+    "url": "https://status.acme.com",
+    "status": "UP"
+  }
+}

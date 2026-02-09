@@ -1,0 +1,41 @@
+{
+  "components": [
+    {
+      "id": "ic1",
+      "name": "API",
+      "description": "Core API",
+      "status": "OPERATIONAL",
+      "order": 1,
+      "isParent": true,
+      "children": [
+        {
+          "id": "ic1a",
+          "name": "REST API",
+          "description": null,
+          "status": "OPERATIONAL",
+          "order": 1,
+          "isParent": false,
+          "children": []
+        },
+        {
+          "id": "ic1b",
+          "name": "GraphQL API",
+          "description": "GraphQL endpoint",
+          "status": "DEGRADEDPERFORMANCE",
+          "order": 2,
+          "isParent": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "ic2",
+      "name": "Dashboard",
+      "description": null,
+      "status": "MAJOROUTAGE",
+      "order": 2,
+      "isParent": false,
+      "children": []
+    }
+  ]
+}

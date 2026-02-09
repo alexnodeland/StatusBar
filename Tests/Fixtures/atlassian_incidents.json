@@ -1,0 +1,54 @@
+{
+  "page": {
+    "id": "kctbh9vrtdwd",
+    "name": "GitHub",
+    "url": "https://www.githubstatus.com",
+    "updated_at": "2024-01-15T10:30:00.000Z",
+    "time_zone": "Etc/UTC"
+  },
+  "incidents": [
+    {
+      "id": "inc1",
+      "name": "Elevated error rates",
+      "status": "investigating",
+      "impact": "minor",
+      "created_at": "2024-01-15T09:00:00.000Z",
+      "updated_at": "2024-01-15T10:00:00.000Z",
+      "shortlink": "https://stspg.io/abc123",
+      "incident_updates": [
+        {
+          "id": "upd1",
+          "status": "investigating",
+          "body": "We are investigating elevated error rates.",
+          "created_at": "2024-01-15T09:00:00.000Z",
+          "updated_at": "2024-01-15T09:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "inc2",
+      "name": "Previous incident resolved",
+      "status": "resolved",
+      "impact": "none",
+      "created_at": "2024-01-14T12:00:00.000Z",
+      "updated_at": "2024-01-14T14:00:00.000Z",
+      "shortlink": null,
+      "incident_updates": [
+        {
+          "id": "upd2",
+          "status": "resolved",
+          "body": "This incident has been resolved.",
+          "created_at": "2024-01-14T14:00:00.000Z",
+          "updated_at": "2024-01-14T14:00:00.000Z"
+        },
+        {
+          "id": "upd3",
+          "status": "investigating",
+          "body": "We are investigating reports of issues.",
+          "created_at": "2024-01-14T12:00:00.000Z",
+          "updated_at": "2024-01-14T12:00:00.000Z"
+        }
+      ]
+    }
+  ]
+}

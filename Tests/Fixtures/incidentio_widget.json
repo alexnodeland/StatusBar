@@ -1,0 +1,38 @@
+{
+  "ongoing_incidents": [
+    {
+      "id": "iio-1",
+      "name": "API degradation",
+      "status": "investigating",
+      "last_update_message": "We are investigating API issues.",
+      "affected_components": [
+        {"id": "comp-1", "name": "API"},
+        {"id": "comp-2", "name": "Dashboard"}
+      ],
+      "created_at": "2024-01-15T09:00:00.000Z",
+      "updated_at": "2024-01-15T10:00:00.000Z"
+    }
+  ],
+  "in_progress_maintenances": [
+    {
+      "id": "iio-2",
+      "name": "Scheduled maintenance",
+      "status": "monitoring",
+      "last_update_message": "Maintenance in progress.",
+      "affected_components": [],
+      "created_at": "2024-01-15T08:00:00.000Z",
+      "updated_at": "2024-01-15T09:30:00.000Z"
+    }
+  ],
+  "scheduled_maintenances": [
+    {
+      "id": "iio-3",
+      "name": "Future maintenance",
+      "status": "scheduled",
+      "last_update_message": null,
+      "affected_components": null,
+      "created_at": "2024-01-16T00:00:00.000Z",
+      "updated_at": "2024-01-16T00:00:00.000Z"
+    }
+  ]
+}
