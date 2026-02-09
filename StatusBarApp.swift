@@ -311,6 +311,11 @@ enum SourceStatusFilter: String, CaseIterable {
 
 // MARK: - Per-Source State
 
+struct StatusSnapshot: Equatable {
+    let timestamp: Date
+    let indicator: String  // "none", "minor", "major", "critical"
+}
+
 struct SourceState: Equatable {
     var summary: SPSummary?
     var recentIncidents: [SPIncident] = []
@@ -318,9 +323,18 @@ struct SourceState: Equatable {
     var lastError: String?
     var lastRefresh: Date?
     var provider: StatusProvider?
+    var isStale: Bool = false
+    var history: [StatusSnapshot] = []
+
+    static let maxHistory = 30
 
     var indicator: String { summary?.status.indicator ?? "unknown" }
-    var statusDescription: String { summary?.status.description ?? "Loading\u{2026}" }
+    var statusDescription: String {
+        if isStale, let desc = summary?.status.description {
+            return "\(desc) (stale)"
+        }
+        return summary?.status.description ?? "Loading\u{2026}"
+    }
 
     var indicatorSeverity: Int {
         switch indicator {
@@ -454,6 +468,28 @@ final class StatusService: ObservableObject {
         return URLSession(configuration: config)
     }()
 
+    // MARK: - Retry with Exponential Backoff
+
+    private func withRetry<T>(
+        maxAttempts: Int = 3,
+        initialDelay: TimeInterval = 1.0,
+        operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+        for attempt in 0..<maxAttempts {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
+                if attempt < maxAttempts - 1 {
+                    let delay = initialDelay * pow(2.0, Double(attempt))
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+            }
+        }
+        throw lastError!
+    }
+
     init() {
         sources = StatusSource.parse(lines: storedLines)
         if sources.isEmpty {
@@ -527,13 +563,13 @@ final class StatusService: ObservableObject {
             let incidents: [SPIncident]
             switch provider {
             case .atlassian, .incidentIOCompat:
-                async let s = fetchSummary(baseURL: source.baseURL)
-                async let i = fetchIncidents(baseURL: source.baseURL)
+                async let s = withRetry { [self] in try await fetchSummary(baseURL: source.baseURL) }
+                async let i = withRetry { [self] in try await fetchIncidents(baseURL: source.baseURL) }
                 (summary, incidents) = try await (s, i)
             case .incidentIO:
-                (summary, incidents) = try await fetchIncidentIO(baseURL: source.baseURL)
+                (summary, incidents) = try await withRetry { [self] in try await fetchIncidentIO(baseURL: source.baseURL) }
             case .instatus:
-                summary = try await fetchInstatus(baseURL: source.baseURL)
+                summary = try await withRetry { [self] in try await fetchInstatus(baseURL: source.baseURL) }
                 incidents = []
             }
 
@@ -544,6 +580,14 @@ final class StatusService: ObservableObject {
             states[source.id]?.recentIncidents = incidents
             states[source.id]?.provider = provider
             states[source.id]?.lastRefresh = Date()
+            states[source.id]?.isStale = false
+
+            // Record status history snapshot
+            let snapshot = StatusSnapshot(timestamp: Date(), indicator: summary.status.indicator)
+            states[source.id]?.history.append(snapshot)
+            if let count = states[source.id]?.history.count, count > SourceState.maxHistory {
+                states[source.id]?.history.removeFirst(count - SourceState.maxHistory)
+            }
 
             // Notify on status changes, including initial load if non-operational
             let newSev = severityFor(newIndicator)
@@ -577,6 +621,10 @@ final class StatusService: ObservableObject {
         } catch {
             providerCache.removeValue(forKey: source.id)
             states[source.id]?.lastError = error.localizedDescription
+            // Preserve last-known-good data as stale rather than clearing it
+            if states[source.id]?.summary != nil {
+                states[source.id]?.isStale = true
+            }
         }
 
         states[source.id]?.isLoading = false
@@ -1177,6 +1225,29 @@ struct RootView: View {
             }
         }
         .frame(width: 380, height: 520)
+        .onKeyPress(.escape) {
+            if selectedSourceID != nil {
+                withAnimation(Design.Timing.transition) { selectedSourceID = nil }
+                return .handled
+            } else if showSettings {
+                withAnimation(Design.Timing.transition) { showSettings = false }
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress("r", modifiers: .command) {
+            Task { await service.refreshAll() }
+            return .handled
+        }
+        .onKeyPress(",", modifiers: .command) {
+            if !showSettings {
+                withAnimation(Design.Timing.transition) {
+                    selectedSourceID = nil
+                    showSettings = true
+                }
+            }
+            return .handled
+        }
     }
 }
 
@@ -1477,6 +1548,13 @@ struct SourceRow: View {
                     .background(colorForIndicator(state.indicator).opacity(0.15), in: Capsule())
             }
 
+            if state.isStale {
+                Image(systemName: "clock.badge.exclamationmark")
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.orange)
+                    .help("Data may be outdated")
+            }
+
             if state.isLoading {
                 ProgressView()
                     .scaleEffect(0.5)
@@ -1523,6 +1601,7 @@ struct SourceDetailView: View {
                             activeIncidentsSection
                         }
                         componentsSection
+                        StatusSparkline(snapshots: state.history)
                         recentIncidentsSection
                     }
                     .padding(12)
@@ -1724,6 +1803,89 @@ struct SourceDetailView: View {
     }
 }
 
+// MARK: - Status Sparkline
+
+struct StatusSparkline: View {
+    let snapshots: [StatusSnapshot]
+    let maxPoints = SourceState.maxHistory
+
+    var body: some View {
+        if snapshots.count >= 2 {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Text("Status History")
+                        .font(Design.Typography.captionSemibold)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(snapshots.count) checks")
+                        .font(Design.Typography.micro)
+                        .foregroundStyle(.quaternary)
+                }
+
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 1) {
+                            ForEach(Array(snapshots.enumerated()), id: \.offset) { _, snapshot in
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(colorForIndicator(snapshot.indicator))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: heightForIndicator(snapshot.indicator))
+                                    .frame(height: 20, alignment: .bottom)
+                            }
+                        }
+
+                        HStack {
+                            if let first = snapshots.first {
+                                Text(relativeDate(isoFromDate(first.timestamp)))
+                                    .font(Design.Typography.micro)
+                                    .foregroundStyle(.quaternary)
+                            }
+                            Spacer()
+                            Text("now")
+                                .font(Design.Typography.micro)
+                                .foregroundStyle(.quaternary)
+                        }
+                    }
+                    .padding(8)
+                }
+
+                uptimeSummary
+            }
+        }
+    }
+
+    private func heightForIndicator(_ indicator: String) -> CGFloat {
+        switch indicator {
+        case "none": return 4
+        case "minor": return 10
+        case "major": return 16
+        case "critical": return 20
+        default: return 2
+        }
+    }
+
+    private func isoFromDate(_ date: Date) -> String {
+        isoFormatter.string(from: date)
+    }
+
+    private var uptimeSummary: some View {
+        let operational = snapshots.filter { $0.indicator == "none" }.count
+        let total = snapshots.count
+        let pct = total > 0 ? Double(operational) / Double(total) * 100 : 100
+        return HStack(spacing: 4) {
+            Circle()
+                .fill(pct >= 99 ? .green : pct >= 90 ? .yellow : .orange)
+                .frame(width: 6, height: 6)
+            Text(String(format: "%.0f%% operational", pct))
+                .font(Design.Typography.micro)
+                .foregroundStyle(.secondary)
+            Text("(\(operational)/\(total) checks)")
+                .font(Design.Typography.micro)
+                .foregroundStyle(.quaternary)
+        }
+    }
+}
+
 // MARK: - Component Row
 
 struct ComponentRow: View {
@@ -1884,7 +2046,35 @@ struct SettingsView: View {
     @State private var showingAddSource = false
     @State private var newSourceName = ""
     @State private var newSourceURL = ""
+    @State private var urlValidationError: String?
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+
+    private func validateURL(_ urlString: String) -> String? {
+        let trimmed = urlString.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        guard trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") else {
+            return "URL must start with https://"
+        }
+        guard let url = URL(string: trimmed) else {
+            return "Invalid URL format"
+        }
+        guard url.host != nil, !(url.host?.isEmpty ?? true) else {
+            return "URL must include a hostname"
+        }
+        if service.sources.contains(where: {
+            $0.baseURL.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                == trimmed.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        }) {
+            return "This URL is already being monitored"
+        }
+        return nil
+    }
+
+    private var isAddFormValid: Bool {
+        let name = newSourceName.trimmingCharacters(in: .whitespaces)
+        let url = newSourceURL.trimmingCharacters(in: .whitespaces)
+        return !name.isEmpty && validateURL(url) == nil && url.hasPrefix("http")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -2051,27 +2241,38 @@ struct SettingsView: View {
             TextField("URL (e.g. https://status.example.com)", text: $newSourceURL)
                 .font(Design.Typography.caption)
                 .textFieldStyle(.roundedBorder)
+                .onChange(of: newSourceURL) {
+                    urlValidationError = validateURL(newSourceURL)
+                }
+
+            if let error = urlValidationError, !newSourceURL.trimmingCharacters(in: .whitespaces).isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(Design.Typography.micro)
+                    Text(error)
+                        .font(Design.Typography.micro)
+                }
+                .foregroundStyle(.orange)
+            }
 
             HStack {
                 Spacer()
                 Button("Add") {
                     let name = newSourceName.trimmingCharacters(in: .whitespaces)
                     let url = newSourceURL.trimmingCharacters(in: .whitespaces)
-                    guard !name.isEmpty, url.hasPrefix("http") else { return }
+                    guard !name.isEmpty, validateURL(url) == nil else { return }
                     withAnimation(Design.Timing.expand) {
                         service.addSource(name: name, baseURL: url)
                         showingAddSource = false
                         newSourceName = ""
                         newSourceURL = ""
+                        urlValidationError = nil
                     }
                 }
                 .font(Design.Typography.caption)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(
-                    newSourceName.trimmingCharacters(in: .whitespaces).isEmpty ||
-                    !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
-                )
+                .disabled(!isAddFormValid)
             }
         }
         .padding(.horizontal, 12)

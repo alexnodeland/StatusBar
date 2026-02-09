@@ -23,10 +23,12 @@ Everything lives in a single `StatusBarApp.swift`:
 
 ```
 StatusSource          — name + URL model with TSV serialization
-SourceState           — per-source fetch state (summary, incidents, loading, error, provider)
+StatusSnapshot        — timestamped status check for history tracking
+SourceState           — per-source fetch state (summary, incidents, loading, error, provider, history)
 StatusProvider        — enum: .atlassian, .incidentIOCompat, .incidentIO, .instatus
 StatusService         — @MainActor ObservableObject managing all sources concurrently
   ├─ detectProvider   — auto-detects provider by probing /api/v2/summary.json
+  ├─ withRetry        — exponential backoff retry (3 attempts, 1s/2s/4s delays)
   ├─ fetchSummary     — Atlassian Statuspage API
   ├─ fetchIncidentIO  — incident.io /proxy/widget fallback
   └─ fetchInstatus    — Instatus summary + components mapping
@@ -34,8 +36,9 @@ UpdateChecker         — checks GitHub Releases API for app updates (daily)
 NotificationManager   — macOS notification delivery and permission handling
 RootView              — state-driven navigation: list ↔ detail ↔ settings
   ├─ SourceListView   — aggregated header + scrollable source rows
-  ├─ SourceDetailView — components, active incidents, recent incidents
-  └─ SettingsView     — visual source management, preferences, updates
+  ├─ SourceDetailView — components, active incidents, sparkline, recent incidents
+  ├─ StatusSparkline  — visual history bar chart with uptime percentage
+  └─ SettingsView     — visual source management, preferences, URL validation, updates
 MenuBarLabel          — worst-status icon + issue count badge
 ```
 
@@ -69,6 +72,31 @@ incident.io pages serve Atlassian-compatible endpoints (same as above). Falls ba
 
 - `GET /api/v2/summary.json` — page name and status (`UP`, `HASISSUES`, `UNDERMAINTENANCE`)
 - `GET /api/v2/components.json` — component tree with status
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+R` | Refresh all sources |
+| `Cmd+,` | Open settings |
+| `Esc` | Go back (detail → list, settings → list) |
+
+## Network Resilience
+
+All fetch operations use automatic retry with exponential backoff:
+
+- **3 attempts** per request with delays of 1s, 2s, 4s between retries
+- On failure after retries, last-known-good data is preserved and marked as **stale**
+- Stale data displays with a clock badge and "(stale)" status suffix
+- Provider detection cache is cleared on failure to allow re-detection on next success
+
+## Status History
+
+Each source tracks the last 30 status check results. The detail view shows:
+
+- **Sparkline bar chart** — color-coded bars (green/yellow/orange/red) with height proportional to severity
+- **Uptime percentage** — ratio of operational checks to total checks
+- History resets when the app restarts (in-memory only)
 
 ## Roadmap — WidgetKit
 
