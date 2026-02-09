@@ -3,18 +3,64 @@
 ## Build from Source
 
 ```bash
-chmod +x build.sh
+make build
+open ./build/StatusBar.app
+```
+
+Or directly via the build script:
+
+```bash
 ./build.sh
 open ./build/StatusBar.app
 ```
 
-Or compile directly:
+## Development
+
+All common tasks are available via `make`:
 
 ```bash
-swiftc Sources/*.swift -parse-as-library -o StatusBar \
-  -framework SwiftUI -framework AppKit \
-  -target arm64-apple-macosx14.0
-./StatusBar
+make help          # Show all targets
+make build         # Dev build (arm64, fast)
+make release       # Release build (universal binary + ZIP)
+make test          # Run unit tests
+make lint          # Run SwiftLint
+make format        # Auto-format code with swift-format
+make format-check  # Check formatting without modifying files
+make check         # Run lint + format check + tests (CI target)
+make clean         # Remove build artifacts
+make install       # Build and copy .app to /Applications
+```
+
+### Prerequisites
+
+- macOS 14+ with Xcode Command Line Tools
+- [SwiftLint](https://github.com/realm/SwiftLint): `brew install swiftlint`
+- [swift-format](https://github.com/swiftlang/swift-format): `brew install swift-format`
+
+### Running Tests
+
+Tests are compiled with `swiftc` into an XCTest bundle and run via `xcrun xctest`. The test suite covers models, helpers, and constants — no running app or network access required.
+
+```bash
+make test
+```
+
+Test files live in `Tests/` alongside JSON fixtures in `Tests/Fixtures/`. Test discovery is automatic via `xcrun xctest`.
+
+### Code Quality
+
+The project uses SwiftLint for style enforcement and swift-format for consistent formatting. CI runs `make check` on every push to `main` and every pull request.
+
+Before submitting a PR:
+
+```bash
+make check         # Runs lint, format check, and tests
+```
+
+To auto-fix formatting:
+
+```bash
+make format        # Applies swift-format changes in-place
 ```
 
 ## Architecture

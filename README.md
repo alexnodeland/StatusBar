@@ -63,6 +63,17 @@ Open **Settings** and click **+** to add more. The app auto-detects the provider
 
 Sources are persisted via `@AppStorage` and survive restarts.
 
+## 🛠 Development
+
+```bash
+brew install swiftlint swift-format   # One-time setup
+make build                            # Dev build
+make test                             # Run tests
+make check                            # Full CI check (lint + format + test)
+```
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the full development guide.
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for build instructions, architecture overview, and roadmap.

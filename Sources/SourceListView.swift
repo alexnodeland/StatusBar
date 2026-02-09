@@ -17,7 +17,8 @@ struct RootView: View {
 
             VStack(spacing: 0) {
                 if let sourceID = selectedSourceID,
-                   let source = service.sources.first(where: { $0.id == sourceID }) {
+                    let source = service.sources.first(where: { $0.id == sourceID })
+                {
                     SourceDetailView(
                         source: source,
                         state: service.state(for: source),
@@ -355,9 +356,10 @@ struct SourceRow: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(state.indicatorSeverity > 0
-                      ? colorForIndicator(state.indicator).opacity(0.06)
-                      : Color.clear)
+                .fill(
+                    state.indicatorSeverity > 0
+                        ? colorForIndicator(state.indicator).opacity(0.06)
+                        : Color.clear)
         )
         .hoverHighlight()
     }

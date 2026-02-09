@@ -200,8 +200,8 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
                 .disabled(
-                    newSourceName.trimmingCharacters(in: .whitespaces).isEmpty ||
-                    !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
+                    newSourceName.trimmingCharacters(in: .whitespaces).isEmpty
+                        || !newSourceURL.trimmingCharacters(in: .whitespaces).hasPrefix("http")
                 )
             }
         }
@@ -246,10 +246,15 @@ struct SettingsView: View {
                     }
                 } label: {
                     if let img = NSImage(contentsOfFile: Bundle.main.path(forResource: "github", ofType: "png") ?? "") {
-                        Image(nsImage: { img.isTemplate = true; return img }())
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 12, height: 12)
+                        Image(
+                            nsImage: {
+                                img.isTemplate = true
+                                return img
+                            }()
+                        )
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 12, height: 12)
                     }
                 }
                 .buttonStyle(.borderless)
@@ -298,14 +303,14 @@ struct SettingsView: View {
                     Text("Check automatically")
                         .font(Design.Typography.micro)
                 }
-                    .toggleStyle(.checkbox)
-                    .onChange(of: updateChecker.autoCheckEnabled) {
-                        if updateChecker.autoCheckEnabled {
-                            updateChecker.startNightlyTimer()
-                        } else {
-                            updateChecker.stopNightlyTimer()
-                        }
+                .toggleStyle(.checkbox)
+                .onChange(of: updateChecker.autoCheckEnabled) {
+                    if updateChecker.autoCheckEnabled {
+                        updateChecker.startNightlyTimer()
+                    } else {
+                        updateChecker.stopNightlyTimer()
                     }
+                }
                 .help("Check for Updates")
             }
             .padding(.horizontal, 12)

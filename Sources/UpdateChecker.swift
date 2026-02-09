@@ -62,7 +62,8 @@ final class UpdateChecker: ObservableObject {
             let (data, response) = try await session.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+                httpResponse.statusCode == 200
+            else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? 0
                 lastCheckError = "Server returned status \(code)"
                 isChecking = false
@@ -70,7 +71,8 @@ final class UpdateChecker: ObservableObject {
             }
 
             let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
-            let remoteVersion = release.tagName.hasPrefix("v")
+            let remoteVersion =
+                release.tagName.hasPrefix("v")
                 ? String(release.tagName.dropFirst())
                 : release.tagName
 
@@ -109,7 +111,8 @@ final class UpdateChecker: ObservableObject {
 
     func openDownload() {
         if let urlString = downloadURL ?? releaseURL,
-           let url = URL(string: urlString) {
+            let url = URL(string: urlString)
+        {
             NSWorkspace.shared.open(url)
         }
     }

@@ -1,0 +1,60 @@
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - build
+  - .build-tests
+
+disabled_rules:
+  - trailing_comma
+  - todo
+  - orphaned_doc_comment
+  - blanket_disable_command
+  - force_try
+  - force_cast
+  - non_optional_string_data_conversion
+  - opening_brace
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - first_where
+  - toggle_bool
+  - joined_default_parameter
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 500
+  error: 800
+
+file_length:
+  warning: 600
+  error: 1000
+
+function_body_length:
+  warning: 80
+  error: 120
+
+identifier_name:
+  min_length:
+    warning: 1
+  excluded:
+    - id
+    - i
+    - f
+    - d
+    - s
+
+large_tuple:
+  warning: 4
+
+nesting:
+  type_level: 3

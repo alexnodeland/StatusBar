@@ -1,5 +1,5 @@
-import XCTest
 import Foundation
+import XCTest
 
 // MARK: - ModelsTests
 
@@ -84,11 +84,11 @@ final class ModelsTests: XCTestCase {
 
     func testSPSummaryDecodeMissingArraysDefaultToEmpty() {
         let json = """
-        {
-            "page": {"id":"p1","name":"Test","url":"https://test.com","updated_at":"2024-01-01T00:00:00Z"},
-            "status": {"indicator":"none","description":"All good"}
-        }
-        """.data(using: .utf8)!
+            {
+                "page": {"id":"p1","name":"Test","url":"https://test.com","updated_at":"2024-01-01T00:00:00Z"},
+                "status": {"indicator":"none","description":"All good"}
+            }
+            """.data(using: .utf8)!
         let summary = try! JSONDecoder().decode(SPSummary.self, from: json)
         XCTAssertEqual(summary.components.count, 0)
         XCTAssertEqual(summary.incidents.count, 0)
@@ -96,8 +96,8 @@ final class ModelsTests: XCTestCase {
 
     func testSPPageCodingKeys() {
         let json = """
-        {"id":"p1","name":"Test","url":"https://test.com","updated_at":"2024-01-01T00:00:00Z","time_zone":"US/Pacific"}
-        """.data(using: .utf8)!
+            {"id":"p1","name":"Test","url":"https://test.com","updated_at":"2024-01-01T00:00:00Z","time_zone":"US/Pacific"}
+            """.data(using: .utf8)!
         let page = try! JSONDecoder().decode(SPPage.self, from: json)
         XCTAssertEqual(page.updatedAt, "2024-01-01T00:00:00Z")
         XCTAssertEqual(page.timeZone, "US/Pacific")
@@ -105,8 +105,8 @@ final class ModelsTests: XCTestCase {
 
     func testSPComponentCodingKeys() {
         let json = """
-        {"id":"c1","name":"API","status":"operational","description":null,"position":1,"group_id":"g1"}
-        """.data(using: .utf8)!
+            {"id":"c1","name":"API","status":"operational","description":null,"position":1,"group_id":"g1"}
+            """.data(using: .utf8)!
         let component = try! JSONDecoder().decode(SPComponent.self, from: json)
         XCTAssertEqual(component.groupId, "g1")
         XCTAssertEqual(component.position, 1)
@@ -157,8 +157,8 @@ final class ModelsTests: XCTestCase {
 
     func testIIOIncidentOptionalFields() {
         let json = """
-        {"id":"x","name":null,"status":null,"last_update_message":null,"affected_components":null,"created_at":null,"updated_at":null}
-        """.data(using: .utf8)!
+            {"id":"x","name":null,"status":null,"last_update_message":null,"affected_components":null,"created_at":null,"updated_at":null}
+            """.data(using: .utf8)!
         let incident = try! JSONDecoder().decode(IIOIncident.self, from: json)
         XCTAssertEqual(incident.id, "x")
         XCTAssertNil(incident.name)
@@ -213,8 +213,8 @@ final class ModelsTests: XCTestCase {
 
     func testGitHubReleaseOptionalNameEmptyAssets() {
         let json = """
-        {"tag_name":"v0.1.0","name":null,"html_url":"https://example.com","assets":[]}
-        """.data(using: .utf8)!
+            {"tag_name":"v0.1.0","name":null,"html_url":"https://example.com","assets":[]}
+            """.data(using: .utf8)!
         let release = try! JSONDecoder().decode(GitHubRelease.self, from: json)
         XCTAssertEqual(release.tagName, "v0.1.0")
         XCTAssertNil(release.name)
@@ -332,10 +332,12 @@ final class ModelsTests: XCTestCase {
 
     func testSourceStateActiveIncidents() {
         let incidents = [
-            SPIncident(id: "i1", name: "Inc 1", status: "investigating", impact: "minor",
-                       createdAt: "", updatedAt: "", shortlink: nil, incidentUpdates: []),
-            SPIncident(id: "i2", name: "Inc 2", status: "resolved", impact: "none",
-                       createdAt: "", updatedAt: "", shortlink: nil, incidentUpdates: []),
+            SPIncident(
+                id: "i1", name: "Inc 1", status: "investigating", impact: "minor",
+                createdAt: "", updatedAt: "", shortlink: nil, incidentUpdates: []),
+            SPIncident(
+                id: "i2", name: "Inc 2", status: "resolved", impact: "none",
+                createdAt: "", updatedAt: "", shortlink: nil, incidentUpdates: []),
         ]
         let summary = SPSummary(
             page: SPPage(id: "p", name: "P", url: "https://p.com", updatedAt: "", timeZone: nil),

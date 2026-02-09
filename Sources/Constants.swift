@@ -16,10 +16,10 @@ let kRefreshIntervalOptions: [(label: String, seconds: TimeInterval)] = [
 ]
 
 let kDefaultSources = """
-Anthropic\thttps://status.anthropic.com
-GitHub\thttps://www.githubstatus.com
-Cloudflare\thttps://www.cloudflarestatus.com
-"""
+    Anthropic\thttps://status.anthropic.com
+    GitHub\thttps://www.githubstatus.com
+    Cloudflare\thttps://www.cloudflarestatus.com
+    """
 
 let kGitHubRepo = "alexnodeland/StatusBar"
 

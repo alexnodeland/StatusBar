@@ -191,7 +191,7 @@ final class StatusService: ObservableObject {
                     return summary.page.timeZone != nil ? .atlassian : .incidentIOCompat
                 }
                 // Try Instatus (has page.status as a plain string like "UP")
-                if let _ = try? JSONDecoder().decode(InstatusSummary.self, from: data) {
+                if (try? JSONDecoder().decode(InstatusSummary.self, from: data)) != nil {
                     return .instatus
                 }
             }
@@ -206,7 +206,8 @@ final class StatusService: ObservableObject {
         let (data, _) = try await session.data(from: url)
         let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: data)
 
-        let allIncidents = (widget.ongoingIncidents ?? [])
+        let allIncidents =
+            (widget.ongoingIncidents ?? [])
             + (widget.inProgressMaintenances ?? [])
 
         let mappedIncidents = allIncidents.map { inc -> SPIncident in
@@ -219,13 +220,14 @@ final class StatusService: ObservableObject {
 
             var updates: [SPIncidentUpdate] = []
             if let msg = inc.lastUpdateMessage, !msg.isEmpty {
-                updates.append(SPIncidentUpdate(
-                    id: "\(id)-update",
-                    status: status,
-                    body: msg,
-                    createdAt: updated,
-                    updatedAt: updated
-                ))
+                updates.append(
+                    SPIncidentUpdate(
+                        id: "\(id)-update",
+                        status: status,
+                        body: msg,
+                        createdAt: updated,
+                        updatedAt: updated
+                    ))
             }
 
             return SPIncident(
@@ -290,8 +292,9 @@ final class StatusService: ObservableObject {
         var components: [SPComponent] = []
         if let compURL = URL(string: "\(baseURL)/api/v2/components.json") {
             if let (compData, compResp) = try? await session.data(from: compURL),
-               let compHTTP = compResp as? HTTPURLResponse, compHTTP.statusCode == 200,
-               let parsed = try? JSONDecoder().decode(InstatusComponentsResponse.self, from: compData) {
+                let compHTTP = compResp as? HTTPURLResponse, compHTTP.statusCode == 200,
+                let parsed = try? JSONDecoder().decode(InstatusComponentsResponse.self, from: compData)
+            {
                 components = flattenInstatusComponents(parsed.components)
             }
         }

@@ -264,7 +264,7 @@ enum SourceStatusFilter: String, CaseIterable {
 enum StatusProvider: Equatable {
     case atlassian
     case incidentIOCompat  // incident.io pages serving Atlassian-compatible API (no update details)
-    case incidentIO        // pure incident.io fallback via /proxy/widget
+    case incidentIO  // pure incident.io fallback via /proxy/widget
     case instatus
 }
 

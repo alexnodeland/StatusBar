@@ -58,9 +58,7 @@ struct GlassButtonStyle: ButtonStyle {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(configuration.isPressed ?
-                          Color.primary.opacity(0.1) :
-                          Color.primary.opacity(0.05))
+                    .fill(configuration.isPressed ? Color.primary.opacity(0.1) : Color.primary.opacity(0.05))
             )
     }
 }
