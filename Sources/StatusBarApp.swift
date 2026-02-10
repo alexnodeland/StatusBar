@@ -29,7 +29,9 @@ struct MenuBarLabel: View {
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    var service: StatusService?
+    var service: StatusService? {
+        didSet { ScriptBridge.service = service }
+    }
     var updateChecker: UpdateChecker?
     private var statusItem: NSStatusItem?
     private weak var popoverPanel: NSPanel?
@@ -215,7 +217,6 @@ struct StatusBarApp: App {
         MenuBarExtra {
             RootView(service: service, updateChecker: updateChecker)
                 .onAppear {
-                    appDelegate.service = service
                     appDelegate.updateChecker = updateChecker
                     #if canImport(Sparkle)
                         updateChecker.setupSparkle()
@@ -223,6 +224,9 @@ struct StatusBarApp: App {
                 }
         } label: {
             MenuBarLabel(service: service)
+                .onAppear {
+                    appDelegate.service = service
+                }
         }
         .menuBarExtraStyle(.window)
     }

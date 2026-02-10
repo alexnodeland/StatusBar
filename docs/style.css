@@ -539,6 +539,36 @@ section {
   padding-left: 2px;
 }
 
+/* AppleScript card layout */
+.applescript-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.applescript-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.applescript-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.applescript-examples {
+  min-width: 0;
+}
+
+.applescript-examples .code-block-wrapper pre {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
 /* Hook steps */
 .hook-steps {
   display: flex;
@@ -628,6 +658,10 @@ section {
   }
 
   .url-examples-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .applescript-layout {
     grid-template-columns: 1fr;
   }
 }

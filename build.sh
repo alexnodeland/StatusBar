@@ -131,6 +131,9 @@ for img in *.png; do
     [ -f "$img" ] && [ "$img" != "icon.png" ] && cp "$img" "${RESOURCES}/"
 done
 
+# Copy scripting definition for AppleScript support
+[ -f "StatusBar.sdef" ] && cp StatusBar.sdef "${RESOURCES}/"
+
 # Copy Sparkle.framework into the app bundle if enabled
 if [ "$SPARKLE" = true ] && [ -d "Vendor/Sparkle.framework" ]; then
     mkdir -p "${CONTENTS}/Frameworks"

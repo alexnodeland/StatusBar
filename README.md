@@ -25,6 +25,8 @@
 
 🪝 **Script Hooks** — Drop executable scripts into the hooks directory and they run automatically on status events (status changes, refreshes, source add/remove). Event details arrive as environment variables and JSON on stdin.
 
+🍎 **AppleScript** — Full Cocoa Scripting support. Query sources and status from Script Editor, JXA, `osascript` one-liners, or any OSA-compatible tool. Refresh, add, and remove sources programmatically.
+
 ⚙️ **Settings** — Status change notifications, automatic update checks, and launch at login. Runs as a pure menu bar agent with no Dock icon.
 
 ## 📦 Install
@@ -120,6 +122,45 @@ LOG="$HOME/Library/Logs/StatusBar/hooks.log"
 mkdir -p "$(dirname "$LOG")"
 echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" >> "$LOG"
 ```
+
+</details>
+
+## 🍎 AppleScript
+
+StatusBar exposes a full scripting dictionary for AppleScript and JXA (JavaScript for Automation). Open Script Editor → File → Open Dictionary → StatusBar to browse it.
+
+```applescript
+tell application "StatusBar"
+    get name of every source           -- list source names
+    get status of source "GitHub"      -- "none" / "minor" / "major" / "critical"
+    get worst status                   -- aggregate worst status
+    get issue count                    -- number of sources with issues
+
+    refresh                            -- trigger immediate refresh
+    add source "https://status.openai.com" named "OpenAI"
+    remove source "OpenAI"
+end tell
+```
+
+Works from Terminal too:
+
+```bash
+osascript -e 'tell application "StatusBar" to get name of every source'
+osascript -e 'tell application "StatusBar" to get worst status'
+osascript -e 'tell application "StatusBar" to refresh'
+```
+
+<details>
+<summary>Source properties</summary>
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | text | Display name |
+| `url` | text | Base URL of the status page |
+| `status` | text | Current indicator (`none`, `minor`, `major`, `critical`, `unknown`) |
+| `status description` | text | Human-readable status |
+| `alert level` | text | Alert level setting |
+| `group` | text | Group name (empty string if ungrouped) |
 
 </details>
 

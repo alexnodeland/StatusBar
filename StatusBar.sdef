@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="StatusBar Terminology">
+
+    <!-- Standard Suite -->
+    <suite name="Standard Suite" code="????" description="Common classes and commands for all applications.">
+
+        <command name="count" code="corecnte" description="Return the number of elements of a particular class within an object.">
+            <cocoa class="NSCountCommand"/>
+            <access-group identifier="*"/>
+            <direct-parameter type="specifier" description="The objects to be counted."/>
+            <result type="integer" description="The count."/>
+        </command>
+
+        <command name="exists" code="coredoex" description="Verify that an object exists.">
+            <cocoa class="NSExistsCommand"/>
+            <access-group identifier="*"/>
+            <direct-parameter type="any" description="The object(s) to check."/>
+            <result type="boolean" description="Did the object(s) exist?"/>
+        </command>
+
+        <command name="get" code="coregetd" description="Get the data for an object.">
+            <cocoa class="NSGetCommand"/>
+            <access-group identifier="*"/>
+            <direct-parameter type="specifier"/>
+            <result type="any"/>
+        </command>
+
+    </suite>
+
+    <!-- StatusBar Suite -->
+    <suite name="StatusBar Suite" code="StBr" description="StatusBar application scripting.">
+
+        <class name="application" code="capp" description="The StatusBar application.">
+            <cocoa class="NSApplication"/>
+
+            <property name="worst status" code="StWs" type="text" access="r"
+                      description="The worst status indicator across all sources.">
+                <cocoa key="worstStatus"/>
+            </property>
+
+            <property name="issue count" code="StIc" type="integer" access="r"
+                      description="Number of sources currently experiencing issues.">
+                <cocoa key="scriptableIssueCount"/>
+            </property>
+
+            <element type="source" access="r">
+                <cocoa key="scriptableSources"/>
+            </element>
+        </class>
+
+        <class name="source" code="SBSr" plural="sources"
+               description="A monitored status page source.">
+            <cocoa class="ScriptableSource"/>
+
+            <property name="id" code="ID  " type="text" access="r"
+                      description="The unique identifier of the source.">
+                <cocoa key="uniqueID"/>
+            </property>
+
+            <property name="name" code="pnam" type="text" access="r"
+                      description="The display name of the source.">
+                <cocoa key="name"/>
+            </property>
+
+            <property name="url" code="SBur" type="text" access="r"
+                      description="The base URL of the status page.">
+                <cocoa key="url"/>
+            </property>
+
+            <property name="status" code="SBst" type="text" access="r"
+                      description="Current status indicator (none, minor, major, critical, unknown).">
+                <cocoa key="status"/>
+            </property>
+
+            <property name="status description" code="SBsd" type="text" access="r"
+                      description="Human-readable status description.">
+                <cocoa key="statusDescription"/>
+            </property>
+
+            <property name="alert level" code="SBal" type="text" access="r"
+                      description="The alert level setting for this source.">
+                <cocoa key="alertLevel"/>
+            </property>
+
+            <property name="group" code="SBgr" type="text" access="r"
+                      description="The group this source belongs to, if any.">
+                <cocoa key="group"/>
+            </property>
+        </class>
+
+        <!-- Commands -->
+
+        <command name="refresh" code="StBrRfsh"
+                 description="Trigger an immediate refresh of all sources.">
+            <cocoa class="RefreshCommand"/>
+        </command>
+
+        <command name="add source" code="StBrAdSr"
+                 description="Add a new status page source by URL.">
+            <cocoa class="AddSourceCommand"/>
+            <direct-parameter type="text" description="The URL of the status page to add."/>
+            <parameter name="named" code="SBnm" type="text" optional="yes"
+                       description="Optional display name for the source.">
+                <cocoa key="name"/>
+            </parameter>
+        </command>
+
+        <command name="remove source" code="StBrRmSr"
+                 description="Remove a status page source by name.">
+            <cocoa class="RemoveSourceCommand"/>
+            <direct-parameter type="text" description="The name of the source to remove."/>
+        </command>
+
+    </suite>
+
+</dictionary>

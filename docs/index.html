@@ -233,7 +233,7 @@ echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" &gt;&gt; "$LOG"</code>
         </div>
       </div>
 
-      <!-- Bottom row: URL Scheme (full-width) -->
+      <!-- URL Scheme (full-width) -->
       <div class="glass-card automate-card automate-card-wide">
         <div class="automate-card-header">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -282,6 +282,57 @@ echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" &gt;&gt; "$LOG"</code>
               <button class="copy-btn" aria-label="Copy code">Copy</button>
             </div>
             <span class="url-label">Jump to a settings tab</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AppleScript (full-width, two-column layout) -->
+      <div class="glass-card automate-card automate-card-wide">
+        <div class="applescript-layout">
+          <div class="applescript-info">
+            <div class="automate-card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+              <h3>AppleScript</h3>
+            </div>
+            <p class="automate-desc">Full Cocoa Scripting dictionary. Query status, refresh, add and remove sources from Script Editor, JXA, <code>osascript</code>, or any OSA-compatible tool.</p>
+            <div class="applescript-capabilities">
+              <span class="webhook-badge">Script Editor</span>
+              <span class="webhook-badge">JXA</span>
+              <span class="webhook-badge">osascript</span>
+              <span class="webhook-badge">Shortcuts</span>
+            </div>
+            <div class="collapsible">
+              <button class="collapsible-trigger" id="applescript-terminal-trigger">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+                Terminal one-liners
+              </button>
+              <div class="collapsible-content" id="applescript-terminal-content">
+                <div class="code-block-wrapper">
+                  <pre><code>osascript -e 'tell application "StatusBar" to get name of every source'
+osascript -e 'tell application "StatusBar" to get worst status'
+osascript -e 'tell application "StatusBar" to refresh'</code></pre>
+                  <button class="copy-btn" aria-label="Copy code">Copy</button>
+                </div>
+                <p class="hook-table-note">Open Script Editor &rarr; File &rarr; Open Dictionary &rarr; StatusBar to browse the full scripting dictionary.</p>
+              </div>
+            </div>
+          </div>
+          <div class="applescript-examples">
+            <div class="code-block-wrapper">
+              <pre><code>tell application "StatusBar"
+    -- Read properties
+    get name of every source
+    get status of source "GitHub"
+    get worst status
+    get issue count
+
+    -- Actions
+    refresh
+    add source "https://status.openai.com" named "OpenAI"
+    remove source "OpenAI"
+end tell</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
           </div>
         </div>
       </div>
