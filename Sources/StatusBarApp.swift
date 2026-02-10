@@ -62,7 +62,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @discardableResult
     private func resolveStatusItem() -> NSStatusItem? {
         if let statusItem { return statusItem }
-        statusItem = NSApp.windows
+        statusItem =
+            NSApp.windows
             .compactMap({ $0.value(forKey: "statusItem") as? NSStatusItem })
             .first
         return statusItem
@@ -82,8 +83,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Right-click on status bar icon shows context menu
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
             guard let self,
-                  let button = self.resolveStatusItem()?.button,
-                  event.window == button.window else {
+                let button = self.resolveStatusItem()?.button,
+                event.window == button.window
+            else {
                 return event
             }
             self.showContextMenu()
@@ -101,8 +103,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func windowDidBecomeKey(_ notification: Notification) {
         guard popoverPanel == nil,
-              let panel = notification.object as? NSPanel,
-              panel != statusItem?.button?.window else { return }
+            let panel = notification.object as? NSPanel,
+            panel != statusItem?.button?.window
+        else { return }
         popoverPanel = panel
     }
 
@@ -148,7 +151,7 @@ struct StatusBarApp: App {
                     appDelegate.service = service
                     appDelegate.updateChecker = updateChecker
                     #if canImport(Sparkle)
-                    updateChecker.setupSparkle()
+                        updateChecker.setupSparkle()
                     #endif
                 }
         } label: {

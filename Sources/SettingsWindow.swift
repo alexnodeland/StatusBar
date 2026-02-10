@@ -195,12 +195,15 @@ struct NotificationsSettingsTab: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(service.sources) { source in
-                        Picker(source.name, selection: Binding(
-                            get: { source.alertLevel },
-                            set: { newLevel in
-                                service.updateAlertLevel(sourceID: source.id, level: newLevel)
-                            }
-                        )) {
+                        Picker(
+                            source.name,
+                            selection: Binding(
+                                get: { source.alertLevel },
+                                set: { newLevel in
+                                    service.updateAlertLevel(sourceID: source.id, level: newLevel)
+                                }
+                            )
+                        ) {
                             ForEach(AlertLevel.allCases, id: \.self) { level in
                                 Text(level.rawValue).tag(level)
                             }
@@ -255,8 +258,9 @@ struct WebhooksSettingsTab: View {
                             newWebhookPlatform = .generic
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(newWebhookURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            || URL(string: newWebhookURL.trimmingCharacters(in: .whitespacesAndNewlines)) == nil)
+                        .disabled(
+                            newWebhookURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                || URL(string: newWebhookURL.trimmingCharacters(in: .whitespacesAndNewlines)) == nil)
                     }
                 } else {
                     Button {
@@ -295,14 +299,17 @@ struct WebhooksSettingsTab: View {
 
     private func webhookRow(_ config: WebhookConfig) -> some View {
         HStack(spacing: 10) {
-            Toggle("", isOn: Binding(
-                get: { config.enabled },
-                set: { newValue in
-                    var updated = config
-                    updated.enabled = newValue
-                    webhookManager.updateConfig(updated)
-                }
-            ))
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { config.enabled },
+                    set: { newValue in
+                        var updated = config
+                        updated.enabled = newValue
+                        webhookManager.updateConfig(updated)
+                    }
+                )
+            )
             .toggleStyle(.switch)
             .labelsHidden()
 

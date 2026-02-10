@@ -27,10 +27,12 @@ struct RootView: View {
                     service: service,
                     updateChecker: updateChecker,
                     onSelect: { id in
-                        withAnimation(reduceMotionAnimation(
-                            Design.Timing.transition,
-                            reduceMotion: reduceMotion
-                        )) {
+                        withAnimation(
+                            reduceMotionAnimation(
+                                Design.Timing.transition,
+                                reduceMotion: reduceMotion
+                            )
+                        ) {
                             destination = .sourceDetail(id)
                         }
                     },
@@ -41,10 +43,12 @@ struct RootView: View {
                         )
                     },
                     onCatalog: {
-                        withAnimation(reduceMotionAnimation(
-                            Design.Timing.transition,
-                            reduceMotion: reduceMotion
-                        )) {
+                        withAnimation(
+                            reduceMotionAnimation(
+                                Design.Timing.transition,
+                                reduceMotion: reduceMotion
+                            )
+                        ) {
                             destination = .catalog
                         }
                     }
@@ -62,20 +66,24 @@ struct RootView: View {
                             Task { await service.refresh(source: source) }
                         },
                         onBack: {
-                            withAnimation(reduceMotionAnimation(
-                                Design.Timing.transition,
-                                reduceMotion: reduceMotion
-                            )) {
+                            withAnimation(
+                                reduceMotionAnimation(
+                                    Design.Timing.transition,
+                                    reduceMotion: reduceMotion
+                                )
+                            ) {
                                 destination = .sourceList
                             }
                         }
                     )
                 } else {
                     Color.clear.onAppear {
-                        withAnimation(reduceMotionAnimation(
-                            Design.Timing.transition,
-                            reduceMotion: reduceMotion
-                        )) {
+                        withAnimation(
+                            reduceMotionAnimation(
+                                Design.Timing.transition,
+                                reduceMotion: reduceMotion
+                            )
+                        ) {
                             destination = .sourceList
                         }
                     }
@@ -85,10 +93,12 @@ struct RootView: View {
                 ServiceCatalogView(
                     service: service,
                     onBack: {
-                        withAnimation(reduceMotionAnimation(
-                            Design.Timing.transition,
-                            reduceMotion: reduceMotion
-                        )) {
+                        withAnimation(
+                            reduceMotionAnimation(
+                                Design.Timing.transition,
+                                reduceMotion: reduceMotion
+                            )
+                        ) {
                             destination = .sourceList
                         }
                     }
@@ -97,10 +107,12 @@ struct RootView: View {
         }
         .background {
             Button("") {
-                withAnimation(reduceMotionAnimation(
-                    Design.Timing.transition,
-                    reduceMotion: reduceMotion
-                )) {
+                withAnimation(
+                    reduceMotionAnimation(
+                        Design.Timing.transition,
+                        reduceMotion: reduceMotion
+                    )
+                ) {
                     destination = .sourceList
                 }
             }

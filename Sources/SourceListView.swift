@@ -145,7 +145,8 @@ struct SourceListView: View {
                 .focused($focusedField, equals: .url)
 
             if !newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-               let message = urlValidation.message {
+                let message = urlValidation.message
+            {
                 HStack(spacing: 4) {
                     Image(systemName: urlValidation.isAcceptable ? "exclamationmark.triangle.fill" : "xmark.circle.fill")
                         .font(Design.Typography.micro)
@@ -192,11 +193,13 @@ struct SourceListView: View {
                 .foregroundStyle(service.menuBarColor)
                 .symbolRenderingMode(.hierarchical)
                 .contentTransition(.symbolEffect(.replace))
-                .accessibilityLabel({
-                    let status = service.worstIndicator == "none"
-                        ? "all operational" : "\(service.issueCount) issues"
-                    return "Status indicator: \(status)"
-                }())
+                .accessibilityLabel(
+                    {
+                        let status =
+                            service.worstIndicator == "none"
+                            ? "all operational" : "\(service.issueCount) issues"
+                        return "Status indicator: \(status)"
+                    }())
 
             VStack(alignment: .leading, spacing: Design.Spacing.listGap) {
                 Text("Status Monitor")
@@ -446,9 +449,9 @@ struct SourceListView: View {
                     .draggable(source.id.uuidString)
                     .dropDestination(for: String.self) { items, _ in
                         guard let draggedIDString = items.first,
-                              let draggedID = UUID(uuidString: draggedIDString),
-                              let fromIndex = service.sources.firstIndex(where: { $0.id == draggedID }),
-                              let toIndex = service.sources.firstIndex(where: { $0.id == source.id })
+                            let draggedID = UUID(uuidString: draggedIDString),
+                            let fromIndex = service.sources.firstIndex(where: { $0.id == draggedID }),
+                            let toIndex = service.sources.firstIndex(where: { $0.id == source.id })
                         else { return false }
                         let fromSet = IndexSet(integer: fromIndex)
                         let dest = toIndex > fromIndex ? toIndex + 1 : toIndex
@@ -505,23 +508,27 @@ struct SourceListView: View {
             }
 
             Button {
-                withAnimation(reduceMotionAnimation(
-                    Design.Timing.expand,
-                    reduceMotion: reduceMotion
-                )) {
+                withAnimation(
+                    reduceMotionAnimation(
+                        Design.Timing.expand,
+                        reduceMotion: reduceMotion
+                    )
+                ) {
                     showingAddSource.toggle()
                     newSourceName = ""
                     newSourceURL = ""
                     focusedField = showingAddSource ? .name : nil
                 }
             } label: {
-                Image(systemName: showingAddSource
-                    ? "xmark.circle.fill" : "plus.circle.fill")
-                    .font(Design.Typography.caption)
-                    .foregroundStyle(
-                        showingAddSource
-                            ? .secondary : Color.accentColor
-                    )
+                Image(
+                    systemName: showingAddSource
+                        ? "xmark.circle.fill" : "plus.circle.fill"
+                )
+                .font(Design.Typography.caption)
+                .foregroundStyle(
+                    showingAddSource
+                        ? .secondary : Color.accentColor
+                )
             }
             .buttonStyle(.borderless)
             .help(showingAddSource ? "Cancel" : "Add source")

@@ -26,15 +26,16 @@ final class HotkeyManager {
 
     // Default: Ctrl+Option+S
     let modifiers: UInt32 = UInt32(controlKey | optionKey)
-    let keyCode: UInt32 = 1 // 's' key
+    let keyCode: UInt32 = 1  // 's' key
 
     var displayString: String { "\u{2303}\u{2325}S" }
 
     func register() {
         guard hotkeyRef == nil else { return }
 
-        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
-                                      eventKind: UInt32(kEventHotKeyPressed))
+        var eventType = EventTypeSpec(
+            eventClass: OSType(kEventClassKeyboard),
+            eventKind: UInt32(kEventHotKeyPressed))
 
         let selfPtr = Unmanaged.passUnretained(self).toOpaque()
 
@@ -47,8 +48,9 @@ final class HotkeyManager {
             &eventHandler
         )
 
-        let hotkeyID = EventHotKeyID(signature: OSType(0x5342_4152), // "SBAR"
-                                      id: 1)
+        let hotkeyID = EventHotKeyID(
+            signature: OSType(0x5342_4152),  // "SBAR"
+            id: 1)
 
         RegisterEventHotKey(
             keyCode,

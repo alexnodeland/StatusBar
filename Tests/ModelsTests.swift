@@ -513,7 +513,8 @@ final class ModelsTests: XCTestCase {
     // MARK: - CatalogEntry
 
     func testCatalogEntryParsing() {
-        let lines = kServiceCatalog
+        let lines =
+            kServiceCatalog
             .split(separator: "\n", omittingEmptySubsequences: true)
             .compactMap { line -> CatalogEntry? in
                 let raw = String(line).trimmingCharacters(in: .whitespaces)

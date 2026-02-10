@@ -18,7 +18,7 @@ final class WebhookManager: ObservableObject {
 
     func loadConfigs() {
         guard let data = storedConfigs.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode([WebhookConfig].self, from: data)
+            let decoded = try? JSONDecoder().decode([WebhookConfig].self, from: data)
         else {
             configs = []
             return
@@ -28,7 +28,7 @@ final class WebhookManager: ObservableObject {
 
     func saveConfigs() {
         guard let data = try? JSONEncoder().encode(configs),
-              let json = String(data: data, encoding: .utf8)
+            let json = String(data: data, encoding: .utf8)
         else { return }
         storedConfigs = json
     }

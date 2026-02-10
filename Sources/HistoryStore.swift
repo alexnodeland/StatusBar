@@ -15,7 +15,8 @@ final class HistoryStore {
             self.fileURL = fileURL
         } else {
             let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            self.fileURL = appSupport
+            self.fileURL =
+                appSupport
                 .appendingPathComponent("StatusBar")
                 .appendingPathComponent("history.json")
         }
@@ -120,7 +121,7 @@ final class HistoryStore {
         } catch {
             // Best-effort — log in debug
             #if DEBUG
-            print("HistoryStore: failed to write: \(error)")
+                print("HistoryStore: failed to write: \(error)")
             #endif
         }
     }
@@ -129,7 +130,7 @@ final class HistoryStore {
 
     func migrateFromAppStorage(_ json: String) {
         guard let rawData = json.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode([String: [StatusCheckpoint]].self, from: rawData)
+            let decoded = try? JSONDecoder().decode([String: [StatusCheckpoint]].self, from: rawData)
         else { return }
         for (key, value) in decoded {
             if let uuid = UUID(uuidString: key) {

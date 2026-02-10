@@ -97,7 +97,7 @@ struct StatusSource: Identifiable, Equatable, Codable {
 
     static func encodeToJSON(_ sources: [StatusSource]) -> String {
         guard let data = try? JSONEncoder().encode(sources),
-              let json = String(data: data, encoding: .utf8)
+            let json = String(data: data, encoding: .utf8)
         else { return "[]" }
         return json
     }

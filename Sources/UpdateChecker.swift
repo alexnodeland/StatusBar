@@ -5,7 +5,7 @@
 import SwiftUI
 
 #if canImport(Sparkle)
-import Sparkle
+    import Sparkle
 #endif
 
 // MARK: - Update Checker
@@ -126,7 +126,8 @@ final class UpdateChecker: ObservableObject {
             // Download zip to temp directory
             let (tempZipURL, response) = try await session.download(for: URLRequest(url: url))
             guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
+                httpResponse.statusCode == 200
+            else {
                 let code = (response as? HTTPURLResponse)?.statusCode ?? 0
                 lastCheckError = "Download failed with status \(code)"
                 return
@@ -201,9 +202,9 @@ final class UpdateChecker: ObservableObject {
     /// Whether the app is using Sparkle for updates instead of GitHub Releases.
     var usesSparkle: Bool {
         #if canImport(Sparkle)
-        return true
+            return true
         #else
-        return false
+            return false
         #endif
     }
 }
@@ -211,15 +212,15 @@ final class UpdateChecker: ObservableObject {
 // MARK: - Sparkle Integration
 
 #if canImport(Sparkle)
-extension UpdateChecker {
-    func setupSparkle() {
-        let controller = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: nil
-        )
-        // Sparkle manages its own update lifecycle from here.
-        _ = controller
+    extension UpdateChecker {
+        func setupSparkle() {
+            let controller = SPUStandardUpdaterController(
+                startingUpdater: true,
+                updaterDelegate: nil,
+                userDriverDelegate: nil
+            )
+            // Sparkle manages its own update lifecycle from here.
+            _ = controller
+        }
     }
-}
 #endif
