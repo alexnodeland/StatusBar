@@ -148,56 +148,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @MainActor private func handleURL(_ url: URL) {
         guard let route = URLRoute.parse(url) else { return }
-
-        switch route {
-        case .open:
-            showPopover()
-
-        case .openSource(let name):
-            showPopover()
-            guard let service else { return }
-            if let source = service.sources.first(where: {
-                $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
-            }) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    NotificationCenter.default.post(
-                        name: .statusBarNavigateToSource,
-                        object: nil,
-                        userInfo: ["sourceID": source.id]
-                    )
-                }
-            }
-
-        case .refresh:
-            guard let service else { return }
-            Task { await service.refreshAll() }
-
-        case .addSource(let urlString, let name):
-            guard let service else { return }
-            let sourceName = name ?? URLRoute.deriveSourceName(from: urlString)
-            service.addSource(name: sourceName, baseURL: urlString)
-
-        case .removeSource(let name):
-            guard let service else { return }
-            if let source = service.sources.first(where: {
-                $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
-            }) {
-                service.removeSource(id: source.id)
-            }
-
-        case .settings:
-            openSettings()
-
-        case .settingsTab(let tab):
-            openSettings()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                NotificationCenter.default.post(
-                    name: .statusBarNavigateToSettingsTab,
-                    object: nil,
-                    userInfo: ["tab": tab]
-                )
-            }
-        }
+        route.execute(service: service, showPopover: showPopover, openSettings: openSettings)
     }
 
     func showPopover() {

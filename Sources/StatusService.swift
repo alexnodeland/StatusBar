@@ -477,6 +477,10 @@ final class StatusService: ObservableObject {
         )
     }
 
+    func findSource(named name: String) -> StatusSource? {
+        sources.first { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }
+    }
+
     func removeSource(id: UUID) {
         let removedName = sources.first(where: { $0.id == id })?.name ?? ""
         let removedURL = sources.first(where: { $0.id == id })?.baseURL ?? ""

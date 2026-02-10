@@ -20,42 +20,103 @@ enum URLRoute: Equatable {
         guard url.scheme == "statusbar" else { return nil }
 
         let host = url.host ?? ""
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        let queryItems = components?.queryItems ?? []
-
-        func queryValue(_ name: String) -> String? {
-            queryItems.first(where: { $0.name == name })?.value
-        }
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
 
         switch host {
-        case "open":
-            if let sourceName = queryValue("source"), !sourceName.isEmpty {
-                return .openSource(sourceName)
-            }
-            return .open
+        case "open": return parseOpen(queryItems)
+        case "refresh": return .refresh
+        case "add": return parseAdd(queryItems)
+        case "remove": return parseRemove(queryItems)
+        case "settings": return parseSettings(queryItems)
+        default: return nil
+        }
+    }
 
-        case "refresh":
-            return .refresh
+    // MARK: - Route Parsers
 
-        case "add":
-            guard let urlString = queryValue("url"), !urlString.isEmpty else { return nil }
-            let validation = validateSourceURL(urlString)
-            guard validation.isAcceptable else { return nil }
-            let name = queryValue("name")
-            return .addSource(url: urlString, name: name?.isEmpty == true ? nil : name)
+    private static func queryValue(_ name: String, from items: [URLQueryItem]) -> String? {
+        items.first(where: { $0.name == name })?.value
+    }
 
-        case "remove":
-            guard let name = queryValue("name"), !name.isEmpty else { return nil }
-            return .removeSource(name: name)
+    private static func parseOpen(_ queryItems: [URLQueryItem]) -> URLRoute {
+        if let sourceName = queryValue("source", from: queryItems), !sourceName.isEmpty {
+            return .openSource(sourceName)
+        }
+        return .open
+    }
 
-        case "settings":
-            if let tab = queryValue("tab"), !tab.isEmpty {
-                return .settingsTab(tab)
-            }
-            return .settings
+    private static func parseAdd(_ queryItems: [URLQueryItem]) -> URLRoute? {
+        guard let urlString = queryValue("url", from: queryItems), !urlString.isEmpty else { return nil }
+        let validation = validateSourceURL(urlString)
+        guard validation.isAcceptable else { return nil }
+        let name = queryValue("name", from: queryItems)
+        return .addSource(url: urlString, name: name?.isEmpty == true ? nil : name)
+    }
 
-        default:
-            return nil
+    private static func parseRemove(_ queryItems: [URLQueryItem]) -> URLRoute? {
+        guard let name = queryValue("name", from: queryItems), !name.isEmpty else { return nil }
+        return .removeSource(name: name)
+    }
+
+    private static func parseSettings(_ queryItems: [URLQueryItem]) -> URLRoute {
+        if let tab = queryValue("tab", from: queryItems), !tab.isEmpty {
+            return .settingsTab(tab)
+        }
+        return .settings
+    }
+
+    // MARK: - Execution
+
+    @MainActor
+    func execute(
+        service: StatusService?,
+        showPopover: () -> Void,
+        openSettings: () -> Void
+    ) {
+        switch self {
+        case .open:
+            showPopover()
+        case .openSource(let name):
+            executeOpenSource(name, service: service, showPopover: showPopover)
+        case .refresh:
+            if let service { Task { await service.refreshAll() } }
+        case .addSource(let urlString, let name):
+            service?.addSource(name: name ?? URLRoute.deriveSourceName(from: urlString), baseURL: urlString)
+        case .removeSource(let name):
+            if let source = service?.findSource(named: name) { service?.removeSource(id: source.id) }
+        case .settings:
+            openSettings()
+        case .settingsTab(let tab):
+            executeSettingsTab(tab, openSettings: openSettings)
+        }
+    }
+
+    @MainActor
+    private func executeOpenSource(
+        _ name: String,
+        service: StatusService?,
+        showPopover: () -> Void
+    ) {
+        showPopover()
+        guard let source = service?.findSource(named: name) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NotificationCenter.default.post(
+                name: .statusBarNavigateToSource,
+                object: nil,
+                userInfo: ["sourceID": source.id]
+            )
+        }
+    }
+
+    @MainActor
+    private func executeSettingsTab(_ tab: String, openSettings: () -> Void) {
+        openSettings()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NotificationCenter.default.post(
+                name: .statusBarNavigateToSettingsTab,
+                object: nil,
+                userInfo: ["tab": tab]
+            )
         }
     }
 
@@ -66,38 +127,28 @@ enum URLRoute: Equatable {
             return urlString
         }
 
-        // Remove common prefixes
         var name = host
-        if name.hasPrefix("www.") {
-            name = String(name.dropFirst(4))
-        }
-        if name.hasPrefix("status.") {
-            name = String(name.dropFirst(7))
+        for prefix in ["www.", "status."] where name.hasPrefix(prefix) {
+            name = String(name.dropFirst(prefix.count))
         }
 
         // Remove common status-page suffixes from domain
         let suffixesToStrip = ["status.com", "status.io", "status.net"]
-        for suffix in suffixesToStrip {
-            if name.hasSuffix(suffix) {
-                name = String(name.dropLast(suffix.count))
-                // Remove trailing dot or hyphen
-                while name.hasSuffix(".") || name.hasSuffix("-") {
-                    name = String(name.dropLast())
-                }
-                break
+        if let suffix = suffixesToStrip.first(where: { name.hasSuffix($0) }) {
+            name = String(name.dropLast(suffix.count))
+            while name.hasSuffix(".") || name.hasSuffix("-") {
+                name = String(name.dropLast())
             }
         }
 
         // Remove TLD if still present (e.g. "example.com" -> "example")
         if let dotRange = name.range(of: ".", options: .backwards) {
             let afterDot = name[dotRange.upperBound...]
-            // Only strip if it looks like a TLD (2-6 chars, no dots)
             if afterDot.count >= 2 && afterDot.count <= 6 && !afterDot.contains(".") {
                 name = String(name[..<dotRange.lowerBound])
             }
         }
 
-        // Capitalize first letter
         guard !name.isEmpty else { return host }
         return name.prefix(1).uppercased() + name.dropFirst()
     }

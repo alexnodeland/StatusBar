@@ -32,7 +32,8 @@ final class HookManager: @unchecked Sendable {
             let appSupport = FileManager.default.urls(
                 for: .applicationSupportDirectory, in: .userDomainMask
             ).first!
-            self.hooksDirectory = appSupport
+            self.hooksDirectory =
+                appSupport
                 .appendingPathComponent("StatusBar")
                 .appendingPathComponent("hooks")
         }
@@ -52,11 +53,13 @@ final class HookManager: @unchecked Sendable {
 
     func discoverHooks() -> [URL] {
         let fm = FileManager.default
-        guard let contents = try? fm.contentsOfDirectory(
-            at: hooksDirectory,
-            includingPropertiesForKeys: [.isExecutableKey],
-            options: [.skipsHiddenFiles]
-        ) else {
+        guard
+            let contents = try? fm.contentsOfDirectory(
+                at: hooksDirectory,
+                includingPropertiesForKeys: [.isExecutableKey],
+                options: [.skipsHiddenFiles]
+            )
+        else {
             return []
         }
         return contents.filter { url in

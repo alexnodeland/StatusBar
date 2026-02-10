@@ -151,11 +151,7 @@ class RemoveSourceCommand: NSScriptCommand {
         }
 
         Task { @MainActor in
-            guard let source = service.sources.first(where: {
-                $0.name.localizedCaseInsensitiveCompare(sourceName) == .orderedSame
-            }) else {
-                return
-            }
+            guard let source = service.findSource(named: sourceName) else { return }
             service.removeSource(id: source.id)
         }
         return nil
