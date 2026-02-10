@@ -31,6 +31,7 @@
       </button>
       <ul class="nav-links" id="nav-links">
         <li><a href="#features">Features</a></li>
+        <li><a href="#automate">Automate</a></li>
         <li><a href="#status-colors">Status</a></li>
         <li><a href="#get-started">Get Started</a></li>
         <li><a href="#docs">Docs</a></li>
@@ -103,6 +104,236 @@
         <div class="showcase-text">
           <h3>Native macOS Integration</h3>
           <p>Lives in the menu bar as a checkmark when all clear, or a warning with a badge count when issues arise. Enable notifications to get native macOS alerts the moment a service status changes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Automate & Integrate -->
+  <section id="automate">
+    <div class="container">
+      <p class="section-label">Automate &amp; Integrate</p>
+      <h2>Connect StatusBar to your workflow</h2>
+
+      <!-- Top row: Webhooks + Script Hooks -->
+      <div class="automate-row">
+        <!-- Webhooks -->
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <h3>Webhooks</h3>
+          </div>
+          <p class="automate-desc">Push status change alerts to Slack, Discord, Microsoft Teams, or any HTTP endpoint. Configure multiple webhooks in <strong>Settings&nbsp;&rarr;&nbsp;Webhooks</strong>.</p>
+
+          <div class="webhook-platforms">
+            <span class="webhook-badge">Slack</span>
+            <span class="webhook-badge">Discord</span>
+            <span class="webhook-badge">Teams</span>
+            <span class="webhook-badge">Generic JSON</span>
+          </div>
+
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="webhook-payload-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Example payloads
+            </button>
+            <div class="collapsible-content" id="webhook-payload-content">
+              <table class="hook-table">
+                <thead>
+                  <tr><th>Platform</th><th>Payload shape</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>Slack</code></td><td><code>{ "text": "..." }</code></td></tr>
+                  <tr><td><code>Discord</code></td><td><code>{ "content": "..." }</code></td></tr>
+                  <tr><td><code>Teams</code></td><td><code>{ "@type": "MessageCard", ... }</code></td></tr>
+                  <tr><td><code>Generic</code></td><td><code>{ "source", "title", "body" }</code></td></tr>
+                </tbody>
+              </table>
+              <p class="hook-table-note">Webhooks fire on every status change. Each webhook has an enable/disable toggle and a 10-second request timeout.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Script Hooks -->
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            <h3>Script Hooks</h3>
+          </div>
+          <p class="automate-desc">Drop executable scripts into the hooks folder and they run automatically on status events. Trigger CI pipelines, write to logs, post to APIs&mdash;anything you can script.</p>
+
+          <div class="hook-steps">
+            <div class="hook-step">
+              <span class="hook-step-num">1</span>
+              <span>Open <strong>Settings &rarr; Hooks &rarr; Add Example Hook</strong>, or create your own script</span>
+            </div>
+            <div class="hook-step">
+              <span class="hook-step-num">2</span>
+              <span>Make it executable: <code>chmod +x my-hook</code></span>
+            </div>
+            <div class="hook-step">
+              <span class="hook-step-num">3</span>
+              <span>It runs on every event&mdash;check <code>$STATUSBAR_EVENT</code> to filter</span>
+            </div>
+          </div>
+
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="hook-example-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Example hook
+            </button>
+            <div class="collapsible-content" id="hook-example-content">
+              <div class="code-block-wrapper">
+                <pre><code>#!/bin/bash
+# Log status changes to a file
+[ "$STATUSBAR_EVENT" = "on-status-change" ] || exit 0
+
+LOG="$HOME/Library/Logs/StatusBar/hooks.log"
+mkdir -p "$(dirname "$LOG")"
+echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" &gt;&gt; "$LOG"</code></pre>
+                <button class="copy-btn" aria-label="Copy code">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="hook-events-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Events &amp; environment variables
+            </button>
+            <div class="collapsible-content" id="hook-events-content">
+              <table class="hook-table">
+                <thead>
+                  <tr><th>Event</th><th>When</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>on-status-change</code></td><td>Source status severity changes</td></tr>
+                  <tr><td><code>on-refresh</code></td><td>All sources finish refreshing</td></tr>
+                  <tr><td><code>on-source-add</code></td><td>A new source is added</td></tr>
+                  <tr><td><code>on-source-remove</code></td><td>A source is removed</td></tr>
+                </tbody>
+              </table>
+              <table class="hook-table">
+                <thead>
+                  <tr><th>Variable</th><th>Events</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>STATUSBAR_EVENT</code></td><td>All</td></tr>
+                  <tr><td><code>STATUSBAR_SOURCE_NAME</code></td><td>status-change, add, remove</td></tr>
+                  <tr><td><code>STATUSBAR_SOURCE_URL</code></td><td>status-change, add, remove</td></tr>
+                  <tr><td><code>STATUSBAR_TITLE</code></td><td>status-change</td></tr>
+                  <tr><td><code>STATUSBAR_BODY</code></td><td>status-change</td></tr>
+                  <tr><td><code>STATUSBAR_SOURCE_COUNT</code></td><td>refresh</td></tr>
+                  <tr><td><code>STATUSBAR_WORST_LEVEL</code></td><td>refresh</td></tr>
+                </tbody>
+              </table>
+              <p class="hook-table-note">A full JSON payload is also piped to stdin. Scripts can be any language&mdash;just add a shebang and make them executable. 30-second timeout per execution.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- URL Scheme (full-width) -->
+      <div class="glass-card automate-card automate-card-wide">
+        <div class="automate-card-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <h3>URL Scheme</h3>
+        </div>
+        <p class="automate-desc">Control the app from Terminal, browsers, Raycast, Alfred, or macOS Shortcuts using <code>statusbar://</code> deep links.</p>
+        <div class="url-examples-grid">
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://open"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Show the popover</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://open?source=GitHub"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Navigate to a source</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://refresh"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Refresh all sources</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://add?url=https://status.openai.com&amp;name=OpenAI"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Add a new source</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://remove?name=GitHub"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Remove by name</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://settings?tab=webhooks"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Jump to a settings tab</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AppleScript (full-width, two-column layout) -->
+      <div class="glass-card automate-card automate-card-wide">
+        <div class="applescript-layout">
+          <div class="applescript-info">
+            <div class="automate-card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+              <h3>AppleScript</h3>
+            </div>
+            <p class="automate-desc">Full Cocoa Scripting dictionary. Query status, refresh, add and remove sources from Script Editor, JXA, <code>osascript</code>, or any OSA-compatible tool.</p>
+            <div class="applescript-capabilities">
+              <span class="webhook-badge">Script Editor</span>
+              <span class="webhook-badge">JXA</span>
+              <span class="webhook-badge">osascript</span>
+              <span class="webhook-badge">Shortcuts</span>
+            </div>
+            <div class="collapsible">
+              <button class="collapsible-trigger" id="applescript-terminal-trigger">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+                Terminal one-liners
+              </button>
+              <div class="collapsible-content" id="applescript-terminal-content">
+                <div class="code-block-wrapper">
+                  <pre><code>osascript -e 'tell application "StatusBar" to get name of every source'
+osascript -e 'tell application "StatusBar" to get worst status'
+osascript -e 'tell application "StatusBar" to refresh'</code></pre>
+                  <button class="copy-btn" aria-label="Copy code">Copy</button>
+                </div>
+                <p class="hook-table-note">Open Script Editor &rarr; File &rarr; Open Dictionary &rarr; StatusBar to browse the full scripting dictionary.</p>
+              </div>
+            </div>
+          </div>
+          <div class="applescript-examples">
+            <div class="code-block-wrapper">
+              <pre><code>tell application "StatusBar"
+    -- Read properties
+    get name of every source
+    get status of source "GitHub"
+    get worst status
+    get issue count
+
+    -- Actions
+    refresh
+    add source "https://status.openai.com" named "OpenAI"
+    remove source "OpenAI"
+end tell</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

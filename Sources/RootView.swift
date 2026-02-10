@@ -146,6 +146,15 @@ struct RootView: View {
             minWidth: 340, idealWidth: 380, maxWidth: 480,
             minHeight: 400, idealHeight: 520, maxHeight: 700
         )
+        .onReceive(NotificationCenter.default.publisher(for: .statusBarNavigateToSource)) { notification in
+            if let sourceID = notification.userInfo?["sourceID"] as? UUID {
+                withAnimation(
+                    reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)
+                ) {
+                    destination = .sourceDetail(sourceID)
+                }
+            }
+        }
         .onChange(of: destination) { _, newValue in
             let label: String
             switch newValue {

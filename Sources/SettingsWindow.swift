@@ -55,6 +55,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case notifications = "Notifications"
     case webhooks = "Webhooks"
+    case hooks = "Hooks"
     case data = "Data"
     case updates = "Updates"
 
@@ -65,6 +66,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: "gear"
         case .notifications: "bell.badge"
         case .webhooks: "antenna.radiowaves.left.and.right"
+        case .hooks: "terminal"
         case .data: "square.and.arrow.up.on.square"
         case .updates: "arrow.triangle.2.circlepath"
         }
@@ -94,6 +96,8 @@ struct SettingsWindowContent: View {
                     NotificationsSettingsTab(service: service)
                 case .webhooks:
                     WebhooksSettingsTab()
+                case .hooks:
+                    HooksSettingsTab()
                 case .data:
                     DataSettingsTab(service: service)
                 case .updates:
@@ -104,6 +108,13 @@ struct SettingsWindowContent: View {
         }
         .navigationSplitViewStyle(.prominentDetail)
         .frame(minWidth: 520, minHeight: 360)
+        .onReceive(NotificationCenter.default.publisher(for: .statusBarNavigateToSettingsTab)) { notification in
+            if let tabRawValue = notification.userInfo?["tab"] as? String,
+                let tab = SettingsTab(rawValue: tabRawValue.capitalized)
+            {
+                selectedTab = tab
+            }
+        }
     }
 }
 

@@ -29,7 +29,9 @@ struct MenuBarLabel: View {
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    var service: StatusService?
+    var service: StatusService? {
+        didSet { ScriptBridge.service = service }
+    }
     var updateChecker: UpdateChecker?
     private var statusItem: NSStatusItem?
     private weak var popoverPanel: NSPanel?
@@ -60,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// Lazily resolve the NSStatusItem created by MenuBarExtra via KVC.
     @discardableResult
-    private func resolveStatusItem() -> NSStatusItem? {
+    func resolveStatusItem() -> NSStatusItem? {
         if let statusItem { return statusItem }
         statusItem =
             NSApp.windows
@@ -71,6 +73,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NotificationManager.shared.requestPermission()
+        HookManager.shared.ensureHooksDirectory()
 
         HotkeyManager.shared.onToggle = { [weak self] in
             self?.resolveStatusItem()?.button?.performClick(nil)
@@ -134,6 +137,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
+
+    // MARK: - URL Scheme Handling
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            handleURL(url)
+        }
+    }
+
+    @MainActor private func handleURL(_ url: URL) {
+        guard let route = URLRoute.parse(url) else { return }
+        route.execute(service: service, showPopover: showPopover, openSettings: openSettings)
+    }
+
+    func showPopover() {
+        resolveStatusItem()?.button?.performClick(nil)
+    }
 }
 
 // MARK: - App Entry Point
@@ -148,7 +168,6 @@ struct StatusBarApp: App {
         MenuBarExtra {
             RootView(service: service, updateChecker: updateChecker)
                 .onAppear {
-                    appDelegate.service = service
                     appDelegate.updateChecker = updateChecker
                     #if canImport(Sparkle)
                         updateChecker.setupSparkle()
@@ -156,6 +175,9 @@ struct StatusBarApp: App {
                 }
         } label: {
             MenuBarLabel(service: service)
+                .onAppear {
+                    appDelegate.service = service
+                }
         }
         .menuBarExtraStyle(.window)
     }

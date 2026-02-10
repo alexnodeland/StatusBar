@@ -28,7 +28,7 @@ mkdir -p "${BUNDLE_DIR}/Contents/MacOS"
 SOURCE_FILES=()
 for f in "${PROJECT_DIR}"/Sources/*.swift; do
     case "$(basename "$f")" in
-        StatusBarApp.swift|HotkeyManager.swift) continue ;;
+        StatusBarApp.swift|HotkeyManager.swift|AppleScriptBridge.swift) continue ;;
         *) SOURCE_FILES+=("$f") ;;
     esac
 done

@@ -69,8 +69,8 @@ Source code lives in `Sources/`, split by responsibility:
 
 ```
 Sources/
-├── StatusBarApp.swift        — @main entry point, AppDelegate, MenuBarLabel
-├── Constants.swift           — config values, Design enum (typography + timing)
+├── StatusBarApp.swift        — @main entry point, AppDelegate, MenuBarLabel, URL scheme handling
+├── Constants.swift           — config values, Design enum (typography + timing), Notification.Names
 ├── Models.swift              — StatusSource, API models, StatusProvider, sort/filter enums, SourceState
 ├── Helpers.swift             — date formatters/functions, indicator color/icon mappers, compareVersions
 ├── StatusService.swift       — @MainActor ObservableObject managing all sources concurrently
@@ -78,12 +78,16 @@ Sources/
 │   ├─ fetchSummary           — Atlassian Statuspage API
 │   ├─ fetchIncidentIO        — incident.io /proxy/widget fallback
 │   └─ fetchInstatus          — Instatus summary + components mapping
+├── HookManager.swift         — script hook discovery, execution with timeout, env vars + JSON stdin
+├── URLSchemeHandler.swift    — statusbar:// URL route parsing and source name derivation
 ├── NotificationManager.swift — macOS notification delivery and permission handling
+├── WebhookManager.swift      — outbound webhook delivery (Slack, Discord, Teams, generic)
 ├── UpdateChecker.swift       — checks GitHub Releases API for app updates (daily)
 ├── SharedComponents.swift    — VisualEffectBackground, HoverEffect, GlassButtonStyle, GlassCard
-├── SourceListView.swift      — RootView, SourceListView, SourceRow
+├── RootView.swift            — root navigation, source navigation via NotificationCenter
+├── SourceListView.swift      — SourceListView, SourceRow
 ├── SourceDetailView.swift    — SourceDetailView, ComponentRow, IncidentCard
-└── SettingsView.swift        — visual source management, preferences, updates
+└── SettingsWindow.swift      — native settings window with sidebar tabs (incl. Hooks tab)
 ```
 
 ## Supported Providers

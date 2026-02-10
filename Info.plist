@@ -32,5 +32,20 @@
     <string>https://raw.githubusercontent.com/alexnodeland/StatusBar/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>SPARKLE_ED_PUBLIC_KEY_PLACEHOLDER</string>
+    <key>OSAScriptingDefinition</key>
+    <string>StatusBar.sdef</string>
+    <key>NSAppleScriptEnabled</key>
+    <true/>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.statusbar.app</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>statusbar</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

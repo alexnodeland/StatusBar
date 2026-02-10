@@ -107,6 +107,16 @@ final class StatusService: ObservableObject {
                 group.addTask { await self.refresh(source: source) }
             }
         }
+        HookManager.shared.fireAll(
+            event: .onRefresh,
+            environment: [
+                "STATUSBAR_SOURCE_COUNT": "\(sources.count)",
+                "STATUSBAR_WORST_LEVEL": worstIndicator,
+            ],
+            jsonPayload: HookManager.buildRefreshJSON(
+                sourceCount: sources.count, worstLevel: worstIndicator
+            )
+        )
     }
 
     func refresh(source: StatusSource) async {
@@ -196,6 +206,19 @@ final class StatusService: ObservableObject {
                 source: source.name, title: title, body: body
             )
         }
+        HookManager.shared.fireAll(
+            event: .onStatusChange,
+            environment: [
+                "STATUSBAR_SOURCE_NAME": source.name,
+                "STATUSBAR_SOURCE_URL": source.baseURL,
+                "STATUSBAR_TITLE": title,
+                "STATUSBAR_BODY": body,
+            ],
+            jsonPayload: HookManager.buildStatusChangeJSON(
+                sourceName: source.name, sourceURL: source.baseURL,
+                title: title, body: body
+            )
+        )
     }
 
     private func fetchSummary(baseURL: String) async throws -> SPSummary {
@@ -442,9 +465,25 @@ final class StatusService: ObservableObject {
         sources.append(source)
         persistSources()
         Task { await refresh(source: source) }
+        HookManager.shared.fireAll(
+            event: .onSourceAdd,
+            environment: [
+                "STATUSBAR_SOURCE_NAME": name,
+                "STATUSBAR_SOURCE_URL": baseURL,
+            ],
+            jsonPayload: HookManager.buildSourceJSON(
+                event: .onSourceAdd, name: name, url: baseURL
+            )
+        )
+    }
+
+    func findSource(named name: String) -> StatusSource? {
+        sources.first { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }
     }
 
     func removeSource(id: UUID) {
+        let removedName = sources.first(where: { $0.id == id })?.name ?? ""
+        let removedURL = sources.first(where: { $0.id == id })?.baseURL ?? ""
         sources.removeAll { $0.id == id }
         states.removeValue(forKey: id)
         previousIndicators.removeValue(forKey: id)
@@ -452,6 +491,18 @@ final class StatusService: ObservableObject {
         historyStore.removeSource(id)
         history = historyStore.data
         persistSources()
+        if !removedName.isEmpty {
+            HookManager.shared.fireAll(
+                event: .onSourceRemove,
+                environment: [
+                    "STATUSBAR_SOURCE_NAME": removedName,
+                    "STATUSBAR_SOURCE_URL": removedURL,
+                ],
+                jsonPayload: HookManager.buildSourceJSON(
+                    event: .onSourceRemove, name: removedName, url: removedURL
+                )
+            )
+        }
     }
 
     func updateAlertLevel(sourceID: UUID, level: AlertLevel) {
