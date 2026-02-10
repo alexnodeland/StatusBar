@@ -351,15 +351,21 @@ struct DataSettingsTab: View {
                     .foregroundStyle(.secondary)
                     .font(.callout)
                 if service.hasWebhooks {
-                    Label("Exported files contain webhook URLs. Share only with trusted recipients.",
-                          systemImage: "exclamationmark.triangle")
-                        .font(.callout).foregroundStyle(.orange)
+                    Label(
+                        "Exported files contain webhook URLs. Share only with trusted recipients.",
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .font(.callout).foregroundStyle(.orange)
                 }
-                Button { importConfig() } label: {
+                Button {
+                    importConfig()
+                } label: {
                     Label("Import Configuration\u{2026}", systemImage: "square.and.arrow.down")
                 }
                 .help("Import settings, sources, and webhooks from JSON file")
-                Button { exportConfig() } label: {
+                Button {
+                    exportConfig()
+                } label: {
                     Label("Export Configuration\u{2026}", systemImage: "square.and.arrow.up")
                 }
                 .help("Export settings, sources, and webhooks as JSON file")
@@ -369,11 +375,15 @@ struct DataSettingsTab: View {
                 Text("Export or import only your monitored status pages as JSON.")
                     .foregroundStyle(.secondary)
                     .font(.callout)
-                Button { importSources() } label: {
+                Button {
+                    importSources()
+                } label: {
                     Label("Import Sources\u{2026}", systemImage: "square.and.arrow.down")
                 }
                 .help("Import sources from JSON file")
-                Button { exportSources() } label: {
+                Button {
+                    exportSources()
+                } label: {
                     Label("Export Sources\u{2026}", systemImage: "square.and.arrow.up")
                 }
                 .help("Export sources as JSON file")
