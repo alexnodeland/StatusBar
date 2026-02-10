@@ -57,8 +57,13 @@ struct RootView: View {
 
             Button("") {
                 withAnimation(Design.Timing.transition) {
-                    selectedSourceID = nil
-                    showSettings = true
+                    if showSettings {
+                        showSettings = false
+                    } else {
+                        selectedSourceID = nil
+                        showCatalog = false
+                        showSettings = true
+                    }
                 }
             }
             .keyboardShortcut(",", modifiers: .command)
