@@ -79,13 +79,13 @@ if [ "$RELEASE" = true ]; then
     # Compile arm64
     echo "  Compiling arm64..."
     swiftc "${SWIFT_FLAGS[@]}" \
-        -target arm64-apple-macosx14.0 \
+        -target arm64-apple-macosx26.0 \
         -o "${BUILD_DIR}/${APP_NAME}-arm64"
 
     # Compile x86_64
     echo "  Compiling x86_64..."
     swiftc "${SWIFT_FLAGS[@]}" \
-        -target x86_64-apple-macosx14.0 \
+        -target x86_64-apple-macosx26.0 \
         -o "${BUILD_DIR}/${APP_NAME}-x86_64"
 
     # Merge into universal binary
@@ -100,7 +100,7 @@ if [ "$RELEASE" = true ]; then
 else
     # Dev build — arm64 only (fast)
     swiftc "${SWIFT_FLAGS[@]}" \
-        -target arm64-apple-macosx14.0 \
+        -target arm64-apple-macosx26.0 \
         -o "${MACOS}/${APP_NAME}"
 fi
 

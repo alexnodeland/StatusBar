@@ -17,13 +17,15 @@ struct SettingsView: View {
     @State private var showingAddWebhook = false
     @State private var newWebhookURL = ""
     @State private var newWebhookPlatform: WebhookPlatform = .generic
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @FocusState private var isWebhookURLFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             settingsHeader
-            Divider().opacity(0.5)
+            ChromeDivider()
             importExportRow
-            Divider().opacity(0.5)
+            ChromeDivider()
 
             HStack {
                 Text("Refresh interval")
@@ -41,18 +43,18 @@ struct SettingsView: View {
                     service.startTimer()
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.vertical, Design.Spacing.sectionV)
 
-            Divider().opacity(0.5)
+            ChromeDivider()
 
             Toggle(isOn: $launchAtLogin) {
                 Text("Launch at login")
                     .font(Design.Typography.caption)
             }
             .toggleStyle(.checkbox)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.vertical, Design.Spacing.sectionV)
             .onChange(of: launchAtLogin) {
                 do {
                     if launchAtLogin {
@@ -65,33 +67,34 @@ struct SettingsView: View {
                 }
             }
 
-            Divider().opacity(0.5)
+            ChromeDivider()
 
             Toggle(isOn: $notificationsEnabled) {
                 Text("Notifications")
                     .font(Design.Typography.caption)
             }
             .toggleStyle(.checkbox)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.vertical, Design.Spacing.sectionV)
 
-            Divider().opacity(0.5)
+            ChromeDivider()
             webhooksSection
-            Divider().opacity(0.5)
+            ChromeDivider()
             hotkeySection
             Spacer()
-            Divider().opacity(0.5)
+            ChromeDivider()
             updateSection
-            Divider().opacity(0.5)
+            ChromeDivider()
             settingsFooter
         }
         .onAppear {
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            AccessibilityNotification.ScreenChanged("Settings").post()
         }
     }
 
     private var importExportRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Design.Spacing.sectionGap) {
             Button {
                 importSources()
             } label: {
@@ -118,8 +121,8 @@ struct SettingsView: View {
                 .font(Design.Typography.micro)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, Design.Spacing.sectionH)
+        .padding(.vertical, Design.Spacing.sectionV)
     }
 
     private func exportSources() {
@@ -151,7 +154,7 @@ struct SettingsView: View {
 
     private var updateSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: Design.Spacing.cellInner) {
                 Button {
                     if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
                         NSWorkspace.shared.open(url)
@@ -201,6 +204,7 @@ struct SettingsView: View {
                         ProgressView()
                             .scaleEffect(0.5)
                             .frame(width: 12, height: 12)
+                            .accessibilityLabel("Checking for updates")
                     } else {
                         Image(systemName: "arrow.triangle.2.circlepath")
                             .font(.caption2)
@@ -211,11 +215,11 @@ struct SettingsView: View {
 
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 4)
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.top, Design.Spacing.sectionV)
+            .padding(.bottom, Design.Spacing.compactV)
 
-            HStack(spacing: 12) {
+            HStack(spacing: Design.Spacing.sectionGap) {
                 Toggle(isOn: $updateChecker.autoCheckEnabled) {
                     Text("Check automatically")
                         .font(Design.Typography.micro)
@@ -246,11 +250,11 @@ struct SettingsView: View {
 
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.bottom, Design.Spacing.sectionV)
 
             if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
-                HStack(spacing: 6) {
+                HStack(spacing: Design.Spacing.cellInner) {
                     Image(systemName: "arrow.up.circle.fill")
                         .foregroundStyle(Color.accentColor)
                     Text("Version \(latest) available")
@@ -261,7 +265,8 @@ struct SettingsView: View {
                         ProgressView()
                             .scaleEffect(0.5)
                             .frame(width: 12, height: 12)
-                        Text("Updating…")
+                            .accessibilityLabel("Checking for updates")
+                        Text("Updating\u{2026}")
                             .font(Design.Typography.micro)
                             .foregroundStyle(.secondary)
                     } else {
@@ -269,37 +274,36 @@ struct SettingsView: View {
                             updateChecker.openDownload()
                         }
                         .font(Design.Typography.caption)
-                        .buttonStyle(GlassButtonStyle())
+                        .buttonStyle(.glass)
                     }
                 }
-                .padding(8)
-                .padding(.horizontal, 4)
+                .padding(Design.Spacing.cardInner)
+                .padding(.horizontal, Design.Spacing.compactV)
                 .background(
                     Color.accentColor.opacity(0.08),
-                    in: RoundedRectangle(cornerRadius: 6)
+                    in: RoundedRectangle(cornerRadius: Design.Radius.row)
                 )
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                .padding(.horizontal, Design.Spacing.sectionH)
+                .padding(.bottom, Design.Spacing.sectionV)
             }
 
             if let error = updateChecker.lastCheckError {
                 Text(error)
                     .font(Design.Typography.micro)
                     .foregroundStyle(.red)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, Design.Spacing.sectionH)
+                    .padding(.bottom, Design.Spacing.sectionV)
             }
         }
     }
 
     private var settingsHeader: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Design.Spacing.standard) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut(.escape, modifiers: [])
             .help("Back (Esc)")
             .accessibilityLabel("Back to source list")
 
@@ -310,21 +314,21 @@ struct SettingsView: View {
                 .font(Design.Typography.bodyMedium)
             Spacer()
         }
-        .padding(12)
-        .background(.ultraThinMaterial)
+        .padding(Design.Spacing.sectionH)
+        .chromeBackground()
     }
 
     // MARK: - Webhooks
 
     private var webhooksSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: Design.Spacing.cellInner) {
                 Text("Webhooks")
                     .font(Design.Typography.captionSemibold)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button {
-                    withAnimation(Design.Timing.expand) {
+                    withAnimation(reduceMotionAnimation(Design.Timing.expand, reduceMotion: reduceMotion)) {
                         showingAddWebhook.toggle()
                         newWebhookURL = ""
                         newWebhookPlatform = .generic
@@ -338,9 +342,9 @@ struct SettingsView: View {
                 .help(showingAddWebhook ? "Cancel" : "Add webhook")
                 .accessibilityLabel(showingAddWebhook ? "Cancel adding webhook" : "Add new webhook")
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .padding(.bottom, 4)
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.top, Design.Spacing.sectionV)
+            .padding(.bottom, Design.Spacing.compactV)
 
             if showingAddWebhook {
                 addWebhookForm
@@ -351,25 +355,31 @@ struct SettingsView: View {
                 Text("No webhooks configured")
                     .font(Design.Typography.micro)
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
+                    .padding(.horizontal, Design.Spacing.sectionH)
+                    .padding(.bottom, Design.Spacing.cellInner)
             } else {
-                VStack(spacing: 2) {
+                VStack(spacing: Design.Spacing.listGap) {
                     ForEach(configs) { config in
                         webhookRow(config)
                     }
                 }
-                .padding(.horizontal, 4)
-                .padding(.bottom, 4)
+                .padding(.horizontal, Design.Spacing.compactV)
+                .padding(.bottom, Design.Spacing.compactV)
+            }
+        }
+        .onChange(of: showingAddWebhook) {
+            if showingAddWebhook {
+                isWebhookURLFocused = true
             }
         }
     }
 
     private var addWebhookForm: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: Design.Spacing.cellInner) {
             TextField("Webhook URL", text: $newWebhookURL)
                 .font(Design.Typography.caption)
                 .textFieldStyle(.roundedBorder)
+                .focused($isWebhookURLFocused)
 
             HStack {
                 Picker("Platform", selection: $newWebhookPlatform) {
@@ -388,7 +398,7 @@ struct SettingsView: View {
                     guard !url.isEmpty, URL(string: url) != nil else { return }
                     let config = WebhookConfig(url: url, platform: newWebhookPlatform)
                     webhookManager.addConfig(config)
-                    withAnimation(Design.Timing.expand) {
+                    withAnimation(reduceMotionAnimation(Design.Timing.expand, reduceMotion: reduceMotion)) {
                         showingAddWebhook = false
                         newWebhookURL = ""
                         newWebhookPlatform = .generic
@@ -401,13 +411,13 @@ struct SettingsView: View {
                     || URL(string: newWebhookURL.trimmingCharacters(in: .whitespacesAndNewlines)) == nil)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 6)
-        .transition(.opacity.combined(with: .move(edge: .top)))
+        .padding(.horizontal, Design.Spacing.sectionH)
+        .padding(.bottom, Design.Spacing.cellInner)
+        .accessibleTransition(.opacity.combined(with: .move(edge: .top)))
     }
 
     private func webhookRow(_ config: WebhookConfig) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Design.Spacing.cardInner) {
             Button {
                 webhookManager.removeConfig(id: config.id)
             } label: {
@@ -440,8 +450,8 @@ struct SettingsView: View {
             }
             Spacer()
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
+        .padding(.horizontal, Design.Spacing.rowH)
+        .padding(.vertical, Design.Spacing.compactV)
         .hoverHighlight()
     }
 
@@ -457,12 +467,12 @@ struct SettingsView: View {
             Text(hotkeyDisplayString)
                 .font(Design.Typography.mono)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4))
+                .padding(.horizontal, Design.Spacing.cardInner)
+                .padding(.vertical, Design.Spacing.badgeV)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: Design.Radius.small))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, Design.Spacing.sectionH)
+        .padding(.vertical, Design.Spacing.sectionV)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Global hotkey: \(hotkeyDisplayString)")
     }
@@ -475,20 +485,9 @@ struct SettingsView: View {
             .font(Design.Typography.caption)
 
             Spacer()
-
-            Button {
-                NSApplication.shared.terminate(nil)
-            } label: {
-                Text("Quit")
-                    .font(Design.Typography.micro)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.tertiary)
-            .help("Quit StatusBar")
-            .accessibilityLabel("Quit StatusBar")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
+        .padding(.horizontal, Design.Spacing.sectionH)
+        .padding(.vertical, Design.Spacing.sectionV)
+        .chromeBackground()
     }
 }

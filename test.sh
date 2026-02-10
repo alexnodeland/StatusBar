@@ -53,7 +53,7 @@ swiftc \
     -I "${PLATFORM_DIR}/usr/lib" \
     -L "${PLATFORM_DIR}/usr/lib" \
     -sdk "${SDK_PATH}" \
-    -target arm64-apple-macosx14.0 \
+    -target arm64-apple-macosx26.0 \
     -emit-executable \
     -o "${BUNDLE_EXEC}" \
     -Xlinker -bundle \

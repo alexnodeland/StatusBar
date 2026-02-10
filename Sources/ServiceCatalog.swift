@@ -27,6 +27,8 @@ struct ServiceCatalogView: View {
     @ObservedObject var service: StatusService
     let onBack: () -> Void
     @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var catalog: [CatalogEntry] { parseCatalog() }
 
@@ -55,59 +57,88 @@ struct ServiceCatalogView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             catalogHeader
-            Divider().opacity(0.5)
+            ChromeDivider()
 
-            TextField("Search services\u{2026}", text: $searchText)
-                .font(Design.Typography.caption)
-                .textFieldStyle(.roundedBorder)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+            HStack(spacing: Design.Spacing.cellInner) {
+                Image(systemName: "magnifyingglass")
+                    .font(Design.Typography.caption)
+                    .foregroundStyle(.secondary)
+                TextField("Search services\u{2026}", text: $searchText)
+                    .font(Design.Typography.caption)
+                    .textFieldStyle(.plain)
+                    .focused($isSearchFocused)
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(Design.Typography.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Clear search")
+                }
+            }
+            .padding(.horizontal, Design.Spacing.sectionH)
+            .padding(.vertical, Design.Spacing.sectionV)
 
-            Divider().opacity(0.3)
+            // Hidden Cmd+F shortcut to focus search
+            Button("") { isSearchFocused = true }
+                .keyboardShortcut("f", modifiers: .command)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+                .accessibilityHidden(true)
+
+            ContentDivider()
 
             ScrollView {
                 if filteredEntries.isEmpty {
-                    VStack(spacing: 6) {
+                    VStack(spacing: Design.Spacing.cellInner) {
                         Image(systemName: "magnifyingglass")
                             .font(.title3)
                             .foregroundStyle(.tertiary)
                         Text("No services match \"\(searchText)\"")
                             .font(Design.Typography.caption)
                             .foregroundStyle(.secondary)
+                        Text("Try a broader term")
+                            .font(Design.Typography.micro)
+                            .foregroundStyle(.tertiary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 40)
                 } else {
-                    LazyVStack(alignment: .leading, spacing: 8) {
+                    LazyVStack(alignment: .leading, spacing: Design.Spacing.cardInner) {
                         ForEach(groupedEntries, id: \.category) { group in
                             Text(group.category)
                                 .font(Design.Typography.captionSemibold)
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal, 12)
-                                .padding(.top, 4)
+                                .padding(.horizontal, Design.Spacing.sectionH)
+                                .padding(.top, Design.Spacing.compactV)
 
                             ForEach(group.entries) { entry in
                                 catalogRow(entry)
                             }
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, Design.Spacing.compactV)
                 }
             }
 
-            Divider().opacity(0.5)
+            ChromeDivider()
             catalogFooter
+        }
+        .onAppear {
+            isSearchFocused = true
         }
     }
 
     private var catalogHeader: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Design.Spacing.standard) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
                     .font(Design.Typography.body)
             }
             .buttonStyle(.borderless)
-            .keyboardShortcut(.escape, modifiers: [])
             .help("Back (Esc)")
             .accessibilityLabel("Back to source list")
 
@@ -118,13 +149,13 @@ struct ServiceCatalogView: View {
                 .font(Design.Typography.bodyMedium)
             Spacer()
         }
-        .padding(12)
-        .background(.ultraThinMaterial)
+        .padding(Design.Spacing.sectionH)
+        .chromeBackground()
     }
 
     private func catalogRow(_ entry: CatalogEntry) -> some View {
         let isAdded = existingURLs.contains(entry.url) || existingURLs.contains(entry.url + "/")
-        return HStack(spacing: 10) {
+        return HStack(spacing: Design.Spacing.standard) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(entry.name)
                     .font(Design.Typography.captionMedium)
@@ -141,7 +172,7 @@ struct ServiceCatalogView: View {
                     .foregroundStyle(.green)
             } else {
                 Button {
-                    withAnimation(Design.Timing.expand) {
+                    withAnimation(reduceMotionAnimation(Design.Timing.expand, reduceMotion: reduceMotion)) {
                         service.addSource(name: entry.name, baseURL: entry.url, group: entry.category)
                     }
                 } label: {
@@ -153,8 +184,8 @@ struct ServiceCatalogView: View {
                 .help("Add \(entry.name)")
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 5)
+        .padding(.horizontal, Design.Spacing.sectionH)
+        .padding(.vertical, Design.Spacing.compactV)
         .hoverHighlight()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(entry.name), \(entry.category)\(isAdded ? ", already added" : "")")
@@ -167,19 +198,9 @@ struct ServiceCatalogView: View {
                 .font(Design.Typography.micro)
                 .foregroundStyle(.quaternary)
             Spacer()
-            Button {
-                NSApplication.shared.terminate(nil)
-            } label: {
-                Text("Quit")
-                    .font(Design.Typography.micro)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.tertiary)
-            .help("Quit StatusBar")
-            .accessibilityLabel("Quit StatusBar")
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial)
+        .padding(.horizontal, Design.Spacing.sectionH)
+        .padding(.vertical, Design.Spacing.sectionV)
+        .chromeBackground()
     }
 }

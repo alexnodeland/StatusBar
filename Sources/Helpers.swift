@@ -167,6 +167,28 @@ func withRetry<T>(
     throw lastError!
 }
 
+// MARK: - Mini Icon Helpers
+
+func miniIconForComponentStatus(_ status: String) -> String {
+    switch status {
+    case "operational": return "checkmark.circle.fill"
+    case "degraded_performance": return "exclamationmark.triangle.fill"
+    case "partial_outage": return "exclamationmark.octagon.fill"
+    case "major_outage": return "xmark.octagon.fill"
+    default: return "questionmark.circle"
+    }
+}
+
+func miniIconForImpact(_ impact: String) -> String {
+    switch impact {
+    case "none": return "checkmark.circle.fill"
+    case "minor": return "exclamationmark.triangle.fill"
+    case "major": return "exclamationmark.octagon.fill"
+    case "critical": return "xmark.octagon.fill"
+    default: return "minus.circle"
+    }
+}
+
 // MARK: - Version Comparison
 
 func compareVersions(_ a: String, _ b: String) -> ComparisonResult {

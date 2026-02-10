@@ -56,18 +56,67 @@ let kRetryMaxDelay: TimeInterval = 8.0
 
 enum Design {
     enum Typography {
-        static let body = Font.system(size: 13)
-        static let bodyMedium = Font.system(size: 13, weight: .medium)
-        static let caption = Font.system(size: 11)
-        static let captionMedium = Font.system(size: 11, weight: .medium)
-        static let captionSemibold = Font.system(size: 11, weight: .semibold)
-        static let micro = Font.system(size: 10)
-        static let mono = Font.system(size: 11, design: .monospaced)
+        static let body: Font = .body
+        static let bodyMedium: Font = .body.weight(.medium)
+        static let caption: Font = .caption
+        static let captionMedium: Font = .caption.weight(.medium)
+        static let captionSemibold: Font = .caption.weight(.semibold)
+        static let micro: Font = .caption2
+        static let mono: Font = .system(.caption, design: .monospaced)
+    }
+
+    enum Spacing {
+        static let sectionH: CGFloat = 12
+        static let rowH: CGFloat = 10
+        static let cardInner: CGFloat = 8
+        static let cellInner: CGFloat = 6
+        static let badgeH: CGFloat = 6
+        static let innerInset: CGFloat = 4
+        static let sectionV: CGFloat = 8
+        static let contentV: CGFloat = 6
+        static let compactV: CGFloat = 4
+        static let badgeV: CGFloat = 2
+        static let listGap: CGFloat = 2
+        static let sectionGap: CGFloat = 12
+        static let standard: CGFloat = 10
+    }
+
+    enum Radius {
+        static let card: CGFloat = 8
+        static let row: CGFloat = 6
+        static let small: CGFloat = 4
+    }
+
+    enum Depth {
+        static let contentFill = Color.primary.opacity(0.04)
+        static let contentStroke = Color.primary.opacity(0.08)
+        static let secondaryFill = Color.primary.opacity(0.03)
+        static let inlineFill = Color.primary.opacity(0.03)
     }
 
     enum Timing {
         static let hover = SwiftUI.Animation.easeOut(duration: 0.12)
         static let transition = SwiftUI.Animation.easeInOut(duration: 0.15)
         static let expand = SwiftUI.Animation.easeInOut(duration: 0.2)
+    }
+}
+
+// MARK: - Accessibility Helpers
+
+func reduceMotionAnimation(_ animation: Animation?, reduceMotion: Bool) -> Animation? {
+    reduceMotion ? nil : animation
+}
+
+struct ConditionalTransition: ViewModifier {
+    let transition: AnyTransition
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func body(content: Content) -> some View {
+        if reduceMotion { content } else { content.transition(transition) }
+    }
+}
+
+extension View {
+    func accessibleTransition(_ transition: AnyTransition) -> some View {
+        modifier(ConditionalTransition(transition: transition))
     }
 }
