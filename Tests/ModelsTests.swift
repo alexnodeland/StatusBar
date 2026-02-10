@@ -12,62 +12,6 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(source.baseURL, "https://example.com")
     }
 
-    func testStatusSourceParseValid() {
-        let input = "Anthropic\thttps://status.anthropic.com\nGitHub\thttps://www.githubstatus.com"
-        let sources = StatusSource.parse(lines: input)
-        XCTAssertEqual(sources.count, 2)
-        XCTAssertEqual(sources[0].name, "Anthropic")
-        XCTAssertEqual(sources[0].baseURL, "https://status.anthropic.com")
-        XCTAssertEqual(sources[1].name, "GitHub")
-    }
-
-    func testStatusSourceParseSkipsComments() {
-        let input = "# This is a comment\nAcme\thttps://status.acme.com"
-        let sources = StatusSource.parse(lines: input)
-        XCTAssertEqual(sources.count, 1)
-        XCTAssertEqual(sources[0].name, "Acme")
-    }
-
-    func testStatusSourceParseEmptyReturnsEmpty() {
-        XCTAssertEqual(StatusSource.parse(lines: "").count, 0)
-        XCTAssertEqual(StatusSource.parse(lines: "\n\n").count, 0)
-    }
-
-    func testStatusSourceParseMalformed() {
-        // No tab separator
-        XCTAssertEqual(StatusSource.parse(lines: "no-tab-here").count, 0)
-        // Empty name
-        XCTAssertEqual(StatusSource.parse(lines: "\thttps://example.com").count, 0)
-    }
-
-    func testStatusSourceParseNonHTTP() {
-        XCTAssertEqual(StatusSource.parse(lines: "Test\tftp://example.com").count, 0)
-        XCTAssertEqual(StatusSource.parse(lines: "Test\tnot-a-url").count, 0)
-    }
-
-    func testStatusSourceSerialize() {
-        let sources = [
-            StatusSource(name: "A", baseURL: "https://a.com"),
-            StatusSource(name: "B", baseURL: "https://b.com"),
-        ]
-        let result = StatusSource.serialize(sources)
-        XCTAssertEqual(result, "A\thttps://a.com\nB\thttps://b.com")
-    }
-
-    func testStatusSourceRoundTrip() {
-        let original = [
-            StatusSource(name: "Test1", baseURL: "https://test1.com"),
-            StatusSource(name: "Test2", baseURL: "https://test2.com/"),
-        ]
-        let serialized = StatusSource.serialize(original)
-        let parsed = StatusSource.parse(lines: serialized)
-        XCTAssertEqual(parsed.count, 2)
-        XCTAssertEqual(parsed[0].name, "Test1")
-        XCTAssertEqual(parsed[0].baseURL, "https://test1.com")
-        XCTAssertEqual(parsed[1].name, "Test2")
-        XCTAssertEqual(parsed[1].baseURL, "https://test2.com")
-    }
-
     // MARK: - Atlassian Models
 
     func testSPSummaryDecodeFullFixture() {
@@ -451,18 +395,6 @@ final class ModelsTests: XCTestCase {
         let decoded = StatusSource.decode(from: json)
         XCTAssertEqual(decoded.count, 1)
         XCTAssertEqual(decoded[0].name, "A")
-    }
-
-    func testStatusSourceTSVToJSONMigration() {
-        // Simulate: parse from TSV, then encode to JSON, then decode from JSON
-        let tsv = "Anthropic\thttps://status.anthropic.com\nGitHub\thttps://www.githubstatus.com"
-        let parsed = StatusSource.parse(lines: tsv)
-        let json = StatusSource.encodeToJSON(parsed)
-        let decoded = StatusSource.decode(from: json)
-        XCTAssertEqual(decoded.count, 2)
-        XCTAssertEqual(decoded[0].name, "Anthropic")
-        XCTAssertEqual(decoded[0].alertLevel, .all)
-        XCTAssertNil(decoded[0].group)
     }
 
     // MARK: - AlertLevel

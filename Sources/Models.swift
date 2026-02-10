@@ -107,25 +107,6 @@ struct StatusSource: Identifiable, Equatable, Codable {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try? encoder.encode(sources)
     }
-
-    static func parse(lines: String) -> [StatusSource] {
-        lines
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .compactMap { line -> StatusSource? in
-                let raw = String(line).trimmingCharacters(in: .whitespaces)
-                guard !raw.isEmpty, !raw.hasPrefix("#") else { return nil }
-                let parts = raw.split(separator: "\t", maxSplits: 1)
-                guard parts.count == 2 else { return nil }
-                let name = parts[0].trimmingCharacters(in: .whitespaces)
-                let url = parts[1].trimmingCharacters(in: .whitespaces)
-                guard !name.isEmpty, validateSourceURL(url).isAcceptable else { return nil }
-                return StatusSource(name: name, baseURL: url)
-            }
-    }
-
-    static func serialize(_ sources: [StatusSource]) -> String {
-        sources.map { "\($0.name)\t\($0.baseURL)" }.joined(separator: "\n")
-    }
 }
 
 // MARK: - Configuration Export/Import

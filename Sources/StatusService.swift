@@ -12,7 +12,6 @@ final class StatusService: ObservableObject {
     @Published var history: [UUID: [StatusCheckpoint]] = [:]
 
     @AppStorage("statusSourcesJSON") private var storedSourcesJSON: String = ""
-    @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
     @AppStorage("refreshInterval") var refreshInterval: Double = kDefaultRefreshInterval
 
     private var refreshTimer: Timer?
@@ -50,7 +49,6 @@ final class StatusService: ObservableObject {
     }
 
     private func loadSources() {
-        // Try JSON format first
         let json = storedSourcesJSON.trimmingCharacters(in: .whitespacesAndNewlines)
         if json.hasPrefix("[") {
             let decoded = StatusSource.decode(from: json)
@@ -59,18 +57,12 @@ final class StatusService: ObservableObject {
                 return
             }
         }
-        // Fall back to TSV format and migrate
-        sources = StatusSource.parse(lines: storedLines)
-        if sources.isEmpty {
-            sources = StatusSource.parse(lines: kDefaultSources)
-        }
-        // Migrate to JSON
+        sources = kDefaultSources
         persistSources()
     }
 
     private func persistSources() {
         storedSourcesJSON = StatusSource.encodeToJSON(sources)
-        storedLines = StatusSource.serialize(sources)
     }
 
     // MARK: - Aggregate Status
@@ -428,11 +420,10 @@ final class StatusService: ObservableObject {
 
     // MARK: - Source Management
 
-    func applySources(from lines: String) {
-        let parsed = StatusSource.parse(lines: lines)
-        guard !parsed.isEmpty else { return }
+    func applySources(_ newSources: [StatusSource]) {
+        guard !newSources.isEmpty else { return }
 
-        let newIDs = Set(parsed.map(\.id))
+        let newIDs = Set(newSources.map(\.id))
         for oldID in states.keys where !newIDs.contains(oldID) {
             states.removeValue(forKey: oldID)
             previousIndicators.removeValue(forKey: oldID)
@@ -441,7 +432,7 @@ final class StatusService: ObservableObject {
         }
         history = historyStore.data
 
-        sources = parsed
+        sources = newSources
         persistSources()
         Task { await refreshAll() }
     }
@@ -483,16 +474,6 @@ final class StatusService: ObservableObject {
         persistSources()
     }
 
-    func exportSourcesTSV() -> String {
-        StatusSource.serialize(sources)
-    }
-
-    func importSourcesTSV(_ tsv: String) {
-        let parsed = StatusSource.parse(lines: tsv)
-        guard !parsed.isEmpty else { return }
-        applySources(from: StatusSource.serialize(parsed))
-    }
-
     // MARK: - JSON Export/Import
 
     func exportSourcesJSON() -> Data? {
@@ -502,16 +483,7 @@ final class StatusService: ObservableObject {
     func importSourcesJSON(_ data: Data) -> Bool {
         let decoded = StatusSource.decode(from: String(data: data, encoding: .utf8) ?? "")
         guard !decoded.isEmpty else { return false }
-        sources = decoded
-        persistSources()
-        for oldID in states.keys where !Set(decoded.map(\.id)).contains(oldID) {
-            states.removeValue(forKey: oldID)
-            previousIndicators.removeValue(forKey: oldID)
-            providerCache.removeValue(forKey: oldID)
-            historyStore.removeSource(oldID)
-        }
-        history = historyStore.data
-        Task { await refreshAll() }
+        applySources(decoded)
         return true
     }
 
@@ -538,18 +510,6 @@ final class StatusService: ObservableObject {
         UserDefaults.standard.set(config.settings.autoCheckForUpdates, forKey: "autoCheckForUpdates")
         startTimer()
 
-        // Apply sources
-        let newIDs = Set(config.sources.map(\.id))
-        for oldID in states.keys where !newIDs.contains(oldID) {
-            states.removeValue(forKey: oldID)
-            previousIndicators.removeValue(forKey: oldID)
-            providerCache.removeValue(forKey: oldID)
-            historyStore.removeSource(oldID)
-        }
-        history = historyStore.data
-        sources = config.sources
-        persistSources()
-
         // Apply webhooks
         let manager = WebhookManager.shared
         for existing in manager.configs {
@@ -559,7 +519,8 @@ final class StatusService: ObservableObject {
             manager.addConfig(webhook)
         }
 
-        Task { await refreshAll() }
+        // Apply sources (triggers refresh)
+        applySources(config.sources)
         return true
     }
 
@@ -568,11 +529,7 @@ final class StatusService: ObservableObject {
     }
 
     func resetToDefaults() {
-        applySources(from: kDefaultSources)
-    }
-
-    var serializedSources: String {
-        StatusSource.serialize(sources)
+        applySources(kDefaultSources)
     }
 
     func state(for source: StatusSource) -> SourceState {

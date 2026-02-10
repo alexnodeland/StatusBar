@@ -372,7 +372,7 @@ struct DataSettingsTab: View {
                 Button { importSources() } label: {
                     Label("Import Sources\u{2026}", systemImage: "square.and.arrow.down")
                 }
-                .help("Import sources from JSON or TSV file")
+                .help("Import sources from JSON file")
                 Button { exportSources() } label: {
                     Label("Export Sources\u{2026}", systemImage: "square.and.arrow.up")
                 }
@@ -439,23 +439,15 @@ struct DataSettingsTab: View {
         importError = nil
         let panel = NSOpenPanel()
         panel.title = "Import Sources"
-        panel.allowedContentTypes = [.json, .tabSeparatedText, .plainText]
+        panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
 
         if panel.runModal() == .OK, let url = panel.url {
             if let data = try? Data(contentsOf: url) {
-                // Try JSON first
-                if service.importSourcesJSON(data) { return }
-                // Fall back to TSV
-                if let text = String(data: data, encoding: .utf8) {
-                    let parsed = StatusSource.parse(lines: text)
-                    if !parsed.isEmpty {
-                        service.importSourcesTSV(text)
-                        return
-                    }
+                if !service.importSourcesJSON(data) {
+                    importError = "Could not read sources file. Check that it is a valid JSON export."
                 }
-                importError = "Could not read sources file. Supported formats: JSON and TSV."
             } else {
                 importError = "Could not read the selected file."
             }
