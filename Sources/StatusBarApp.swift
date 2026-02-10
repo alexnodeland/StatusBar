@@ -29,6 +29,8 @@ struct MenuBarLabel: View {
 // MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    var service: StatusService?
+    var updateChecker: UpdateChecker?
     private var statusItem: NSStatusItem?
     private weak var popoverPanel: NSPanel?
     private var eventMonitor: Any?
@@ -115,15 +117,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem?.menu = nil
     }
 
-    @objc private func openSettings() {
-        StatusBarNotification.settingsPending = true
-        // Open the popover, then post the notification once the run loop
-        // has finished showing it (view is subscribed by then).
-        statusItem?.button?.performClick(nil)
-        DispatchQueue.main.async {
-            StatusBarNotification.settingsPending = false
-            NotificationCenter.default.post(name: StatusBarNotification.openSettings, object: nil)
-        }
+    @MainActor @objc func openSettings() {
+        guard let service, let updateChecker else { return }
+        SettingsWindowController.shared.open(service: service, updateChecker: updateChecker)
     }
 
     @objc private func openAbout() {
@@ -149,6 +145,8 @@ struct StatusBarApp: App {
         MenuBarExtra {
             RootView(service: service, updateChecker: updateChecker)
                 .onAppear {
+                    appDelegate.service = service
+                    appDelegate.updateChecker = updateChecker
                     #if canImport(Sparkle)
                     updateChecker.setupSparkle()
                     #endif

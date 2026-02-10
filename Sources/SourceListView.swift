@@ -10,7 +10,6 @@ enum NavigationDestination: Equatable, Hashable {
     case sourceList
     case sourceDetail(UUID)
     case catalog
-    case settings
 }
 
 // MARK: - Root View
@@ -34,9 +33,7 @@ struct RootView: View {
                         }
                     },
                     onSettings: {
-                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                            destination = .settings
-                        }
+                        SettingsWindowController.shared.open(service: service, updateChecker: updateChecker)
                     },
                     onCatalog: {
                         withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
@@ -76,17 +73,6 @@ struct RootView: View {
                         }
                     }
                 )
-
-            case .settings:
-                SettingsView(
-                    service: service,
-                    updateChecker: updateChecker,
-                    onBack: {
-                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                            destination = .sourceList
-                        }
-                    }
-                )
             }
         }
 
@@ -106,15 +92,9 @@ struct RootView: View {
                 .keyboardShortcut("r", modifiers: .command)
                 .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
 
-            // Cmd+, — toggle settings
+            // Cmd+, — open settings window
             Button("") {
-                withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                    if destination == .settings {
-                        destination = .sourceList
-                    } else {
-                        destination = .settings
-                    }
-                }
+                SettingsWindowController.shared.open(service: service, updateChecker: updateChecker)
             }
             .keyboardShortcut(",", modifiers: .command)
             .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
@@ -127,19 +107,6 @@ struct RootView: View {
             .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
         }
         .frame(minWidth: 340, idealWidth: 380, maxWidth: 480, minHeight: 400, idealHeight: 520, maxHeight: 700)
-        .onAppear {
-            if StatusBarNotification.settingsPending {
-                StatusBarNotification.settingsPending = false
-                withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                    destination = .settings
-                }
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: StatusBarNotification.openSettings)) { _ in
-            withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                destination = .settings
-            }
-        }
         .onChange(of: destination) { _, newValue in
             let label: String
             switch newValue {
@@ -153,8 +120,6 @@ struct RootView: View {
                 }
             case .catalog:
                 label = "Service catalog"
-            case .settings:
-                label = "Settings"
             }
             AccessibilityNotification.Announcement(label).post()
         }
