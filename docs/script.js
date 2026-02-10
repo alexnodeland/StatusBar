@@ -52,15 +52,16 @@
   });
 
   // --- Collapsible sections ---
-  const trigger = document.getElementById('build-trigger');
-  const content = document.getElementById('build-content');
-
-  if (trigger && content) {
-    trigger.addEventListener('click', function () {
-      trigger.classList.toggle('open');
-      content.classList.toggle('open');
-    });
-  }
+  document.querySelectorAll('.collapsible-trigger').forEach(function (trigger) {
+    var contentId = trigger.id.replace('-trigger', '-content');
+    var content = document.getElementById(contentId);
+    if (content) {
+      trigger.addEventListener('click', function () {
+        trigger.classList.toggle('open');
+        content.classList.toggle('open');
+      });
+    }
+  });
 
   // --- Source Directory ---
   var STATUS_SOURCES = [
