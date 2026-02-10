@@ -210,7 +210,12 @@ struct SettingsView: View {
                 .disabled(updateChecker.isChecking)
 
                 Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
 
+            HStack(spacing: 12) {
                 Toggle(isOn: $updateChecker.autoCheckEnabled) {
                     Text("Check automatically")
                         .font(Design.Typography.micro)
@@ -221,12 +226,28 @@ struct SettingsView: View {
                         updateChecker.startNightlyTimer()
                     } else {
                         updateChecker.stopNightlyTimer()
+                        updateChecker.autoUpdateEnabled = false
                     }
                 }
                 .help("Check for Updates")
+
+                Toggle(isOn: $updateChecker.autoUpdateEnabled) {
+                    Text("Update automatically")
+                        .font(Design.Typography.micro)
+                }
+                .toggleStyle(.checkbox)
+                .onChange(of: updateChecker.autoUpdateEnabled) {
+                    if updateChecker.autoUpdateEnabled {
+                        updateChecker.autoCheckEnabled = true
+                        updateChecker.startNightlyTimer()
+                    }
+                }
+                .help("Download and install updates automatically")
+
+                Spacer()
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.bottom, 8)
 
             if updateChecker.isUpdateAvailable, let latest = updateChecker.latestVersion {
                 HStack(spacing: 6) {
@@ -236,11 +257,20 @@ struct SettingsView: View {
                         .font(Design.Typography.caption)
                         .foregroundStyle(Color.accentColor)
                     Spacer()
-                    Button("Download") {
-                        updateChecker.openDownload()
+                    if updateChecker.isAutoUpdating {
+                        ProgressView()
+                            .scaleEffect(0.5)
+                            .frame(width: 12, height: 12)
+                        Text("Updating…")
+                            .font(Design.Typography.micro)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Button("Download") {
+                            updateChecker.openDownload()
+                        }
+                        .font(Design.Typography.caption)
+                        .buttonStyle(GlassButtonStyle())
                     }
-                    .font(Design.Typography.caption)
-                    .buttonStyle(GlassButtonStyle())
                 }
                 .padding(8)
                 .padding(.horizontal, 4)
