@@ -46,6 +46,15 @@ let kServiceCatalog = """
     Notion\thttps://status.notion.so\tProductivity
     """
 
+// MARK: - App Notifications
+
+enum StatusBarNotification {
+    static let openSettings = Notification.Name("StatusBar.openSettings")
+    /// Flag for first-open edge case: RootView checks this in .onAppear
+    /// before the .onReceive subscription is active.
+    static var settingsPending = false
+}
+
 // MARK: - Retry Configuration
 
 let kMaxRetries = 3

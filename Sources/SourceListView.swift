@@ -127,6 +127,19 @@ struct RootView: View {
             .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
         }
         .frame(minWidth: 340, idealWidth: 380, maxWidth: 480, minHeight: 400, idealHeight: 520, maxHeight: 700)
+        .onAppear {
+            if StatusBarNotification.settingsPending {
+                StatusBarNotification.settingsPending = false
+                withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
+                    destination = .settings
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: StatusBarNotification.openSettings)) { _ in
+            withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
+                destination = .settings
+            }
+        }
         .onChange(of: destination) { _, newValue in
             let label: String
             switch newValue {
@@ -794,17 +807,6 @@ struct SourceListView: View {
             .buttonStyle(.borderless)
             .help(updateChecker.isUpdateAvailable ? "Settings — Update available (Cmd+,)" : "Settings (Cmd+,)")
             .accessibilityLabel(updateChecker.isUpdateAvailable ? "Settings, update available" : "Settings")
-
-            Button {
-                NSApplication.shared.terminate(nil)
-            } label: {
-                Text("Quit")
-                    .font(Design.Typography.micro)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.tertiary)
-            .help("Quit StatusBar (Cmd+Q)")
-            .accessibilityLabel("Quit StatusBar")
         }
         .padding(.horizontal, Design.Spacing.sectionH)
         .padding(.vertical, Design.Spacing.sectionV)
