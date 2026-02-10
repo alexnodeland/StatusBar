@@ -52,6 +52,13 @@ let kMaxRetries = 3
 let kRetryBaseDelay: TimeInterval = 1.0
 let kRetryMaxDelay: TimeInterval = 8.0
 
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let statusBarNavigateToSource = Notification.Name("statusBarNavigateToSource")
+    static let statusBarNavigateToSettingsTab = Notification.Name("statusBarNavigateToSettingsTab")
+}
+
 // MARK: - Design System
 
 enum Design {

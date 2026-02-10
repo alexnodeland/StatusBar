@@ -60,7 +60,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// Lazily resolve the NSStatusItem created by MenuBarExtra via KVC.
     @discardableResult
-    private func resolveStatusItem() -> NSStatusItem? {
+    func resolveStatusItem() -> NSStatusItem? {
         if let statusItem { return statusItem }
         statusItem =
             NSApp.windows
@@ -71,6 +71,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NotificationManager.shared.requestPermission()
+        HookManager.shared.ensureHooksDirectory()
 
         HotkeyManager.shared.onToggle = { [weak self] in
             self?.resolveStatusItem()?.button?.performClick(nil)
@@ -133,6 +134,72 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
+    }
+
+    // MARK: - URL Scheme Handling
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            handleURL(url)
+        }
+    }
+
+    @MainActor private func handleURL(_ url: URL) {
+        guard let route = URLRoute.parse(url) else { return }
+
+        switch route {
+        case .open:
+            showPopover()
+
+        case .openSource(let name):
+            showPopover()
+            guard let service else { return }
+            if let source = service.sources.first(where: {
+                $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+            }) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    NotificationCenter.default.post(
+                        name: .statusBarNavigateToSource,
+                        object: nil,
+                        userInfo: ["sourceID": source.id]
+                    )
+                }
+            }
+
+        case .refresh:
+            guard let service else { return }
+            Task { await service.refreshAll() }
+
+        case .addSource(let urlString, let name):
+            guard let service else { return }
+            let sourceName = name ?? URLRoute.deriveSourceName(from: urlString)
+            service.addSource(name: sourceName, baseURL: urlString)
+
+        case .removeSource(let name):
+            guard let service else { return }
+            if let source = service.sources.first(where: {
+                $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+            }) {
+                service.removeSource(id: source.id)
+            }
+
+        case .settings:
+            openSettings()
+
+        case .settingsTab(let tab):
+            openSettings()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                NotificationCenter.default.post(
+                    name: .statusBarNavigateToSettingsTab,
+                    object: nil,
+                    userInfo: ["tab": tab]
+                )
+            }
+        }
+    }
+
+    func showPopover() {
+        resolveStatusItem()?.button?.performClick(nil)
     }
 }
 
