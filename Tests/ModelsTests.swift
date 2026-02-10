@@ -480,27 +480,14 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - CatalogEntry
 
-    func testCatalogEntryParsing() {
-        let lines =
-            kServiceCatalog
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .compactMap { line -> CatalogEntry? in
-                let raw = String(line).trimmingCharacters(in: .whitespaces)
-                guard !raw.isEmpty else { return nil }
-                let parts = raw.split(separator: "\t")
-                guard parts.count == 3 else { return nil }
-                return CatalogEntry(
-                    name: String(parts[0]),
-                    url: String(parts[1]),
-                    category: String(parts[2])
-                )
-            }
-        XCTAssertTrue(lines.count >= 15)
-        XCTAssertEqual(lines[0].name, "GitHub")
-        XCTAssertEqual(lines[0].category, "Developer Tools")
-        // Verify all entries have valid URLs
-        for entry in lines {
+    func testCatalogEntries() {
+        XCTAssertTrue(kServiceCatalog.count >= 15)
+        XCTAssertEqual(kServiceCatalog[0].name, "GitHub")
+        XCTAssertEqual(kServiceCatalog[0].category, "Developer Tools")
+        for entry in kServiceCatalog {
             XCTAssertTrue(entry.url.hasPrefix("https://"), "URL should start with https: \(entry.url)")
+            XCTAssertFalse(entry.name.isEmpty)
+            XCTAssertFalse(entry.category.isEmpty)
         }
     }
 
