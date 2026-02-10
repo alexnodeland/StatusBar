@@ -12,7 +12,6 @@ final class StatusService: ObservableObject {
     @Published var history: [UUID: [StatusCheckpoint]] = [:]
 
     @AppStorage("statusSourcesJSON") private var storedSourcesJSON: String = ""
-    @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
     @AppStorage("refreshInterval") var refreshInterval: Double = kDefaultRefreshInterval
 
     private var refreshTimer: Timer?
@@ -50,7 +49,6 @@ final class StatusService: ObservableObject {
     }
 
     private func loadSources() {
-        // Try JSON format first
         let json = storedSourcesJSON.trimmingCharacters(in: .whitespacesAndNewlines)
         if json.hasPrefix("[") {
             let decoded = StatusSource.decode(from: json)
@@ -59,18 +57,12 @@ final class StatusService: ObservableObject {
                 return
             }
         }
-        // Fall back to TSV format and migrate
-        sources = StatusSource.parse(lines: storedLines)
-        if sources.isEmpty {
-            sources = StatusSource.parse(lines: kDefaultSources)
-        }
-        // Migrate to JSON
+        sources = kDefaultSources
         persistSources()
     }
 
     private func persistSources() {
         storedSourcesJSON = StatusSource.encodeToJSON(sources)
-        storedLines = StatusSource.serialize(sources)
     }
 
     // MARK: - Aggregate Status
@@ -428,11 +420,10 @@ final class StatusService: ObservableObject {
 
     // MARK: - Source Management
 
-    func applySources(from lines: String) {
-        let parsed = StatusSource.parse(lines: lines)
-        guard !parsed.isEmpty else { return }
+    func applySources(_ newSources: [StatusSource]) {
+        guard !newSources.isEmpty else { return }
 
-        let newIDs = Set(parsed.map(\.id))
+        let newIDs = Set(newSources.map(\.id))
         for oldID in states.keys where !newIDs.contains(oldID) {
             states.removeValue(forKey: oldID)
             previousIndicators.removeValue(forKey: oldID)
@@ -441,7 +432,7 @@ final class StatusService: ObservableObject {
         }
         history = historyStore.data
 
-        sources = parsed
+        sources = newSources
         persistSources()
         Task { await refreshAll() }
     }
@@ -483,22 +474,62 @@ final class StatusService: ObservableObject {
         persistSources()
     }
 
-    func exportSourcesTSV() -> String {
-        StatusSource.serialize(sources)
+    // MARK: - JSON Export/Import
+
+    func exportSourcesJSON() -> Data? {
+        StatusSource.encodeToPrettyJSON(sources)
     }
 
-    func importSourcesTSV(_ tsv: String) {
-        let parsed = StatusSource.parse(lines: tsv)
-        guard !parsed.isEmpty else { return }
-        applySources(from: StatusSource.serialize(parsed))
+    func importSourcesJSON(_ data: Data) -> Bool {
+        let decoded = StatusSource.decode(from: String(data: data, encoding: .utf8) ?? "")
+        guard !decoded.isEmpty else { return false }
+        applySources(decoded)
+        return true
+    }
+
+    func exportConfigJSON() -> Data? {
+        let defaults = UserDefaults.standard
+        let settings = ConfigSettings(
+            refreshInterval: refreshInterval,
+            notificationsEnabled: defaults.object(forKey: "notificationsEnabled") as? Bool ?? true,
+            defaultAlertLevel: defaults.string(forKey: "defaultAlertLevel") ?? AlertLevel.all.rawValue,
+            autoCheckForUpdates: defaults.object(forKey: "autoCheckForUpdates") as? Bool ?? true
+        )
+        let webhooks = WebhookManager.shared.configs
+        let config = StatusBarConfig(settings: settings, sources: sources, webhooks: webhooks)
+        return StatusBarConfig.encode(config)
+    }
+
+    func importConfigJSON(_ data: Data) -> Bool {
+        guard let config = StatusBarConfig.decode(from: data) else { return false }
+
+        // Apply settings
+        refreshInterval = config.settings.refreshInterval
+        UserDefaults.standard.set(config.settings.notificationsEnabled, forKey: "notificationsEnabled")
+        UserDefaults.standard.set(config.settings.defaultAlertLevel, forKey: "defaultAlertLevel")
+        UserDefaults.standard.set(config.settings.autoCheckForUpdates, forKey: "autoCheckForUpdates")
+        startTimer()
+
+        // Apply webhooks
+        let manager = WebhookManager.shared
+        for existing in manager.configs {
+            manager.removeConfig(id: existing.id)
+        }
+        for webhook in config.webhooks {
+            manager.addConfig(webhook)
+        }
+
+        // Apply sources (triggers refresh)
+        applySources(config.sources)
+        return true
+    }
+
+    var hasWebhooks: Bool {
+        !WebhookManager.shared.configs.isEmpty
     }
 
     func resetToDefaults() {
-        applySources(from: kDefaultSources)
-    }
-
-    var serializedSources: String {
-        StatusSource.serialize(sources)
+        applySources(kDefaultSources)
     }
 
     func state(for source: StatusSource) -> SourceState {

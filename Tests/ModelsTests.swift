@@ -12,62 +12,6 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(source.baseURL, "https://example.com")
     }
 
-    func testStatusSourceParseValid() {
-        let input = "Anthropic\thttps://status.anthropic.com\nGitHub\thttps://www.githubstatus.com"
-        let sources = StatusSource.parse(lines: input)
-        XCTAssertEqual(sources.count, 2)
-        XCTAssertEqual(sources[0].name, "Anthropic")
-        XCTAssertEqual(sources[0].baseURL, "https://status.anthropic.com")
-        XCTAssertEqual(sources[1].name, "GitHub")
-    }
-
-    func testStatusSourceParseSkipsComments() {
-        let input = "# This is a comment\nAcme\thttps://status.acme.com"
-        let sources = StatusSource.parse(lines: input)
-        XCTAssertEqual(sources.count, 1)
-        XCTAssertEqual(sources[0].name, "Acme")
-    }
-
-    func testStatusSourceParseEmptyReturnsEmpty() {
-        XCTAssertEqual(StatusSource.parse(lines: "").count, 0)
-        XCTAssertEqual(StatusSource.parse(lines: "\n\n").count, 0)
-    }
-
-    func testStatusSourceParseMalformed() {
-        // No tab separator
-        XCTAssertEqual(StatusSource.parse(lines: "no-tab-here").count, 0)
-        // Empty name
-        XCTAssertEqual(StatusSource.parse(lines: "\thttps://example.com").count, 0)
-    }
-
-    func testStatusSourceParseNonHTTP() {
-        XCTAssertEqual(StatusSource.parse(lines: "Test\tftp://example.com").count, 0)
-        XCTAssertEqual(StatusSource.parse(lines: "Test\tnot-a-url").count, 0)
-    }
-
-    func testStatusSourceSerialize() {
-        let sources = [
-            StatusSource(name: "A", baseURL: "https://a.com"),
-            StatusSource(name: "B", baseURL: "https://b.com"),
-        ]
-        let result = StatusSource.serialize(sources)
-        XCTAssertEqual(result, "A\thttps://a.com\nB\thttps://b.com")
-    }
-
-    func testStatusSourceRoundTrip() {
-        let original = [
-            StatusSource(name: "Test1", baseURL: "https://test1.com"),
-            StatusSource(name: "Test2", baseURL: "https://test2.com/"),
-        ]
-        let serialized = StatusSource.serialize(original)
-        let parsed = StatusSource.parse(lines: serialized)
-        XCTAssertEqual(parsed.count, 2)
-        XCTAssertEqual(parsed[0].name, "Test1")
-        XCTAssertEqual(parsed[0].baseURL, "https://test1.com")
-        XCTAssertEqual(parsed[1].name, "Test2")
-        XCTAssertEqual(parsed[1].baseURL, "https://test2.com")
-    }
-
     // MARK: - Atlassian Models
 
     func testSPSummaryDecodeFullFixture() {
@@ -453,18 +397,6 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(decoded[0].name, "A")
     }
 
-    func testStatusSourceTSVToJSONMigration() {
-        // Simulate: parse from TSV, then encode to JSON, then decode from JSON
-        let tsv = "Anthropic\thttps://status.anthropic.com\nGitHub\thttps://www.githubstatus.com"
-        let parsed = StatusSource.parse(lines: tsv)
-        let json = StatusSource.encodeToJSON(parsed)
-        let decoded = StatusSource.decode(from: json)
-        XCTAssertEqual(decoded.count, 2)
-        XCTAssertEqual(decoded[0].name, "Anthropic")
-        XCTAssertEqual(decoded[0].alertLevel, .all)
-        XCTAssertNil(decoded[0].group)
-    }
-
     // MARK: - AlertLevel
 
     func testAlertLevelMinimumSeverity() {
@@ -510,29 +442,52 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(WebhookPlatform.allCases.count, 4)
     }
 
+    // MARK: - StatusSource JSON Export
+
+    func testStatusSourceEncodeToPrettyJSON() {
+        let sources = [
+            StatusSource(
+                id: UUID(uuidString: "12345678-1234-1234-1234-123456789012")!,
+                name: "Test", baseURL: "https://test.com", alertLevel: .critical, group: "Infra", sortOrder: 2
+            )
+        ]
+        let data = StatusSource.encodeToPrettyJSON(sources)
+        XCTAssertNotNil(data)
+        let json = String(data: data!, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\n"))
+        let decoded = StatusSource.decode(from: json)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].name, "Test")
+        XCTAssertEqual(decoded[0].alertLevel, .critical)
+        XCTAssertEqual(decoded[0].group, "Infra")
+        XCTAssertEqual(decoded[0].sortOrder, 2)
+    }
+
+    func testStatusSourceJSONPreservesAllFields() {
+        let source = StatusSource(
+            id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
+            name: "Full Fields", baseURL: "https://full.example.com", alertLevel: .none, group: "MyGroup", sortOrder: 99
+        )
+        let data = StatusSource.encodeToPrettyJSON([source])
+        XCTAssertNotNil(data)
+        let decoded = StatusSource.decode(from: String(data: data!, encoding: .utf8)!)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].id, source.id)
+        XCTAssertEqual(decoded[0].alertLevel, .none)
+        XCTAssertEqual(decoded[0].group, "MyGroup")
+        XCTAssertEqual(decoded[0].sortOrder, 99)
+    }
+
     // MARK: - CatalogEntry
 
-    func testCatalogEntryParsing() {
-        let lines =
-            kServiceCatalog
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .compactMap { line -> CatalogEntry? in
-                let raw = String(line).trimmingCharacters(in: .whitespaces)
-                guard !raw.isEmpty else { return nil }
-                let parts = raw.split(separator: "\t")
-                guard parts.count == 3 else { return nil }
-                return CatalogEntry(
-                    name: String(parts[0]),
-                    url: String(parts[1]),
-                    category: String(parts[2])
-                )
-            }
-        XCTAssertTrue(lines.count >= 15)
-        XCTAssertEqual(lines[0].name, "GitHub")
-        XCTAssertEqual(lines[0].category, "Developer Tools")
-        // Verify all entries have valid URLs
-        for entry in lines {
+    func testCatalogEntries() {
+        XCTAssertTrue(kServiceCatalog.count >= 15)
+        XCTAssertEqual(kServiceCatalog[0].name, "GitHub")
+        XCTAssertEqual(kServiceCatalog[0].category, "Developer Tools")
+        for entry in kServiceCatalog {
             XCTAssertTrue(entry.url.hasPrefix("https://"), "URL should start with https: \(entry.url)")
+            XCTAssertFalse(entry.name.isEmpty)
+            XCTAssertFalse(entry.category.isEmpty)
         }
     }
 

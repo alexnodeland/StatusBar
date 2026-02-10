@@ -3,24 +3,6 @@
 
 import SwiftUI
 
-// MARK: - Catalog Parsing
-
-func parseCatalog() -> [CatalogEntry] {
-    kServiceCatalog
-        .split(separator: "\n", omittingEmptySubsequences: true)
-        .compactMap { line -> CatalogEntry? in
-            let raw = String(line).trimmingCharacters(in: .whitespaces)
-            guard !raw.isEmpty else { return nil }
-            let parts = raw.split(separator: "\t")
-            guard parts.count == 3 else { return nil }
-            return CatalogEntry(
-                name: String(parts[0]),
-                url: String(parts[1]),
-                category: String(parts[2])
-            )
-        }
-}
-
 // MARK: - Service Catalog View
 
 struct ServiceCatalogView: View {
@@ -30,14 +12,12 @@ struct ServiceCatalogView: View {
     @FocusState private var isSearchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var catalog: [CatalogEntry] { parseCatalog() }
-
     private var filteredEntries: [CatalogEntry] {
         if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-            return catalog
+            return kServiceCatalog
         }
         let query = searchText.lowercased()
-        return catalog.filter {
+        return kServiceCatalog.filter {
             $0.name.lowercased().contains(query) || $0.category.lowercased().contains(query)
         }
     }

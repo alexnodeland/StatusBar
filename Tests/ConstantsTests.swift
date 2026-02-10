@@ -24,17 +24,21 @@ final class ConstantsTests: XCTestCase {
         XCTAssertEqual(seconds, sorted, "Interval options should be sorted ascending")
     }
 
-    func testDefaultSourcesParseable() {
-        let sources = StatusSource.parse(lines: kDefaultSources)
-        XCTAssertGreaterThanOrEqual(sources.count, 3)
+    func testDefaultSourcesNotEmpty() {
+        XCTAssertGreaterThanOrEqual(kDefaultSources.count, 3)
     }
 
     func testDefaultSourcesContainExpectedEntries() {
-        let sources = StatusSource.parse(lines: kDefaultSources)
-        let names = sources.map(\.name)
+        let names = kDefaultSources.map(\.name)
         XCTAssertTrue(names.contains("Anthropic"), "Should contain Anthropic")
         XCTAssertTrue(names.contains("GitHub"), "Should contain GitHub")
         XCTAssertTrue(names.contains("Cloudflare"), "Should contain Cloudflare")
+    }
+
+    func testDefaultSourcesHaveValidURLs() {
+        for source in kDefaultSources {
+            XCTAssertTrue(source.baseURL.hasPrefix("https://"), "\(source.name) URL should use https")
+        }
     }
 
     // MARK: - Retry Constants

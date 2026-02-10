@@ -19,7 +19,7 @@
 
 🟢 **Monitoring** — Menu bar icon reflects the worst status across all sources (green → yellow → orange → red) with a badge showing how many have issues. Drill into any source to see components, active incidents, and update timelines.
 
-📋 **Sources** — Add and remove sources visually with **+** / **−** buttons, or bulk import/export as TSV files. Sources refresh concurrently on a configurable interval (1–15 min).
+📋 **Sources** — Add and remove sources visually with **+** / **−** buttons, or bulk import/export as JSON. Full configuration export bundles settings, sources, and webhooks into a single versioned file. Sources refresh concurrently on a configurable interval (1–15 min).
 
 ⚙️ **Settings** — Status change notifications, automatic update checks, and launch at login. Runs as a pure menu bar agent with no Dock icon.
 
@@ -61,7 +61,7 @@ Open **Settings** and click **+** to add more. The app auto-detects the provider
 
 > **Note:** Incident history detail varies by provider. Atlassian Statuspage sources include full incident timelines. incident.io and Instatus sources may have limited or unavailable incident details due to provider API restrictions.
 
-Sources are persisted via `@AppStorage` and survive restarts.
+Sources are persisted as JSON via `@AppStorage` and survive restarts. Use **Settings → Data** to export/import a full configuration (settings, sources, webhooks) or sources only.
 
 ## 🛠 Development
 

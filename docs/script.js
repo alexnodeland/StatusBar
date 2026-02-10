@@ -164,8 +164,8 @@
     return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  function downloadTSV(filename, content) {
-    var blob = new Blob([content], { type: 'text/tab-separated-values;charset=utf-8' });
+  function downloadJSON(filename, content) {
+    var blob = new Blob([content], { type: 'application/json;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = filename;
@@ -243,9 +243,9 @@
     if (exportBtn) {
       exportBtn.disabled = selectedUrls.size === 0;
       if (selectedUrls.size > 0) {
-        exportBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg> Export ' + selectedUrls.size + ' as TSV';
+        exportBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg> Export ' + selectedUrls.size + ' as JSON';
       } else {
-        exportBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg> Export TSV';
+        exportBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg> Export JSON';
       }
     }
   }
@@ -323,13 +323,19 @@
   if (exportButton) {
     exportButton.addEventListener('click', function () {
       if (selectedUrls.size === 0) return;
-      var lines = [];
+      var sources = [];
       STATUS_SOURCES.forEach(function (s) {
         if (selectedUrls.has(s.url)) {
-          lines.push(s.name + '\t' + s.url);
+          sources.push({
+            id: crypto.randomUUID(),
+            name: s.name,
+            baseURL: s.url,
+            alertLevel: 'All Changes',
+            sortOrder: sources.length
+          });
         }
       });
-      downloadTSV('status-pages.tsv', lines.join('\n'));
+      downloadJSON('statusbar-sources.json', JSON.stringify(sources, null, 2));
     });
   }
 

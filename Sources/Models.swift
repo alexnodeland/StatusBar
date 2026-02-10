@@ -102,23 +102,59 @@ struct StatusSource: Identifiable, Equatable, Codable {
         return json
     }
 
-    static func parse(lines: String) -> [StatusSource] {
-        lines
-            .split(separator: "\n", omittingEmptySubsequences: true)
-            .compactMap { line -> StatusSource? in
-                let raw = String(line).trimmingCharacters(in: .whitespaces)
-                guard !raw.isEmpty, !raw.hasPrefix("#") else { return nil }
-                let parts = raw.split(separator: "\t", maxSplits: 1)
-                guard parts.count == 2 else { return nil }
-                let name = parts[0].trimmingCharacters(in: .whitespaces)
-                let url = parts[1].trimmingCharacters(in: .whitespaces)
-                guard !name.isEmpty, validateSourceURL(url).isAcceptable else { return nil }
-                return StatusSource(name: name, baseURL: url)
-            }
+    static func encodeToPrettyJSON(_ sources: [StatusSource]) -> Data? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try? encoder.encode(sources)
+    }
+}
+
+// MARK: - Configuration Export/Import
+
+struct StatusBarConfig: Codable, Equatable {
+    let version: Int
+    let exportedAt: String
+    var settings: ConfigSettings
+    var sources: [StatusSource]
+    var webhooks: [WebhookConfig]
+
+    static let currentVersion = 1
+
+    init(settings: ConfigSettings, sources: [StatusSource], webhooks: [WebhookConfig]) {
+        self.version = Self.currentVersion
+        self.exportedAt = ISO8601DateFormatter().string(from: Date())
+        self.settings = settings
+        self.sources = sources
+        self.webhooks = webhooks
     }
 
-    static func serialize(_ sources: [StatusSource]) -> String {
-        sources.map { "\($0.name)\t\($0.baseURL)" }.joined(separator: "\n")
+    static func encode(_ config: StatusBarConfig) -> Data? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try? encoder.encode(config)
+    }
+
+    static func decode(from data: Data) -> StatusBarConfig? {
+        try? JSONDecoder().decode(StatusBarConfig.self, from: data)
+    }
+}
+
+struct ConfigSettings: Codable, Equatable {
+    var refreshInterval: Double
+    var notificationsEnabled: Bool
+    var defaultAlertLevel: String
+    var autoCheckForUpdates: Bool
+
+    init(
+        refreshInterval: Double = 300,
+        notificationsEnabled: Bool = true,
+        defaultAlertLevel: String = AlertLevel.all.rawValue,
+        autoCheckForUpdates: Bool = true
+    ) {
+        self.refreshInterval = refreshInterval
+        self.notificationsEnabled = notificationsEnabled
+        self.defaultAlertLevel = defaultAlertLevel
+        self.autoCheckForUpdates = autoCheckForUpdates
     }
 }
 

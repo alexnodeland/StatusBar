@@ -15,36 +15,36 @@ let kRefreshIntervalOptions: [(label: String, seconds: TimeInterval)] = [
     ("15 min", 900),
 ]
 
-let kDefaultSources = """
-    Anthropic\thttps://status.anthropic.com
-    GitHub\thttps://www.githubstatus.com
-    Cloudflare\thttps://www.cloudflarestatus.com
-    """
+let kDefaultSources: [StatusSource] = [
+    StatusSource(name: "Anthropic", baseURL: "https://status.anthropic.com"),
+    StatusSource(name: "GitHub", baseURL: "https://www.githubstatus.com"),
+    StatusSource(name: "Cloudflare", baseURL: "https://www.cloudflarestatus.com"),
+]
 
 let kGitHubRepo = "alexnodeland/StatusBar"
 
-let kServiceCatalog = """
-    GitHub\thttps://www.githubstatus.com\tDeveloper Tools
-    Cloudflare\thttps://www.cloudflarestatus.com\tInfrastructure
-    Anthropic\thttps://status.anthropic.com\tAI & ML
-    OpenAI\thttps://status.openai.com\tAI & ML
-    AWS\thttps://health.aws.amazon.com\tCloud
-    Datadog\thttps://status.datadoghq.com\tObservability
-    PagerDuty\thttps://status.pagerduty.com\tIncident Management
-    Vercel\thttps://www.vercel-status.com\tDeveloper Tools
-    Netlify\thttps://www.netlifystatus.com\tDeveloper Tools
-    Twilio\thttps://status.twilio.com\tCommunication
-    Stripe\thttps://status.stripe.com\tPayments
-    Braintree\thttps://status.braintreepayments.com\tPayments
-    HashiCorp\thttps://status.hashicorp.com\tDeveloper Tools
-    Atlassian\thttps://status.atlassian.com\tProductivity
-    Bitbucket\thttps://bitbucket.status.atlassian.com\tDeveloper Tools
-    Figma\thttps://status.figma.com\tDesign
-    Reddit\thttps://www.redditstatus.com\tSocial
-    Discord\thttps://discordstatus.com\tCommunication
-    Linear\thttps://linearstatus.com\tProductivity
-    Notion\thttps://status.notion.so\tProductivity
-    """
+let kServiceCatalog: [CatalogEntry] = [
+    CatalogEntry(name: "GitHub", url: "https://www.githubstatus.com", category: "Developer Tools"),
+    CatalogEntry(name: "Cloudflare", url: "https://www.cloudflarestatus.com", category: "Infrastructure"),
+    CatalogEntry(name: "Anthropic", url: "https://status.anthropic.com", category: "AI & ML"),
+    CatalogEntry(name: "OpenAI", url: "https://status.openai.com", category: "AI & ML"),
+    CatalogEntry(name: "AWS", url: "https://health.aws.amazon.com", category: "Cloud"),
+    CatalogEntry(name: "Datadog", url: "https://status.datadoghq.com", category: "Observability"),
+    CatalogEntry(name: "PagerDuty", url: "https://status.pagerduty.com", category: "Incident Management"),
+    CatalogEntry(name: "Vercel", url: "https://www.vercel-status.com", category: "Developer Tools"),
+    CatalogEntry(name: "Netlify", url: "https://www.netlifystatus.com", category: "Developer Tools"),
+    CatalogEntry(name: "Twilio", url: "https://status.twilio.com", category: "Communication"),
+    CatalogEntry(name: "Stripe", url: "https://status.stripe.com", category: "Payments"),
+    CatalogEntry(name: "Braintree", url: "https://status.braintreepayments.com", category: "Payments"),
+    CatalogEntry(name: "HashiCorp", url: "https://status.hashicorp.com", category: "Developer Tools"),
+    CatalogEntry(name: "Atlassian", url: "https://status.atlassian.com", category: "Productivity"),
+    CatalogEntry(name: "Bitbucket", url: "https://bitbucket.status.atlassian.com", category: "Developer Tools"),
+    CatalogEntry(name: "Figma", url: "https://status.figma.com", category: "Design"),
+    CatalogEntry(name: "Reddit", url: "https://www.redditstatus.com", category: "Social"),
+    CatalogEntry(name: "Discord", url: "https://discordstatus.com", category: "Communication"),
+    CatalogEntry(name: "Linear", url: "https://linearstatus.com", category: "Productivity"),
+    CatalogEntry(name: "Notion", url: "https://status.notion.so", category: "Productivity"),
+]
 
 // MARK: - Retry Configuration
 
