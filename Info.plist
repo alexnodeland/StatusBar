@@ -27,5 +27,10 @@
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
+    <!-- Sparkle auto-update configuration (activate when Sparkle.framework is vendored) -->
+    <key>SUFeedURL</key>
+    <string>https://raw.githubusercontent.com/alexnodeland/StatusBar/main/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>SPARKLE_ED_PUBLIC_KEY_PLACEHOLDER</string>
 </dict>
 </plist>

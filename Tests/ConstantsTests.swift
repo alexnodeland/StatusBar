@@ -37,6 +37,24 @@ final class ConstantsTests: XCTestCase {
         XCTAssertTrue(names.contains("Cloudflare"), "Should contain Cloudflare")
     }
 
+    // MARK: - Retry Constants
+
+    func testMaxRetries() {
+        XCTAssertEqual(kMaxRetries, 3)
+    }
+
+    func testRetryBaseDelay() {
+        XCTAssertEqual(kRetryBaseDelay, 1.0)
+    }
+
+    func testRetryMaxDelay() {
+        XCTAssertEqual(kRetryMaxDelay, 8.0)
+    }
+
+    func testRetryMaxDelayGreaterThanBase() {
+        XCTAssertGreaterThan(kRetryMaxDelay, kRetryBaseDelay, "Max delay should be greater than base delay")
+    }
+
     func testGitHubRepoFormat() {
         let parts = kGitHubRepo.split(separator: "/")
         XCTAssertEqual(parts.count, 2, "kGitHubRepo should be in 'owner/repo' format")

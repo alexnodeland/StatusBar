@@ -123,6 +123,106 @@ final class HelpersTests: XCTestCase {
         XCTAssertEqual(labelForComponentStatus(""), "")
     }
 
+    // MARK: - validateSourceURL
+
+    func testValidateSourceURLValid() {
+        let result = validateSourceURL("https://status.example.com")
+        XCTAssertEqual(result, .valid)
+        XCTAssertTrue(result.isAcceptable)
+        XCTAssertNil(result.message)
+    }
+
+    func testValidateSourceURLEmpty() {
+        let result = validateSourceURL("")
+        XCTAssertEqual(result, .invalid("URL cannot be empty"))
+        XCTAssertFalse(result.isAcceptable)
+    }
+
+    func testValidateSourceURLWhitespaceOnly() {
+        let result = validateSourceURL("   ")
+        XCTAssertEqual(result, .invalid("URL cannot be empty"))
+        XCTAssertFalse(result.isAcceptable)
+    }
+
+    func testValidateSourceURLMissingScheme() {
+        let result = validateSourceURL("status.example.com")
+        XCTAssertFalse(result.isAcceptable)
+    }
+
+    func testValidateSourceURLFTPScheme() {
+        let result = validateSourceURL("ftp://example.com")
+        XCTAssertEqual(result, .invalid("URL must use http or https scheme"))
+        XCTAssertFalse(result.isAcceptable)
+    }
+
+    func testValidateSourceURLHTTPWarning() {
+        let result = validateSourceURL("http://status.example.com")
+        XCTAssertEqual(result, .validWithWarning("Consider using https for secure connections"))
+        XCTAssertTrue(result.isAcceptable)
+        XCTAssertNotNil(result.message)
+    }
+
+    func testValidateSourceURLNoHost() {
+        let result = validateSourceURL("https://")
+        XCTAssertFalse(result.isAcceptable)
+    }
+
+    func testValidateSourceURLNoDotInHost() {
+        let result = validateSourceURL("https://localhost")
+        XCTAssertEqual(result, .invalid("Host must contain a domain (e.g. example.com)"))
+        XCTAssertFalse(result.isAcceptable)
+    }
+
+    func testValidateSourceURLAPIPathWarning() {
+        let result = validateSourceURL("https://example.com/api/v2/summary.json")
+        XCTAssertEqual(result, .validWithWarning("URL appears to contain an API path — use the base status page URL instead"))
+        XCTAssertTrue(result.isAcceptable)
+    }
+
+    func testValidateSourceURLTrimsWhitespace() {
+        let result = validateSourceURL("  https://status.example.com  ")
+        XCTAssertEqual(result, .valid)
+    }
+
+    // MARK: - withRetry
+
+    func testWithRetrySucceedsFirstAttempt() async throws {
+        var attempts = 0
+        let result = try await withRetry(maxAttempts: 3, baseDelay: 0.01, maxDelay: 0.01) {
+            attempts += 1
+            return "success"
+        }
+        XCTAssertEqual(result, "success")
+        XCTAssertEqual(attempts, 1)
+    }
+
+    func testWithRetrySucceedsAfterTransientFailures() async throws {
+        var attempts = 0
+        let result: String = try await withRetry(maxAttempts: 3, baseDelay: 0.01, maxDelay: 0.01) {
+            attempts += 1
+            if attempts < 3 {
+                throw URLError(.timedOut)
+            }
+            return "recovered"
+        }
+        XCTAssertEqual(result, "recovered")
+        XCTAssertEqual(attempts, 3)
+    }
+
+    func testWithRetryThrowsAfterAllFail() async {
+        var attempts = 0
+        do {
+            let _: String = try await withRetry(maxAttempts: 3, baseDelay: 0.01, maxDelay: 0.01) {
+                attempts += 1
+                throw URLError(.notConnectedToInternet)
+            }
+            XCTFail("Should have thrown")
+        } catch {
+            XCTAssertEqual(attempts, 3)
+            XCTAssertTrue(error is URLError)
+        }
+    }
+
     // MARK: - compareVersions
 
     func testCompareVersionsEqual() {

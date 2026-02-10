@@ -9,13 +9,18 @@ import SwiftUI
 final class StatusService: ObservableObject {
     @Published var sources: [StatusSource] = []
     @Published var states: [UUID: SourceState] = [:]
+    @Published var history: [UUID: [StatusCheckpoint]] = [:]
 
+    @AppStorage("statusSourcesJSON") private var storedSourcesJSON: String = ""
     @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
     @AppStorage("refreshInterval") var refreshInterval: Double = kDefaultRefreshInterval
 
     private var refreshTimer: Timer?
     private var previousIndicators: [UUID: String] = [:]
     private var providerCache: [UUID: StatusProvider] = [:]
+
+    let historyStore = HistoryStore()
+    @AppStorage("statusHistory") private var storedHistory: String = "{}"
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default
@@ -27,15 +32,45 @@ final class StatusService: ObservableObject {
     }()
 
     init() {
-        sources = StatusSource.parse(lines: storedLines)
-        if sources.isEmpty {
-            sources = StatusSource.parse(lines: kDefaultSources)
-            storedLines = kDefaultSources
+        historyStore.load()
+        // Migrate legacy @AppStorage history to file-based store
+        let legacyHistory = storedHistory
+        if legacyHistory != "{}" && !legacyHistory.isEmpty {
+            historyStore.migrateFromAppStorage(legacyHistory)
+            storedHistory = "{}"
         }
+        // Prune checkpoints older than 30 days
+        historyStore.pruneOlderThan(Date().addingTimeInterval(-30 * 24 * 60 * 60))
+        history = historyStore.data
+        loadSources()
         // Ensure notification delegate is wired before any refresh sends notifications
         _ = NotificationManager.shared
         Task { await refreshAll() }
         startTimer()
+    }
+
+    private func loadSources() {
+        // Try JSON format first
+        let json = storedSourcesJSON.trimmingCharacters(in: .whitespacesAndNewlines)
+        if json.hasPrefix("[") {
+            let decoded = StatusSource.decode(from: json)
+            if !decoded.isEmpty {
+                sources = decoded
+                return
+            }
+        }
+        // Fall back to TSV format and migrate
+        sources = StatusSource.parse(lines: storedLines)
+        if sources.isEmpty {
+            sources = StatusSource.parse(lines: kDefaultSources)
+        }
+        // Migrate to JSON
+        persistSources()
+    }
+
+    private func persistSources() {
+        storedSourcesJSON = StatusSource.encodeToJSON(sources)
+        storedLines = StatusSource.serialize(sources)
     }
 
     // MARK: - Aggregate Status
@@ -116,54 +151,75 @@ final class StatusService: ObservableObject {
             states[source.id]?.recentIncidents = incidents
             states[source.id]?.provider = provider
             states[source.id]?.lastRefresh = Date()
+            states[source.id]?.isStale = false
+            states[source.id]?.lastSuccessfulRefresh = Date()
 
-            // Notify on status changes, including initial load if non-operational
-            let newSev = severityFor(newIndicator)
-            if let old = oldIndicator, old != newIndicator {
-                let oldSev = severityFor(old)
-                if newSev > oldSev {
-                    NotificationManager.shared.sendStatusChange(
-                        source: source.name,
-                        url: source.baseURL,
-                        title: "\(source.name) \u{2014} Status Degraded",
-                        body: summary.status.description
-                    )
-                } else if newSev < oldSev && newIndicator == "none" {
-                    NotificationManager.shared.sendStatusChange(
-                        source: source.name,
-                        url: source.baseURL,
-                        title: "\(source.name) \u{2014} Recovered",
-                        body: "All systems operational"
-                    )
-                }
-            } else if oldIndicator == nil && newSev > 0 {
-                NotificationManager.shared.sendStatusChange(
-                    source: source.name,
-                    url: source.baseURL,
-                    title: "\(source.name) \u{2014} Active Incident",
-                    body: summary.status.description
-                )
-            }
+            // Notify on status changes, gated by alert level
+            notifyIfNeeded(
+                source: source, summary: summary,
+                newIndicator: newIndicator, oldIndicator: oldIndicator
+            )
 
             previousIndicators[source.id] = newIndicator
+            recordCheckpoint(sourceID: source.id, indicator: newIndicator)
         } catch {
             providerCache.removeValue(forKey: source.id)
             states[source.id]?.lastError = error.localizedDescription
+            if states[source.id]?.summary != nil {
+                states[source.id]?.isStale = true
+            }
         }
 
         states[source.id]?.isLoading = false
     }
 
+    private func notifyIfNeeded(
+        source: StatusSource, summary: SPSummary,
+        newIndicator: String, oldIndicator: String?
+    ) {
+        let newSev = severityFor(newIndicator)
+        guard newSev >= source.alertLevel.minimumSeverity else { return }
+
+        let name = source.name
+        let desc = summary.status.description
+
+        if let old = oldIndicator, old != newIndicator {
+            let oldSev = severityFor(old)
+            if newSev > oldSev {
+                sendNotification(source: source, title: "\(name) \u{2014} Status Degraded", body: desc)
+            } else if newSev < oldSev && newIndicator == "none" {
+                sendNotification(source: source, title: "\(name) \u{2014} Recovered", body: "All systems operational")
+            }
+        } else if oldIndicator == nil && newSev > 0 {
+            sendNotification(source: source, title: "\(name) \u{2014} Active Incident", body: desc)
+        }
+    }
+
+    private func sendNotification(source: StatusSource, title: String, body: String) {
+        NotificationManager.shared.sendStatusChange(
+            source: source.name, url: source.baseURL, title: title, body: body
+        )
+        Task.detached {
+            await WebhookManager.shared.sendAll(
+                source: source.name, title: title, body: body
+            )
+        }
+    }
+
     private func fetchSummary(baseURL: String) async throws -> SPSummary {
-        let url = URL(string: "\(baseURL)/api/v2/summary.json")!
-        let (data, _) = try await session.data(from: url)
-        return try JSONDecoder().decode(SPSummary.self, from: data)
+        try await withRetry {
+            let url = URL(string: "\(baseURL)/api/v2/summary.json")!
+            let (data, _) = try await self.session.data(from: url)
+            return try JSONDecoder().decode(SPSummary.self, from: data)
+        }
     }
 
     private func fetchIncidents(baseURL: String) async throws -> [SPIncident] {
-        let url = URL(string: "\(baseURL)/api/v2/incidents.json")!
-        let (data, _) = try await session.data(from: url)
-        return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
+        try await withRetry {
+            let url = URL(string: "\(baseURL)/api/v2/incidents.json")!
+            let (data, _) = try await self.session.data(from: url)
+            return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
+        }
     }
 
     private func severityFor(_ indicator: String) -> Int {
@@ -183,7 +239,9 @@ final class StatusService: ObservableObject {
             return .incidentIO
         }
         do {
-            let (data, response) = try await session.data(from: url)
+            let (data, response) = try await withRetry {
+                try await self.session.data(from: url)
+            }
             if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                 // Try Atlassian-format first (has status.indicator object)
                 if let summary = try? JSONDecoder().decode(SPSummary.self, from: data) {
@@ -202,8 +260,10 @@ final class StatusService: ObservableObject {
     // MARK: - incident.io Fetch + Mapping
 
     private func fetchIncidentIO(baseURL: String) async throws -> (SPSummary, [SPIncident]) {
-        let url = URL(string: "\(baseURL)/proxy/widget")!
-        let (data, _) = try await session.data(from: url)
+        let (data, _) = try await withRetry {
+            let url = URL(string: "\(baseURL)/proxy/widget")!
+            return try await self.session.data(from: url)
+        }
         let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: data)
 
         let allIncidents =
@@ -285,8 +345,10 @@ final class StatusService: ObservableObject {
     // MARK: - Instatus Fetch + Mapping
 
     private func fetchInstatus(baseURL: String) async throws -> SPSummary {
-        let summaryURL = URL(string: "\(baseURL)/api/v2/summary.json")!
-        let (summaryData, _) = try await session.data(from: summaryURL)
+        let (summaryData, _) = try await withRetry {
+            let summaryURL = URL(string: "\(baseURL)/api/v2/summary.json")!
+            return try await self.session.data(from: summaryURL)
+        }
         let instatus = try JSONDecoder().decode(InstatusSummary.self, from: summaryData)
 
         var components: [SPComponent] = []
@@ -375,17 +437,19 @@ final class StatusService: ObservableObject {
             states.removeValue(forKey: oldID)
             previousIndicators.removeValue(forKey: oldID)
             providerCache.removeValue(forKey: oldID)
+            historyStore.removeSource(oldID)
         }
+        history = historyStore.data
 
         sources = parsed
-        storedLines = lines
+        persistSources()
         Task { await refreshAll() }
     }
 
-    func addSource(name: String, baseURL: String) {
-        let source = StatusSource(name: name, baseURL: baseURL)
+    func addSource(name: String, baseURL: String, group: String? = nil) {
+        let source = StatusSource(name: name, baseURL: baseURL, group: group, sortOrder: sources.count)
         sources.append(source)
-        storedLines = StatusSource.serialize(sources)
+        persistSources()
         Task { await refresh(source: source) }
     }
 
@@ -394,7 +458,29 @@ final class StatusService: ObservableObject {
         states.removeValue(forKey: id)
         previousIndicators.removeValue(forKey: id)
         providerCache.removeValue(forKey: id)
-        storedLines = StatusSource.serialize(sources)
+        historyStore.removeSource(id)
+        history = historyStore.data
+        persistSources()
+    }
+
+    func updateAlertLevel(sourceID: UUID, level: AlertLevel) {
+        guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
+        sources[idx].alertLevel = level
+        persistSources()
+    }
+
+    func setGroup(sourceID: UUID, group: String?) {
+        guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
+        sources[idx].group = group
+        persistSources()
+    }
+
+    func moveSources(from offsets: IndexSet, to destination: Int) {
+        sources.move(fromOffsets: offsets, toOffset: destination)
+        for i in sources.indices {
+            sources[i].sortOrder = i
+        }
+        persistSources()
     }
 
     func exportSourcesTSV() -> String {
@@ -417,5 +503,12 @@ final class StatusService: ObservableObject {
 
     func state(for source: StatusSource) -> SourceState {
         states[source.id] ?? SourceState()
+    }
+
+    // MARK: - Status History
+
+    private func recordCheckpoint(sourceID: UUID, indicator: String) {
+        historyStore.record(sourceID: sourceID, indicator: indicator)
+        history = historyStore.data
     }
 }

@@ -86,6 +86,109 @@ func labelForComponentStatus(_ status: String) -> String {
     }
 }
 
+// MARK: - URL Validation
+
+enum URLValidationResult: Equatable {
+    case valid
+    case validWithWarning(String)
+    case invalid(String)
+
+    var isAcceptable: Bool {
+        switch self {
+        case .valid, .validWithWarning: return true
+        case .invalid: return false
+        }
+    }
+
+    var message: String? {
+        switch self {
+        case .valid: return nil
+        case .validWithWarning(let msg): return msg
+        case .invalid(let msg): return msg
+        }
+    }
+}
+
+func validateSourceURL(_ rawURL: String) -> URLValidationResult {
+    let trimmed = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !trimmed.isEmpty else {
+        return .invalid("URL cannot be empty")
+    }
+
+    guard let url = URL(string: trimmed) else {
+        return .invalid("Invalid URL format")
+    }
+
+    guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
+        return .invalid("URL must use http or https scheme")
+    }
+
+    guard let host = url.host, !host.isEmpty else {
+        return .invalid("URL must have a host")
+    }
+
+    guard host.contains(".") else {
+        return .invalid("Host must contain a domain (e.g. example.com)")
+    }
+
+    // Warnings (non-blocking)
+    if scheme == "http" {
+        return .validWithWarning("Consider using https for secure connections")
+    }
+
+    if let path = URL(string: trimmed)?.path, path.contains("/api/") {
+        return .validWithWarning("URL appears to contain an API path — use the base status page URL instead")
+    }
+
+    return .valid
+}
+
+// MARK: - Network Retry
+
+func withRetry<T>(
+    maxAttempts: Int = kMaxRetries,
+    baseDelay: TimeInterval = kRetryBaseDelay,
+    maxDelay: TimeInterval = kRetryMaxDelay,
+    operation: () async throws -> T
+) async throws -> T {
+    var lastError: Error?
+    for attempt in 0..<maxAttempts {
+        do {
+            return try await operation()
+        } catch {
+            lastError = error
+            if attempt < maxAttempts - 1 {
+                let delay = min(baseDelay * pow(2.0, Double(attempt)), maxDelay)
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+        }
+    }
+    throw lastError!
+}
+
+// MARK: - Mini Icon Helpers
+
+func miniIconForComponentStatus(_ status: String) -> String {
+    switch status {
+    case "operational": return "checkmark.circle.fill"
+    case "degraded_performance": return "exclamationmark.triangle.fill"
+    case "partial_outage": return "exclamationmark.octagon.fill"
+    case "major_outage": return "xmark.octagon.fill"
+    default: return "questionmark.circle"
+    }
+}
+
+func miniIconForImpact(_ impact: String) -> String {
+    switch impact {
+    case "none": return "checkmark.circle.fill"
+    case "minor": return "exclamationmark.triangle.fill"
+    case "major": return "exclamationmark.octagon.fill"
+    case "critical": return "xmark.octagon.fill"
+    default: return "minus.circle"
+    }
+}
+
 // MARK: - Version Comparison
 
 func compareVersions(_ a: String, _ b: String) -> ComparisonResult {

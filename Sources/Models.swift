@@ -5,15 +5,101 @@ import Foundation
 
 // MARK: - Source Model
 
-struct StatusSource: Identifiable, Equatable {
+// MARK: - Alert Level
+
+enum AlertLevel: String, Codable, CaseIterable {
+    case all = "All Changes"
+    case critical = "Critical Only"
+    case none = "Muted"
+
+    var minimumSeverity: Int {
+        switch self {
+        case .all: return 1
+        case .critical: return 3
+        case .none: return Int.max
+        }
+    }
+}
+
+// MARK: - Webhook Configuration
+
+enum WebhookPlatform: String, Codable, CaseIterable {
+    case slack, discord, teams, generic
+}
+
+struct WebhookConfig: Codable, Identifiable, Equatable {
+    let id: UUID
+    var url: String
+    var enabled: Bool
+    var platform: WebhookPlatform
+
+    init(id: UUID = UUID(), url: String, enabled: Bool = true, platform: WebhookPlatform = .generic) {
+        self.id = id
+        self.url = url
+        self.enabled = enabled
+        self.platform = platform
+    }
+}
+
+// MARK: - Uptime Trend
+
+struct UptimeTrend {
+    let label: String
+    let fraction: Double
+    let checkpointCount: Int
+}
+
+// MARK: - Catalog Entry
+
+struct CatalogEntry: Identifiable {
+    let id = UUID()
+    let name: String
+    let url: String
+    let category: String
+}
+
+struct StatusSource: Identifiable, Equatable, Codable {
     let id: UUID
     var name: String
     var baseURL: String
+    var alertLevel: AlertLevel
+    var group: String?
+    var sortOrder: Int
 
-    init(id: UUID = UUID(), name: String, baseURL: String) {
+    enum CodingKeys: String, CodingKey {
+        case id, name, baseURL, alertLevel, group, sortOrder
+    }
+
+    init(id: UUID = UUID(), name: String, baseURL: String, alertLevel: AlertLevel = .all, group: String? = nil, sortOrder: Int = 0) {
         self.id = id
         self.name = name
         self.baseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        self.alertLevel = alertLevel
+        self.group = group
+        self.sortOrder = sortOrder
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        let rawURL = try container.decode(String.self, forKey: .baseURL)
+        baseURL = rawURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        alertLevel = try container.decodeIfPresent(AlertLevel.self, forKey: .alertLevel) ?? .all
+        group = try container.decodeIfPresent(String.self, forKey: .group)
+        sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+    }
+
+    static func decode(from json: String) -> [StatusSource] {
+        guard let data = json.data(using: .utf8) else { return [] }
+        return (try? JSONDecoder().decode([StatusSource].self, from: data)) ?? []
+    }
+
+    static func encodeToJSON(_ sources: [StatusSource]) -> String {
+        guard let data = try? JSONEncoder().encode(sources),
+            let json = String(data: data, encoding: .utf8)
+        else { return "[]" }
+        return json
     }
 
     static func parse(lines: String) -> [StatusSource] {
@@ -26,7 +112,7 @@ struct StatusSource: Identifiable, Equatable {
                 guard parts.count == 2 else { return nil }
                 let name = parts[0].trimmingCharacters(in: .whitespaces)
                 let url = parts[1].trimmingCharacters(in: .whitespaces)
-                guard !name.isEmpty, url.hasPrefix("http") else { return nil }
+                guard !name.isEmpty, validateSourceURL(url).isAcceptable else { return nil }
                 return StatusSource(name: name, baseURL: url)
             }
     }
@@ -221,12 +307,14 @@ enum SourceSortOrder: String, CaseIterable {
     case alphabetical = "Name"
     case latest = "Latest"
     case status = "Status"
+    case manual = "Manual"
 
     var systemImage: String {
         switch self {
         case .alphabetical: return "textformat.abc"
         case .latest: return "clock"
         case .status: return "circle.fill"
+        case .manual: return "hand.draw"
         }
     }
 }
@@ -268,6 +356,13 @@ enum StatusProvider: Equatable {
     case instatus
 }
 
+// MARK: - Status History
+
+struct StatusCheckpoint: Codable, Equatable {
+    let date: Date
+    let indicator: String
+}
+
 // MARK: - Per-Source State
 
 struct SourceState: Equatable {
@@ -277,6 +372,8 @@ struct SourceState: Equatable {
     var lastError: String?
     var lastRefresh: Date?
     var provider: StatusProvider?
+    var isStale: Bool = false
+    var lastSuccessfulRefresh: Date?
 
     var indicator: String { summary?.status.indicator ?? "unknown" }
     var statusDescription: String { summary?.status.description ?? "Loading\u{2026}" }
