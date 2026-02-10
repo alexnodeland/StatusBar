@@ -342,63 +342,122 @@ struct WebhooksSettingsTab: View {
 
 struct DataSettingsTab: View {
     @ObservedObject var service: StatusService
+    @State private var importError: String?
 
     var body: some View {
         Form {
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Import or export your monitored status pages as a TSV file for backup or sharing between machines.")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
+            Section("Full Configuration") {
+                Text("Export all settings, sources, and webhooks as a single JSON file for backup or sharing.")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                if service.hasWebhooks {
+                    Label("Exported files contain webhook URLs. Share only with trusted recipients.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.callout).foregroundStyle(.orange)
                 }
-            } header: {
-                Text("Import / Export Sources")
+                Button { importConfig() } label: {
+                    Label("Import Configuration\u{2026}", systemImage: "square.and.arrow.down")
+                }
+                .help("Import settings, sources, and webhooks from JSON file")
+                Button { exportConfig() } label: {
+                    Label("Export Configuration\u{2026}", systemImage: "square.and.arrow.up")
+                }
+                .help("Export settings, sources, and webhooks as JSON file")
             }
 
-            Section {
-                Button {
-                    importSources()
-                } label: {
-                    Label("Import from File\u{2026}", systemImage: "square.and.arrow.down")
+            Section("Sources Only") {
+                Text("Export or import only your monitored status pages as JSON.")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+                Button { importSources() } label: {
+                    Label("Import Sources\u{2026}", systemImage: "square.and.arrow.down")
                 }
-                .help("Import sources from TSV file")
-                .accessibilityLabel("Import sources from file")
+                .help("Import sources from JSON or TSV file")
+                Button { exportSources() } label: {
+                    Label("Export Sources\u{2026}", systemImage: "square.and.arrow.up")
+                }
+                .help("Export sources as JSON file")
+            }
 
-                Button {
-                    exportSources()
-                } label: {
-                    Label("Export to File\u{2026}", systemImage: "square.and.arrow.up")
+            if let importError {
+                Section {
+                    Label(importError, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
                 }
-                .help("Export sources as TSV file")
-                .accessibilityLabel("Export sources to file")
             }
         }
         .formStyle(.grouped)
     }
 
-    private func exportSources() {
+    private func exportConfig() {
         let panel = NSSavePanel()
-        panel.title = "Export Status Pages"
-        panel.nameFieldStringValue = "status-pages.tsv"
-        panel.allowedContentTypes = [.tabSeparatedText]
+        panel.title = "Export Configuration"
+        panel.nameFieldStringValue = "statusbar-config.json"
+        panel.allowedContentTypes = [.json]
         panel.canCreateDirectories = true
 
         if panel.runModal() == .OK, let url = panel.url {
-            let tsv = service.exportSourcesTSV()
-            try? tsv.write(to: url, atomically: true, encoding: .utf8)
+            if let data = service.exportConfigJSON() {
+                try? data.write(to: url)
+            }
         }
     }
 
-    private func importSources() {
+    private func importConfig() {
+        importError = nil
         let panel = NSOpenPanel()
-        panel.title = "Import Status Pages"
-        panel.allowedContentTypes = [.tabSeparatedText, .plainText]
+        panel.title = "Import Configuration"
+        panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
 
         if panel.runModal() == .OK, let url = panel.url {
-            if let tsv = try? String(contentsOf: url, encoding: .utf8) {
-                service.importSourcesTSV(tsv)
+            if let data = try? Data(contentsOf: url) {
+                if !service.importConfigJSON(data) {
+                    importError = "Could not read configuration file. Check that it is a valid StatusBar JSON export."
+                }
+            } else {
+                importError = "Could not read the selected file."
+            }
+        }
+    }
+
+    private func exportSources() {
+        let panel = NSSavePanel()
+        panel.title = "Export Sources"
+        panel.nameFieldStringValue = "statusbar-sources.json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if let data = service.exportSourcesJSON() {
+                try? data.write(to: url)
+            }
+        }
+    }
+
+    private func importSources() {
+        importError = nil
+        let panel = NSOpenPanel()
+        panel.title = "Import Sources"
+        panel.allowedContentTypes = [.json, .tabSeparatedText, .plainText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        if panel.runModal() == .OK, let url = panel.url {
+            if let data = try? Data(contentsOf: url) {
+                // Try JSON first
+                if service.importSourcesJSON(data) { return }
+                // Fall back to TSV
+                if let text = String(data: data, encoding: .utf8) {
+                    let parsed = StatusSource.parse(lines: text)
+                    if !parsed.isEmpty {
+                        service.importSourcesTSV(text)
+                        return
+                    }
+                }
+                importError = "Could not read sources file. Supported formats: JSON and TSV."
+            } else {
+                importError = "Could not read the selected file."
             }
         }
     }

@@ -493,6 +493,80 @@ final class StatusService: ObservableObject {
         applySources(from: StatusSource.serialize(parsed))
     }
 
+    // MARK: - JSON Export/Import
+
+    func exportSourcesJSON() -> Data? {
+        StatusSource.encodeToPrettyJSON(sources)
+    }
+
+    func importSourcesJSON(_ data: Data) -> Bool {
+        let decoded = StatusSource.decode(from: String(data: data, encoding: .utf8) ?? "")
+        guard !decoded.isEmpty else { return false }
+        sources = decoded
+        persistSources()
+        for oldID in states.keys where !Set(decoded.map(\.id)).contains(oldID) {
+            states.removeValue(forKey: oldID)
+            previousIndicators.removeValue(forKey: oldID)
+            providerCache.removeValue(forKey: oldID)
+            historyStore.removeSource(oldID)
+        }
+        history = historyStore.data
+        Task { await refreshAll() }
+        return true
+    }
+
+    func exportConfigJSON() -> Data? {
+        let defaults = UserDefaults.standard
+        let settings = ConfigSettings(
+            refreshInterval: refreshInterval,
+            notificationsEnabled: defaults.object(forKey: "notificationsEnabled") as? Bool ?? true,
+            defaultAlertLevel: defaults.string(forKey: "defaultAlertLevel") ?? AlertLevel.all.rawValue,
+            autoCheckForUpdates: defaults.object(forKey: "autoCheckForUpdates") as? Bool ?? true
+        )
+        let webhooks = WebhookManager.shared.configs
+        let config = StatusBarConfig(settings: settings, sources: sources, webhooks: webhooks)
+        return StatusBarConfig.encode(config)
+    }
+
+    func importConfigJSON(_ data: Data) -> Bool {
+        guard let config = StatusBarConfig.decode(from: data) else { return false }
+
+        // Apply settings
+        refreshInterval = config.settings.refreshInterval
+        UserDefaults.standard.set(config.settings.notificationsEnabled, forKey: "notificationsEnabled")
+        UserDefaults.standard.set(config.settings.defaultAlertLevel, forKey: "defaultAlertLevel")
+        UserDefaults.standard.set(config.settings.autoCheckForUpdates, forKey: "autoCheckForUpdates")
+        startTimer()
+
+        // Apply sources
+        let newIDs = Set(config.sources.map(\.id))
+        for oldID in states.keys where !newIDs.contains(oldID) {
+            states.removeValue(forKey: oldID)
+            previousIndicators.removeValue(forKey: oldID)
+            providerCache.removeValue(forKey: oldID)
+            historyStore.removeSource(oldID)
+        }
+        history = historyStore.data
+        sources = config.sources
+        persistSources()
+
+        // Apply webhooks
+        let manager = WebhookManager.shared
+        for existing in manager.configs {
+            manager.removeConfig(id: existing.id)
+        }
+        for webhook in config.webhooks {
+            manager.addConfig(webhook)
+        }
+
+        Task { await refreshAll() }
+        return true
+    }
+
+    var hasWebhooks: Bool {
+        !WebhookManager.shared.configs.isEmpty
+    }
+
     func resetToDefaults() {
         applySources(from: kDefaultSources)
     }

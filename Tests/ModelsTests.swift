@@ -510,6 +510,42 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(WebhookPlatform.allCases.count, 4)
     }
 
+    // MARK: - StatusSource JSON Export
+
+    func testStatusSourceEncodeToPrettyJSON() {
+        let sources = [
+            StatusSource(
+                id: UUID(uuidString: "12345678-1234-1234-1234-123456789012")!,
+                name: "Test", baseURL: "https://test.com", alertLevel: .critical, group: "Infra", sortOrder: 2
+            )
+        ]
+        let data = StatusSource.encodeToPrettyJSON(sources)
+        XCTAssertNotNil(data)
+        let json = String(data: data!, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\n"))
+        let decoded = StatusSource.decode(from: json)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].name, "Test")
+        XCTAssertEqual(decoded[0].alertLevel, .critical)
+        XCTAssertEqual(decoded[0].group, "Infra")
+        XCTAssertEqual(decoded[0].sortOrder, 2)
+    }
+
+    func testStatusSourceJSONPreservesAllFields() {
+        let source = StatusSource(
+            id: UUID(uuidString: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE")!,
+            name: "Full Fields", baseURL: "https://full.example.com", alertLevel: .none, group: "MyGroup", sortOrder: 99
+        )
+        let data = StatusSource.encodeToPrettyJSON([source])
+        XCTAssertNotNil(data)
+        let decoded = StatusSource.decode(from: String(data: data!, encoding: .utf8)!)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].id, source.id)
+        XCTAssertEqual(decoded[0].alertLevel, .none)
+        XCTAssertEqual(decoded[0].group, "MyGroup")
+        XCTAssertEqual(decoded[0].sortOrder, 99)
+    }
+
     // MARK: - CatalogEntry
 
     func testCatalogEntryParsing() {
