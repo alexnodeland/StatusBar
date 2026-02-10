@@ -155,39 +155,10 @@ final class StatusService: ObservableObject {
             states[source.id]?.lastSuccessfulRefresh = Date()
 
             // Notify on status changes, gated by alert level
-            let newSev = severityFor(newIndicator)
-            let shouldNotify = newSev >= source.alertLevel.minimumSeverity
-
-            if shouldNotify {
-                if let old = oldIndicator, old != newIndicator {
-                    let oldSev = severityFor(old)
-                    if newSev > oldSev {
-                        NotificationManager.shared.sendStatusChange(
-                            source: source.name,
-                            url: source.baseURL,
-                            title: "\(source.name) \u{2014} Status Degraded",
-                            body: summary.status.description
-                        )
-                        Task.detached { await WebhookManager.shared.sendAll(source: source.name, title: "\(source.name) \u{2014} Status Degraded", body: summary.status.description) }
-                    } else if newSev < oldSev && newIndicator == "none" {
-                        NotificationManager.shared.sendStatusChange(
-                            source: source.name,
-                            url: source.baseURL,
-                            title: "\(source.name) \u{2014} Recovered",
-                            body: "All systems operational"
-                        )
-                        Task.detached { await WebhookManager.shared.sendAll(source: source.name, title: "\(source.name) \u{2014} Recovered", body: "All systems operational") }
-                    }
-                } else if oldIndicator == nil && newSev > 0 {
-                    NotificationManager.shared.sendStatusChange(
-                        source: source.name,
-                        url: source.baseURL,
-                        title: "\(source.name) \u{2014} Active Incident",
-                        body: summary.status.description
-                    )
-                    Task.detached { await WebhookManager.shared.sendAll(source: source.name, title: "\(source.name) \u{2014} Active Incident", body: summary.status.description) }
-                }
-            }
+            notifyIfNeeded(
+                source: source, summary: summary,
+                newIndicator: newIndicator, oldIndicator: oldIndicator
+            )
 
             previousIndicators[source.id] = newIndicator
             recordCheckpoint(sourceID: source.id, indicator: newIndicator)
@@ -200,6 +171,39 @@ final class StatusService: ObservableObject {
         }
 
         states[source.id]?.isLoading = false
+    }
+
+    private func notifyIfNeeded(
+        source: StatusSource, summary: SPSummary,
+        newIndicator: String, oldIndicator: String?
+    ) {
+        let newSev = severityFor(newIndicator)
+        guard newSev >= source.alertLevel.minimumSeverity else { return }
+
+        let name = source.name
+        let desc = summary.status.description
+
+        if let old = oldIndicator, old != newIndicator {
+            let oldSev = severityFor(old)
+            if newSev > oldSev {
+                sendNotification(source: source, title: "\(name) \u{2014} Status Degraded", body: desc)
+            } else if newSev < oldSev && newIndicator == "none" {
+                sendNotification(source: source, title: "\(name) \u{2014} Recovered", body: "All systems operational")
+            }
+        } else if oldIndicator == nil && newSev > 0 {
+            sendNotification(source: source, title: "\(name) \u{2014} Active Incident", body: desc)
+        }
+    }
+
+    private func sendNotification(source: StatusSource, title: String, body: String) {
+        NotificationManager.shared.sendStatusChange(
+            source: source.name, url: source.baseURL, title: title, body: body
+        )
+        Task.detached {
+            await WebhookManager.shared.sendAll(
+                source: source.name, title: title, body: body
+            )
+        }
     }
 
     private func fetchSummary(baseURL: String) async throws -> SPSummary {

@@ -428,7 +428,9 @@ final class ModelsTests: XCTestCase {
 
     func testStatusSourceDecodeFromJSON() {
         let json = """
-            [{"id":"12345678-1234-1234-1234-123456789012","name":"Test","baseURL":"https://test.com/","alertLevel":"Critical Only","group":"Infra","sortOrder":5}]
+            [{"id":"12345678-1234-1234-1234-123456789012",\
+            "name":"Test","baseURL":"https://test.com/",\
+            "alertLevel":"Critical Only","group":"Infra","sortOrder":5}]
             """
         let decoded = StatusSource.decode(from: json)
         XCTAssertEqual(decoded.count, 1)

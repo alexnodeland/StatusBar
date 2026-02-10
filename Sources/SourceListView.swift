@@ -1,133 +1,12 @@
 // SourceListView.swift
-// Root navigation view, source list with sort/filter, and source row.
+// Source list with sort/filter.
 
 import AppKit
 import SwiftUI
 
-// MARK: - Navigation Destination
-
-enum NavigationDestination: Equatable, Hashable {
-    case sourceList
-    case sourceDetail(UUID)
-    case catalog
-}
-
-// MARK: - Root View
-
-struct RootView: View {
-    @ObservedObject var service: StatusService
-    @ObservedObject var updateChecker: UpdateChecker
-    @State private var destination: NavigationDestination = .sourceList
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        VStack(spacing: 0) {
-            switch destination {
-            case .sourceList:
-                SourceListView(
-                    service: service,
-                    updateChecker: updateChecker,
-                    onSelect: { id in
-                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                            destination = .sourceDetail(id)
-                        }
-                    },
-                    onSettings: {
-                        SettingsWindowController.shared.open(service: service, updateChecker: updateChecker)
-                    },
-                    onCatalog: {
-                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                            destination = .catalog
-                        }
-                    }
-                )
-
-            case .sourceDetail(let sourceID):
-                if let source = service.sources.first(where: { $0.id == sourceID }) {
-                    SourceDetailView(
-                        source: source,
-                        state: service.state(for: source),
-                        historyStore: service.historyStore,
-                        onRefresh: { Task { await service.refresh(source: source) } },
-                        onBack: {
-                            withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                                destination = .sourceList
-                            }
-                        }
-                    )
-                } else {
-                    // Source was removed while viewing detail — go back
-                    Color.clear.onAppear {
-                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                            destination = .sourceList
-                        }
-                    }
-                }
-
-            case .catalog:
-                ServiceCatalogView(
-                    service: service,
-                    onBack: {
-                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                            destination = .sourceList
-                        }
-                    }
-                )
-            }
-        }
-
-        // Hidden buttons for global keyboard shortcuts
-        .background {
-            // Esc — navigate back to source list
-            Button("") {
-                withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
-                    destination = .sourceList
-                }
-            }
-            .keyboardShortcut(.escape, modifiers: [])
-            .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
-
-            // Cmd+R — refresh all
-            Button("") { Task { await service.refreshAll() } }
-                .keyboardShortcut("r", modifiers: .command)
-                .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
-
-            // Cmd+, — open settings window
-            Button("") {
-                SettingsWindowController.shared.open(service: service, updateChecker: updateChecker)
-            }
-            .keyboardShortcut(",", modifiers: .command)
-            .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
-
-            // Cmd+Q — quit
-            Button("") {
-                NSApplication.shared.terminate(nil)
-            }
-            .keyboardShortcut("q", modifiers: .command)
-            .frame(width: 0, height: 0).opacity(0).accessibilityHidden(true)
-        }
-        .frame(minWidth: 340, idealWidth: 380, maxWidth: 480, minHeight: 400, idealHeight: 520, maxHeight: 700)
-        .onChange(of: destination) { _, newValue in
-            let label: String
-            switch newValue {
-            case .sourceList:
-                label = "Source list"
-            case .sourceDetail(let id):
-                if let source = service.sources.first(where: { $0.id == id }) {
-                    label = "\(source.name) detail view"
-                } else {
-                    label = "Detail view"
-                }
-            case .catalog:
-                label = "Service catalog"
-            }
-            AccessibilityNotification.Announcement(label).post()
-        }
-    }
-}
-
 // MARK: - Source List View
 
+// swiftlint:disable:next type_body_length
 struct SourceListView: View {
     @ObservedObject var service: StatusService
     @ObservedObject var updateChecker: UpdateChecker
@@ -313,7 +192,11 @@ struct SourceListView: View {
                 .foregroundStyle(service.menuBarColor)
                 .symbolRenderingMode(.hierarchical)
                 .contentTransition(.symbolEffect(.replace))
-                .accessibilityLabel("Status indicator: \(service.worstIndicator == "none" ? "all operational" : "\(service.issueCount) issues")")
+                .accessibilityLabel({
+                    let status = service.worstIndicator == "none"
+                        ? "all operational" : "\(service.issueCount) issues"
+                    return "Status indicator: \(status)"
+                }())
 
             VStack(alignment: .leading, spacing: Design.Spacing.listGap) {
                 Text("Status Monitor")
@@ -607,110 +490,6 @@ struct SourceListView: View {
         }
     }
 
-    // MARK: - Context Menu
-
-    @ViewBuilder
-    private func sourceContextMenu(for source: StatusSource) -> some View {
-        Button {
-            Task { await service.refresh(source: source) }
-        } label: {
-            Label("Refresh", systemImage: "arrow.clockwise")
-        }
-
-        Divider()
-
-        // Alert Level submenu
-        Menu {
-            ForEach(AlertLevel.allCases, id: \.self) { level in
-                Button {
-                    service.updateAlertLevel(sourceID: source.id, level: level)
-                } label: {
-                    if source.alertLevel == level {
-                        Label(level.rawValue, systemImage: "checkmark")
-                    } else {
-                        Text(level.rawValue)
-                    }
-                }
-            }
-        } label: {
-            Label("Alert Level", systemImage: "bell")
-        }
-
-        // Move to Group submenu
-        Menu {
-            let existingGroups = Set(service.sources.compactMap(\.group)).sorted()
-            ForEach(existingGroups, id: \.self) { group in
-                Button {
-                    service.setGroup(sourceID: source.id, group: group)
-                } label: {
-                    if source.group == group {
-                        Label(group, systemImage: "checkmark")
-                    } else {
-                        Text(group)
-                    }
-                }
-            }
-            if !existingGroups.isEmpty {
-                Divider()
-            }
-            Button {
-                promptForNewGroup(sourceID: source.id)
-            } label: {
-                Label("New Group\u{2026}", systemImage: "plus")
-            }
-            if source.group != nil {
-                Button("Remove from Group") {
-                    service.setGroup(sourceID: source.id, group: nil)
-                }
-            }
-        } label: {
-            Label("Move to Group", systemImage: "folder")
-        }
-
-        Divider()
-
-        Button {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(source.baseURL, forType: .string)
-        } label: {
-            Label("Copy URL", systemImage: "doc.on.doc")
-        }
-
-        Button {
-            if let url = URL(string: source.baseURL) {
-                NSWorkspace.shared.open(url)
-            }
-        } label: {
-            Label("Open in Browser", systemImage: "safari")
-        }
-
-        Divider()
-
-        Button(role: .destructive) {
-            service.removeSource(id: source.id)
-        } label: {
-            Label("Remove", systemImage: "trash")
-        }
-    }
-
-    private func promptForNewGroup(sourceID: UUID) {
-        let alert = NSAlert()
-        alert.messageText = "New Group"
-        alert.informativeText = "Enter a name for the new group:"
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Cancel")
-        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
-        textField.placeholderString = "Group name"
-        alert.accessoryView = textField
-        alert.window.initialFirstResponder = textField
-        if alert.runModal() == .alertFirstButtonReturn {
-            let name = textField.stringValue.trimmingCharacters(in: .whitespaces)
-            if !name.isEmpty {
-                service.setGroup(sourceID: sourceID, group: name)
-            }
-        }
-    }
-
     // MARK: - Footer
 
     private var footerSection: some View {
@@ -726,30 +505,38 @@ struct SourceListView: View {
             }
 
             Button {
-                withAnimation(reduceMotionAnimation(Design.Timing.expand, reduceMotion: reduceMotion)) {
+                withAnimation(reduceMotionAnimation(
+                    Design.Timing.expand,
+                    reduceMotion: reduceMotion
+                )) {
                     showingAddSource.toggle()
                     newSourceName = ""
                     newSourceURL = ""
-                    if showingAddSource {
-                        focusedField = .name
-                    } else {
-                        focusedField = nil
-                    }
+                    focusedField = showingAddSource ? .name : nil
                 }
             } label: {
-                Image(systemName: showingAddSource ? "xmark.circle.fill" : "plus.circle.fill")
+                Image(systemName: showingAddSource
+                    ? "xmark.circle.fill" : "plus.circle.fill")
                     .font(Design.Typography.caption)
-                    .foregroundStyle(showingAddSource ? .secondary : Color.accentColor)
+                    .foregroundStyle(
+                        showingAddSource
+                            ? .secondary : Color.accentColor
+                    )
             }
             .buttonStyle(.borderless)
             .help(showingAddSource ? "Cancel" : "Add source")
-            .accessibilityLabel(showingAddSource ? "Cancel adding source" : "Add new source")
+            .accessibilityLabel(
+                showingAddSource
+                    ? "Cancel adding source" : "Add new source"
+            )
 
             Group {
+                let c = service.sources.count
                 if statusFilter == .all {
-                    Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                    Text("\(c) source\(c == 1 ? "" : "s")")
                 } else {
-                    Text("\(filteredAndSortedSources.count) of \(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                    let f = filteredAndSortedSources.count
+                    Text("\(f) of \(c) source\(c == 1 ? "" : "s")")
                 }
             }
             .font(Design.Typography.micro)
@@ -770,143 +557,18 @@ struct SourceListView: View {
                 }
             }
             .buttonStyle(.borderless)
-            .help(updateChecker.isUpdateAvailable ? "Settings — Update available (Cmd+,)" : "Settings (Cmd+,)")
-            .accessibilityLabel(updateChecker.isUpdateAvailable ? "Settings, update available" : "Settings")
+            .help(
+                updateChecker.isUpdateAvailable
+                    ? "Settings \u{2014} Update available (Cmd+,)"
+                    : "Settings (Cmd+,)"
+            )
+            .accessibilityLabel(
+                updateChecker.isUpdateAvailable
+                    ? "Settings, update available" : "Settings"
+            )
         }
         .padding(.horizontal, Design.Spacing.sectionH)
         .padding(.vertical, Design.Spacing.sectionV)
         .chromeBackground()
-    }
-}
-
-// MARK: - Source Row
-
-struct SourceRow: View {
-    let source: StatusSource
-    let state: SourceState
-    var checkpoints: [StatusCheckpoint] = []
-
-    var body: some View {
-        HStack(spacing: Design.Spacing.standard) {
-            ZStack(alignment: .bottomTrailing) {
-                Image(systemName: iconForIndicator(state.indicator))
-                    .font(Design.Typography.body)
-                    .foregroundStyle(colorForIndicator(state.indicator))
-                    .symbolRenderingMode(.hierarchical)
-                    .frame(width: 20)
-
-                if state.isStale {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 7))
-                        .foregroundStyle(.orange)
-                        .offset(x: 4, y: 4)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: Design.Spacing.listGap) {
-                Text(source.name)
-                    .font(Design.Typography.bodyMedium)
-                    .lineLimit(1)
-
-                HStack(spacing: Design.Spacing.cellInner) {
-                    if !checkpoints.isEmpty {
-                        SparklineView(checkpoints: checkpoints)
-                    }
-
-                    if state.isStale, state.lastError != nil {
-                        Text("\(state.statusDescription) (stale)")
-                            .font(Design.Typography.caption)
-                            .foregroundStyle(.orange)
-                            .lineLimit(1)
-                    } else if let error = state.lastError {
-                        Text(error)
-                            .font(Design.Typography.micro)
-                            .foregroundStyle(.red)
-                            .lineLimit(1)
-                    } else {
-                        Text(state.statusDescription)
-                            .font(Design.Typography.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-            }
-
-            Spacer()
-
-            let activeCount = state.activeIncidents.count
-            if activeCount > 0 {
-                BadgeView(text: "\(activeCount)", color: colorForIndicator(state.indicator))
-            }
-
-            if state.isLoading {
-                ProgressView()
-                    .scaleEffect(0.5)
-                    .frame(width: 12)
-                    .accessibilityLabel("Loading")
-            }
-
-            Image(systemName: "chevron.right")
-                .font(Design.Typography.micro)
-                .foregroundStyle(.quaternary)
-        }
-        .padding(.horizontal, Design.Spacing.rowH)
-        .padding(.vertical, Design.Spacing.sectionV)
-        .background(
-            RoundedRectangle(cornerRadius: Design.Radius.row, style: .continuous)
-                .fill(
-                    state.indicatorSeverity > 0
-                        ? colorForIndicator(state.indicator).opacity(0.06)
-                        : Color.clear)
-        )
-        .hoverHighlight()
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(source.name), status: \(state.statusDescription)")
-        .accessibilityValue(state.activeIncidents.isEmpty ? "No active incidents" : "\(state.activeIncidents.count) active incident\(state.activeIncidents.count == 1 ? "" : "s")")
-        .accessibilityHint("Double tap to view details")
-    }
-}
-
-// MARK: - Compact Source Row
-
-struct CompactSourceRow: View {
-    let source: StatusSource
-    let state: SourceState
-
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
-
-    var body: some View {
-        HStack(spacing: Design.Spacing.cardInner) {
-            if differentiateWithoutColor {
-                Image(systemName: iconForIndicator(state.indicator))
-                    .font(.system(size: 9))
-                    .foregroundStyle(colorForIndicator(state.indicator))
-                    .symbolRenderingMode(.hierarchical)
-                    .frame(width: 10)
-            } else {
-                Circle()
-                    .fill(colorForIndicator(state.indicator))
-                    .frame(width: 7, height: 7)
-            }
-            Text(source.name)
-                .font(Design.Typography.caption)
-                .lineLimit(1)
-            Spacer()
-            if state.isStale {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 8))
-                    .foregroundStyle(.orange)
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 8))
-                .foregroundStyle(.quaternary)
-        }
-        .padding(.horizontal, Design.Spacing.rowH)
-        .padding(.vertical, Design.Spacing.compactV)
-        .hoverHighlight()
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(source.name), status: \(state.statusDescription)")
-        .accessibilityValue(state.activeIncidents.isEmpty ? "No active incidents" : "\(state.activeIncidents.count) active incident\(state.activeIncidents.count == 1 ? "" : "s")")
-        .accessibilityHint("Double tap to view details")
     }
 }

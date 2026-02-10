@@ -17,8 +17,11 @@ struct HoverEffect: ViewModifier {
             )
             .contentShape(RoundedRectangle(cornerRadius: Design.Radius.row))
             .onHover { hovering in
-                if reduceMotion { isHovered = hovering }
-                else { withAnimation(Design.Timing.hover) { isHovered = hovering } }
+                if reduceMotion {
+                    isHovered = hovering
+                } else {
+                    withAnimation(Design.Timing.hover) { isHovered = hovering }
+                }
             }
     }
 }
@@ -126,4 +129,3 @@ struct ChromeDivider: View {
 struct ContentDivider: View {
     var body: some View { Divider().opacity(0.3) }
 }
-
