@@ -600,17 +600,15 @@ struct SourceListView: View {
 
     private var footerSection: some View {
         HStack {
-            Group {
-                if statusFilter == .all {
-                    Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
-                } else {
-                    Text("\(filteredAndSortedSources.count) of \(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+            if let onCatalog {
+                Button(action: onCatalog) {
+                    Image(systemName: "list.star")
+                        .font(Design.Typography.caption)
                 }
+                .buttonStyle(.borderless)
+                .help("Browse service catalog")
+                .accessibilityLabel("Browse service catalog")
             }
-            .font(Design.Typography.micro)
-            .foregroundStyle(.quaternary)
-
-            Spacer()
 
             Button {
                 withAnimation(Design.Timing.expand) {
@@ -627,15 +625,17 @@ struct SourceListView: View {
             .help(showingAddSource ? "Cancel" : "Add source")
             .accessibilityLabel(showingAddSource ? "Cancel adding source" : "Add new source")
 
-            if let onCatalog {
-                Button(action: onCatalog) {
-                    Image(systemName: "list.star")
-                        .font(Design.Typography.caption)
+            Group {
+                if statusFilter == .all {
+                    Text("\(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
+                } else {
+                    Text("\(filteredAndSortedSources.count) of \(service.sources.count) source\(service.sources.count == 1 ? "" : "s")")
                 }
-                .buttonStyle(.borderless)
-                .help("Browse service catalog")
-                .accessibilityLabel("Browse service catalog")
             }
+            .font(Design.Typography.micro)
+            .foregroundStyle(.quaternary)
+
+            Spacer()
 
             Button(action: onSettings) {
                 ZStack(alignment: .topTrailing) {

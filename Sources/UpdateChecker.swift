@@ -1,7 +1,12 @@
 // UpdateChecker.swift
 // Checks GitHub Releases API for app updates.
+// When Sparkle.framework is available, delegates to SPUStandardUpdaterController.
 
 import SwiftUI
+
+#if canImport(Sparkle)
+import Sparkle
+#endif
 
 // MARK: - Update Checker
 
@@ -116,4 +121,29 @@ final class UpdateChecker: ObservableObject {
             NSWorkspace.shared.open(url)
         }
     }
+
+    /// Whether the app is using Sparkle for updates instead of GitHub Releases.
+    var usesSparkle: Bool {
+        #if canImport(Sparkle)
+        return true
+        #else
+        return false
+        #endif
+    }
 }
+
+// MARK: - Sparkle Integration
+
+#if canImport(Sparkle)
+extension UpdateChecker {
+    func setupSparkle() {
+        let controller = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
+        // Sparkle manages its own update lifecycle from here.
+        _ = controller
+    }
+}
+#endif

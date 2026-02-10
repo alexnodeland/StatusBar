@@ -31,6 +31,16 @@ struct MenuBarLabel: View {
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NotificationManager.shared.requestPermission()
+
+        HotkeyManager.shared.onToggle = {
+            // Toggle the menu bar extra by clicking its status bar button
+            if let button = NSApp.windows
+                .compactMap({ $0.value(forKey: "statusItem") as? NSStatusItem })
+                .first?.button {
+                button.performClick(nil)
+            }
+        }
+        HotkeyManager.shared.register()
     }
 }
 
@@ -45,6 +55,11 @@ struct StatusBarApp: App {
     var body: some Scene {
         MenuBarExtra {
             RootView(service: service, updateChecker: updateChecker)
+                .onAppear {
+                    #if canImport(Sparkle)
+                    updateChecker.setupSparkle()
+                    #endif
+                }
         } label: {
             MenuBarLabel(service: service)
         }

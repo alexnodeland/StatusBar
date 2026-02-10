@@ -23,6 +23,29 @@ let kDefaultSources = """
 
 let kGitHubRepo = "alexnodeland/StatusBar"
 
+let kServiceCatalog = """
+    GitHub\thttps://www.githubstatus.com\tDeveloper Tools
+    Cloudflare\thttps://www.cloudflarestatus.com\tInfrastructure
+    Anthropic\thttps://status.anthropic.com\tAI & ML
+    OpenAI\thttps://status.openai.com\tAI & ML
+    AWS\thttps://health.aws.amazon.com\tCloud
+    Datadog\thttps://status.datadoghq.com\tObservability
+    PagerDuty\thttps://status.pagerduty.com\tIncident Management
+    Vercel\thttps://www.vercel-status.com\tDeveloper Tools
+    Netlify\thttps://www.netlifystatus.com\tDeveloper Tools
+    Twilio\thttps://status.twilio.com\tCommunication
+    Stripe\thttps://status.stripe.com\tPayments
+    Braintree\thttps://status.braintreepayments.com\tPayments
+    HashiCorp\thttps://status.hashicorp.com\tDeveloper Tools
+    Atlassian\thttps://status.atlassian.com\tProductivity
+    Bitbucket\thttps://bitbucket.status.atlassian.com\tDeveloper Tools
+    Figma\thttps://status.figma.com\tDesign
+    Reddit\thttps://www.redditstatus.com\tSocial
+    Discord\thttps://discordstatus.com\tCommunication
+    Linear\thttps://linearstatus.com\tProductivity
+    Notion\thttps://status.notion.so\tProductivity
+    """
+
 // MARK: - Retry Configuration
 
 let kMaxRetries = 3

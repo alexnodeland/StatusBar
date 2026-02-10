@@ -394,4 +394,143 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(state.activeIncidents[0].id, "i1")
     }
 
+    // MARK: - StatusSource JSON Codable
+
+    func testStatusSourceCodableRoundTrip() throws {
+        let source = StatusSource(
+            id: UUID(uuidString: "12345678-1234-1234-1234-123456789012")!,
+            name: "Test",
+            baseURL: "https://test.com",
+            alertLevel: .critical,
+            group: "Infrastructure",
+            sortOrder: 3
+        )
+        let data = try JSONEncoder().encode([source])
+        let decoded = try JSONDecoder().decode([StatusSource].self, from: data)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].id, source.id)
+        XCTAssertEqual(decoded[0].name, "Test")
+        XCTAssertEqual(decoded[0].baseURL, "https://test.com")
+        XCTAssertEqual(decoded[0].alertLevel, .critical)
+        XCTAssertEqual(decoded[0].group, "Infrastructure")
+        XCTAssertEqual(decoded[0].sortOrder, 3)
+    }
+
+    func testStatusSourceCodableDefaultValues() throws {
+        let json = """
+            [{"id":"12345678-1234-1234-1234-123456789012","name":"Test","baseURL":"https://test.com"}]
+            """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode([StatusSource].self, from: json)
+        XCTAssertEqual(decoded[0].alertLevel, .all)
+        XCTAssertNil(decoded[0].group)
+        XCTAssertEqual(decoded[0].sortOrder, 0)
+    }
+
+    func testStatusSourceDecodeFromJSON() {
+        let json = """
+            [{"id":"12345678-1234-1234-1234-123456789012","name":"Test","baseURL":"https://test.com/","alertLevel":"Critical Only","group":"Infra","sortOrder":5}]
+            """
+        let decoded = StatusSource.decode(from: json)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].baseURL, "https://test.com")  // trailing slash trimmed
+        XCTAssertEqual(decoded[0].alertLevel, .critical)
+        XCTAssertEqual(decoded[0].group, "Infra")
+    }
+
+    func testStatusSourceDecodeFromInvalidJSON() {
+        XCTAssertEqual(StatusSource.decode(from: "not json").count, 0)
+        XCTAssertEqual(StatusSource.decode(from: "").count, 0)
+    }
+
+    func testStatusSourceEncodeToJSON() {
+        let sources = [StatusSource(name: "A", baseURL: "https://a.com")]
+        let json = StatusSource.encodeToJSON(sources)
+        XCTAssertTrue(json.hasPrefix("["))
+        let decoded = StatusSource.decode(from: json)
+        XCTAssertEqual(decoded.count, 1)
+        XCTAssertEqual(decoded[0].name, "A")
+    }
+
+    func testStatusSourceTSVToJSONMigration() {
+        // Simulate: parse from TSV, then encode to JSON, then decode from JSON
+        let tsv = "Anthropic\thttps://status.anthropic.com\nGitHub\thttps://www.githubstatus.com"
+        let parsed = StatusSource.parse(lines: tsv)
+        let json = StatusSource.encodeToJSON(parsed)
+        let decoded = StatusSource.decode(from: json)
+        XCTAssertEqual(decoded.count, 2)
+        XCTAssertEqual(decoded[0].name, "Anthropic")
+        XCTAssertEqual(decoded[0].alertLevel, .all)
+        XCTAssertNil(decoded[0].group)
+    }
+
+    // MARK: - AlertLevel
+
+    func testAlertLevelMinimumSeverity() {
+        XCTAssertEqual(AlertLevel.all.minimumSeverity, 1)
+        XCTAssertEqual(AlertLevel.critical.minimumSeverity, 3)
+        XCTAssertEqual(AlertLevel.none.minimumSeverity, Int.max)
+    }
+
+    func testAlertLevelCodable() throws {
+        let level = AlertLevel.critical
+        let data = try JSONEncoder().encode(level)
+        let decoded = try JSONDecoder().decode(AlertLevel.self, from: data)
+        XCTAssertEqual(decoded, .critical)
+    }
+
+    func testAlertLevelAllCases() {
+        XCTAssertEqual(AlertLevel.allCases.count, 3)
+        XCTAssertTrue(AlertLevel.allCases.contains(.all))
+        XCTAssertTrue(AlertLevel.allCases.contains(.critical))
+        XCTAssertTrue(AlertLevel.allCases.contains(.none))
+    }
+
+    // MARK: - SourceSortOrder.manual
+
+    func testSourceSortOrderManual() {
+        XCTAssertEqual(SourceSortOrder.manual.rawValue, "Manual")
+        XCTAssertEqual(SourceSortOrder.manual.systemImage, "hand.draw")
+        XCTAssertTrue(SourceSortOrder.allCases.contains(.manual))
+    }
+
+    // MARK: - WebhookConfig
+
+    func testWebhookConfigCodable() throws {
+        let config = WebhookConfig(url: "https://hooks.slack.com/test", enabled: true, platform: .slack)
+        let data = try JSONEncoder().encode(config)
+        let decoded = try JSONDecoder().decode(WebhookConfig.self, from: data)
+        XCTAssertEqual(decoded.url, "https://hooks.slack.com/test")
+        XCTAssertTrue(decoded.enabled)
+        XCTAssertEqual(decoded.platform, .slack)
+    }
+
+    func testWebhookPlatformAllCases() {
+        XCTAssertEqual(WebhookPlatform.allCases.count, 4)
+    }
+
+    // MARK: - CatalogEntry
+
+    func testCatalogEntryParsing() {
+        let lines = kServiceCatalog
+            .split(separator: "\n", omittingEmptySubsequences: true)
+            .compactMap { line -> CatalogEntry? in
+                let raw = String(line).trimmingCharacters(in: .whitespaces)
+                guard !raw.isEmpty else { return nil }
+                let parts = raw.split(separator: "\t")
+                guard parts.count == 3 else { return nil }
+                return CatalogEntry(
+                    name: String(parts[0]),
+                    url: String(parts[1]),
+                    category: String(parts[2])
+                )
+            }
+        XCTAssertTrue(lines.count >= 15)
+        XCTAssertEqual(lines[0].name, "GitHub")
+        XCTAssertEqual(lines[0].category, "Developer Tools")
+        // Verify all entries have valid URLs
+        for entry in lines {
+            XCTAssertTrue(entry.url.hasPrefix("https://"), "URL should start with https: \(entry.url)")
+        }
+    }
+
 }

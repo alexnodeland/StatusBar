@@ -96,6 +96,8 @@ struct SparklineView: View {
         }
         .frame(height: maxHeight, alignment: .center)
         .help("Last \(checkpoints.suffix(30).count) checks: \(issueCount) with issues")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Status history: \(issueCount) of \(checkpoints.suffix(30).count) checks had issues")
     }
 }
 

@@ -6,6 +6,11 @@
 #   ./build.sh                           # Dev build (arm64 only, fast)
 #   ./build.sh --release                 # Universal binary (arm64 + x86_64) + ZIP
 #   ./build.sh --release --version v1.0  # Release build with version injected
+#   ./build.sh --sparkle                 # Build with Sparkle auto-update framework
+#
+# Environment variables:
+#   CODESIGN_IDENTITY  — Developer ID for signing (omit for ad-hoc)
+#   NOTARIZE_PROFILE   — Keychain profile for notarytool (requires CODESIGN_IDENTITY)
 #
 # After building, the app will be at ./build/StatusBar.app
 # You can double-click it or run: open ./build/StatusBar.app
@@ -21,6 +26,7 @@ RESOURCES="${CONTENTS}/Resources"
 
 RELEASE=false
 VERSION=""
+SPARKLE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -31,6 +37,10 @@ while [[ $# -gt 0 ]]; do
         --version)
             VERSION="$2"
             shift 2
+            ;;
+        --sparkle)
+            SPARKLE=true
+            shift
             ;;
         *)
             echo "Unknown option: $1"
@@ -52,8 +62,16 @@ SWIFT_FLAGS=(
     -framework SwiftUI
     -framework AppKit
     -framework UserNotifications
+    -framework Carbon
     -O
 )
+
+# Sparkle auto-update framework (optional)
+if [ "$SPARKLE" = true ] && [ -d "Vendor/Sparkle.framework" ]; then
+    echo "  Including Sparkle.framework..."
+    SWIFT_FLAGS+=(-F Vendor -framework Sparkle)
+    SWIFT_FLAGS+=(-Xlinker -rpath -Xlinker @executable_path/../Frameworks)
+fi
 
 if [ "$RELEASE" = true ]; then
     echo "📦 Release build (universal binary)..."
@@ -113,8 +131,28 @@ for img in *.png; do
     [ -f "$img" ] && [ "$img" != "icon.png" ] && cp "$img" "${RESOURCES}/"
 done
 
-# Code sign with entitlements (required for notification permissions)
-codesign --force --sign - --entitlements StatusBar.entitlements "${APP_BUNDLE}"
+# Copy Sparkle.framework into the app bundle if enabled
+if [ "$SPARKLE" = true ] && [ -d "Vendor/Sparkle.framework" ]; then
+    mkdir -p "${CONTENTS}/Frameworks"
+    cp -R Vendor/Sparkle.framework "${CONTENTS}/Frameworks/"
+fi
+
+# Code signing
+if [ -n "${CODESIGN_IDENTITY:-}" ]; then
+    echo "🔏 Signing with identity: ${CODESIGN_IDENTITY}..."
+
+    # Sign embedded frameworks first
+    if [ -d "${CONTENTS}/Frameworks/Sparkle.framework" ]; then
+        codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp \
+            "${CONTENTS}/Frameworks/Sparkle.framework"
+    fi
+
+    codesign --force --sign "$CODESIGN_IDENTITY" --options runtime \
+        --entitlements StatusBar.entitlements --timestamp "${APP_BUNDLE}"
+else
+    # Ad-hoc signing (local development)
+    codesign --force --sign - --entitlements StatusBar.entitlements "${APP_BUNDLE}"
+fi
 
 echo "✅ Built successfully: ${APP_BUNDLE}"
 
@@ -126,6 +164,18 @@ if [ "$RELEASE" = true ]; then
     echo "📦 Creating ${ZIP_NAME}..."
     ditto -c -k --keepParent "${APP_BUNDLE}" "${BUILD_DIR}/${ZIP_NAME}"
     echo "✅ Archive: ${BUILD_DIR}/${ZIP_NAME}"
+
+    # Notarize if profile is configured
+    if [ -n "${CODESIGN_IDENTITY:-}" ] && [ -n "${NOTARIZE_PROFILE:-}" ]; then
+        echo "📋 Notarizing..."
+        xcrun notarytool submit "${BUILD_DIR}/${ZIP_NAME}" \
+            --keychain-profile "$NOTARIZE_PROFILE" --wait
+        xcrun stapler staple "${APP_BUNDLE}"
+        # Re-create ZIP with stapled app
+        rm "${BUILD_DIR}/${ZIP_NAME}"
+        ditto -c -k --keepParent "${APP_BUNDLE}" "${BUILD_DIR}/${ZIP_NAME}"
+        echo "✅ Notarized and stapled"
+    fi
 else
     echo ""
     echo "Run with:  open ${APP_BUNDLE}"

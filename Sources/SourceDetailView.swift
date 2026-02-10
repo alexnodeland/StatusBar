@@ -8,6 +8,7 @@ import SwiftUI
 struct SourceDetailView: View {
     let source: StatusSource
     let state: SourceState
+    var historyStore: HistoryStore?
     let onRefresh: () -> Void
     let onBack: () -> Void
 
@@ -46,9 +47,55 @@ struct SourceDetailView: View {
                 }
             }
 
+            if historyStore != nil {
+                Divider().opacity(0.3)
+                uptimeTrendRow
+            }
             Divider().opacity(0.5)
             detailFooter
         }
+    }
+
+    // MARK: - Uptime Trend
+
+    private var uptimeTrendRow: some View {
+        HStack(spacing: 8) {
+            Text("Uptime")
+                .font(Design.Typography.captionSemibold)
+                .foregroundStyle(.secondary)
+            Spacer()
+            uptimeBadge(label: "24h", since: Date().addingTimeInterval(-24 * 60 * 60))
+            uptimeBadge(label: "7d", since: Date().addingTimeInterval(-7 * 24 * 60 * 60))
+            uptimeBadge(label: "30d", since: Date().addingTimeInterval(-30 * 24 * 60 * 60))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.ultraThinMaterial)
+    }
+
+    private func uptimeBadge(label: String, since: Date) -> some View {
+        let fraction = historyStore?.uptimeFraction(for: source.id, since: since) ?? 1.0
+        let pct = fraction * 100
+        let color = uptimeColor(fraction)
+        return HStack(spacing: 3) {
+            Text(label)
+                .font(Design.Typography.micro)
+                .foregroundStyle(.tertiary)
+            Text(String(format: "%.1f%%", pct))
+                .font(Design.Typography.micro.weight(.medium))
+                .foregroundStyle(color)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(color.opacity(0.1), in: Capsule())
+        .accessibilityLabel("\(label) uptime: \(String(format: "%.1f", pct)) percent")
+    }
+
+    private func uptimeColor(_ fraction: Double) -> Color {
+        if fraction > 0.995 { return .green }
+        if fraction > 0.95 { return .yellow }
+        if fraction > 0.90 { return .orange }
+        return .red
     }
 
     private var detailHeader: some View {
@@ -60,11 +107,13 @@ struct SourceDetailView: View {
             .buttonStyle(.borderless)
             .keyboardShortcut(.escape, modifiers: [])
             .help("Back (Esc)")
+            .accessibilityLabel("Back to source list")
 
             Image(systemName: iconForIndicator(state.indicator))
                 .font(.title3)
                 .foregroundStyle(colorForIndicator(state.indicator))
                 .symbolRenderingMode(.hierarchical)
+                .accessibilityLabel("Status: \(state.indicator)")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.name)
@@ -88,6 +137,7 @@ struct SourceDetailView: View {
             }
             .buttonStyle(.borderless)
             .help("Refresh")
+            .accessibilityLabel("Refresh \(source.name)")
         }
         .padding(12)
         .background(.ultraThinMaterial)
@@ -225,6 +275,7 @@ struct SourceDetailView: View {
                     .font(Design.Typography.caption)
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Open \(source.name) status page in browser")
 
             Button {
                 NSApplication.shared.terminate(nil)
@@ -235,6 +286,7 @@ struct SourceDetailView: View {
             .buttonStyle(.borderless)
             .foregroundStyle(.tertiary)
             .help("Quit StatusBar")
+            .accessibilityLabel("Quit StatusBar")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -263,6 +315,8 @@ struct ComponentRow: View {
         .padding(.vertical, 3)
         .padding(.horizontal, 4)
         .hoverHighlight()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(component.name), \(labelForComponentStatus(component.status))")
     }
 }
 
@@ -313,6 +367,7 @@ struct IncidentCard: View {
                             .foregroundStyle(.tertiary)
                     }
                     .buttonStyle(.borderless)
+                    .accessibilityLabel(isExpanded ? "Collapse incident details" : "Expand incident details")
                 }
 
                 if isExpanded {
@@ -357,6 +412,9 @@ struct IncidentCard: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(isActive ? impactColor.opacity(0.3) : Color.clear, lineWidth: 0.5)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(incident.name), \(incident.status)")
+        .accessibilityHint("Double tap to expand details")
     }
 
     private var impactColor: Color {

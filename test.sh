@@ -23,11 +23,12 @@ echo "🧪 Building StatusBar tests..."
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUNDLE_DIR}/Contents/MacOS"
 
-# Collect source files (exclude StatusBarApp.swift which has @main)
+# Collect source files (exclude StatusBarApp.swift which has @main,
+# and HotkeyManager.swift which requires Carbon event loop at runtime)
 SOURCE_FILES=()
 for f in "${PROJECT_DIR}"/Sources/*.swift; do
     case "$(basename "$f")" in
-        StatusBarApp.swift) continue ;;
+        StatusBarApp.swift|HotkeyManager.swift) continue ;;
         *) SOURCE_FILES+=("$f") ;;
     esac
 done

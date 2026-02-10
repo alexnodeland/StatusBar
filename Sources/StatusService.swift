@@ -11,6 +11,7 @@ final class StatusService: ObservableObject {
     @Published var states: [UUID: SourceState] = [:]
     @Published var history: [UUID: [StatusCheckpoint]] = [:]
 
+    @AppStorage("statusSourcesJSON") private var storedSourcesJSON: String = ""
     @AppStorage("statusSourceLines") private var storedLines: String = kDefaultSources
     @AppStorage("refreshInterval") var refreshInterval: Double = kDefaultRefreshInterval
 
@@ -18,6 +19,7 @@ final class StatusService: ObservableObject {
     private var previousIndicators: [UUID: String] = [:]
     private var providerCache: [UUID: StatusProvider] = [:]
 
+    let historyStore = HistoryStore()
     @AppStorage("statusHistory") private var storedHistory: String = "{}"
 
     private let session: URLSession = {
@@ -30,16 +32,45 @@ final class StatusService: ObservableObject {
     }()
 
     init() {
-        loadHistory()
-        sources = StatusSource.parse(lines: storedLines)
-        if sources.isEmpty {
-            sources = StatusSource.parse(lines: kDefaultSources)
-            storedLines = kDefaultSources
+        historyStore.load()
+        // Migrate legacy @AppStorage history to file-based store
+        let legacyHistory = storedHistory
+        if legacyHistory != "{}" && !legacyHistory.isEmpty {
+            historyStore.migrateFromAppStorage(legacyHistory)
+            storedHistory = "{}"
         }
+        // Prune checkpoints older than 30 days
+        historyStore.pruneOlderThan(Date().addingTimeInterval(-30 * 24 * 60 * 60))
+        history = historyStore.data
+        loadSources()
         // Ensure notification delegate is wired before any refresh sends notifications
         _ = NotificationManager.shared
         Task { await refreshAll() }
         startTimer()
+    }
+
+    private func loadSources() {
+        // Try JSON format first
+        let json = storedSourcesJSON.trimmingCharacters(in: .whitespacesAndNewlines)
+        if json.hasPrefix("[") {
+            let decoded = StatusSource.decode(from: json)
+            if !decoded.isEmpty {
+                sources = decoded
+                return
+            }
+        }
+        // Fall back to TSV format and migrate
+        sources = StatusSource.parse(lines: storedLines)
+        if sources.isEmpty {
+            sources = StatusSource.parse(lines: kDefaultSources)
+        }
+        // Migrate to JSON
+        persistSources()
+    }
+
+    private func persistSources() {
+        storedSourcesJSON = StatusSource.encodeToJSON(sources)
+        storedLines = StatusSource.serialize(sources)
     }
 
     // MARK: - Aggregate Status
@@ -123,32 +154,39 @@ final class StatusService: ObservableObject {
             states[source.id]?.isStale = false
             states[source.id]?.lastSuccessfulRefresh = Date()
 
-            // Notify on status changes, including initial load if non-operational
+            // Notify on status changes, gated by alert level
             let newSev = severityFor(newIndicator)
-            if let old = oldIndicator, old != newIndicator {
-                let oldSev = severityFor(old)
-                if newSev > oldSev {
+            let shouldNotify = newSev >= source.alertLevel.minimumSeverity
+
+            if shouldNotify {
+                if let old = oldIndicator, old != newIndicator {
+                    let oldSev = severityFor(old)
+                    if newSev > oldSev {
+                        NotificationManager.shared.sendStatusChange(
+                            source: source.name,
+                            url: source.baseURL,
+                            title: "\(source.name) \u{2014} Status Degraded",
+                            body: summary.status.description
+                        )
+                        Task.detached { await WebhookManager.shared.sendAll(source: source.name, title: "\(source.name) \u{2014} Status Degraded", body: summary.status.description) }
+                    } else if newSev < oldSev && newIndicator == "none" {
+                        NotificationManager.shared.sendStatusChange(
+                            source: source.name,
+                            url: source.baseURL,
+                            title: "\(source.name) \u{2014} Recovered",
+                            body: "All systems operational"
+                        )
+                        Task.detached { await WebhookManager.shared.sendAll(source: source.name, title: "\(source.name) \u{2014} Recovered", body: "All systems operational") }
+                    }
+                } else if oldIndicator == nil && newSev > 0 {
                     NotificationManager.shared.sendStatusChange(
                         source: source.name,
                         url: source.baseURL,
-                        title: "\(source.name) \u{2014} Status Degraded",
+                        title: "\(source.name) \u{2014} Active Incident",
                         body: summary.status.description
                     )
-                } else if newSev < oldSev && newIndicator == "none" {
-                    NotificationManager.shared.sendStatusChange(
-                        source: source.name,
-                        url: source.baseURL,
-                        title: "\(source.name) \u{2014} Recovered",
-                        body: "All systems operational"
-                    )
+                    Task.detached { await WebhookManager.shared.sendAll(source: source.name, title: "\(source.name) \u{2014} Active Incident", body: summary.status.description) }
                 }
-            } else if oldIndicator == nil && newSev > 0 {
-                NotificationManager.shared.sendStatusChange(
-                    source: source.name,
-                    url: source.baseURL,
-                    title: "\(source.name) \u{2014} Active Incident",
-                    body: summary.status.description
-                )
             }
 
             previousIndicators[source.id] = newIndicator
@@ -395,19 +433,19 @@ final class StatusService: ObservableObject {
             states.removeValue(forKey: oldID)
             previousIndicators.removeValue(forKey: oldID)
             providerCache.removeValue(forKey: oldID)
-            history.removeValue(forKey: oldID)
+            historyStore.removeSource(oldID)
         }
-        saveHistory()
+        history = historyStore.data
 
         sources = parsed
-        storedLines = lines
+        persistSources()
         Task { await refreshAll() }
     }
 
-    func addSource(name: String, baseURL: String) {
-        let source = StatusSource(name: name, baseURL: baseURL)
+    func addSource(name: String, baseURL: String, group: String? = nil) {
+        let source = StatusSource(name: name, baseURL: baseURL, group: group, sortOrder: sources.count)
         sources.append(source)
-        storedLines = StatusSource.serialize(sources)
+        persistSources()
         Task { await refresh(source: source) }
     }
 
@@ -416,9 +454,29 @@ final class StatusService: ObservableObject {
         states.removeValue(forKey: id)
         previousIndicators.removeValue(forKey: id)
         providerCache.removeValue(forKey: id)
-        history.removeValue(forKey: id)
-        saveHistory()
-        storedLines = StatusSource.serialize(sources)
+        historyStore.removeSource(id)
+        history = historyStore.data
+        persistSources()
+    }
+
+    func updateAlertLevel(sourceID: UUID, level: AlertLevel) {
+        guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
+        sources[idx].alertLevel = level
+        persistSources()
+    }
+
+    func setGroup(sourceID: UUID, group: String?) {
+        guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
+        sources[idx].group = group
+        persistSources()
+    }
+
+    func moveSources(from offsets: IndexSet, to destination: Int) {
+        sources.move(fromOffsets: offsets, toOffset: destination)
+        for i in sources.indices {
+            sources[i].sortOrder = i
+        }
+        persistSources()
     }
 
     func exportSourcesTSV() -> String {
@@ -445,36 +503,8 @@ final class StatusService: ObservableObject {
 
     // MARK: - Status History
 
-    private func loadHistory() {
-        guard let data = storedHistory.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode([String: [StatusCheckpoint]].self, from: data)
-        else { return }
-        history = [:]
-        for (key, value) in decoded {
-            if let uuid = UUID(uuidString: key) {
-                history[uuid] = value
-            }
-        }
-    }
-
-    private func saveHistory() {
-        var stringKeyed: [String: [StatusCheckpoint]] = [:]
-        for (key, value) in history {
-            stringKeyed[key.uuidString] = value
-        }
-        if let data = try? JSONEncoder().encode(stringKeyed),
-           let json = String(data: data, encoding: .utf8) {
-            storedHistory = json
-        }
-    }
-
     private func recordCheckpoint(sourceID: UUID, indicator: String) {
-        var checkpoints = history[sourceID] ?? []
-        checkpoints.append(StatusCheckpoint(date: Date(), indicator: indicator))
-        if checkpoints.count > 30 {
-            checkpoints = Array(checkpoints.suffix(30))
-        }
-        history[sourceID] = checkpoints
-        saveHistory()
+        historyStore.record(sourceID: sourceID, indicator: indicator)
+        history = historyStore.data
     }
 }
