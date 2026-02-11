@@ -54,6 +54,17 @@ struct WebhookEvent {
     let components: [String]
 }
 
+extension WebhookEvent {
+    init(source: StatusSource, title: String, body: String, summary: SPSummary, event: String) {
+        self.init(
+            source: source.name, title: title, body: body,
+            severity: summary.status.indicator, event: event, url: source.baseURL,
+            timestamp: ISO8601DateFormatter().string(from: Date()),
+            components: summary.components.filter { $0.status != "operational" }.map(\.name)
+        )
+    }
+}
+
 // MARK: - Uptime Trend
 
 struct UptimeTrend {
