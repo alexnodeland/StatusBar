@@ -64,6 +64,20 @@ final class WebhookManager: ObservableObject {
         }
     }
 
+    func sendTest(config: WebhookConfig) async {
+        let event = WebhookEvent(
+            source: "StatusBar Test",
+            title: "StatusBar Test — Status Degraded",
+            body: "This is a test notification from StatusBar. If you see this, your webhook is working!",
+            severity: "minor",
+            event: "degraded",
+            url: "https://github.com/alexnodeland/StatusBar",
+            timestamp: ISO8601DateFormatter().string(from: Date()),
+            components: ["API", "Dashboard"]
+        )
+        await send(config: config, event: event)
+    }
+
     private func send(config: WebhookConfig, event: WebhookEvent) async {
         guard let url = URL(string: config.url) else { return }
         let payload = Self.buildPayload(platform: config.platform, event: event)
