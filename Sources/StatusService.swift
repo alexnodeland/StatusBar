@@ -338,8 +338,8 @@ final class StatusService: ObservableObject {
     }
 
     private func deriveImpact(from status: String) -> String {
-        ["investigating": "major", "identified": "major", "monitoring": "minor",
-         "resolved": "none", "postmortem": "none"][status.lowercased(), default: "minor"]
+        let map = ["investigating": "major", "identified": "major", "monitoring": "minor", "resolved": "none", "postmortem": "none"]
+        return map[status.lowercased(), default: "minor"]
     }
 
     private func deriveIndicator(from incidents: [IIOIncident]) -> String {
@@ -420,14 +420,19 @@ final class StatusService: ObservableObject {
     }
 
     private func mapInstatusDescription(_ status: String) -> String {
-        ["UP": "All systems operational", "HASISSUES": "Experiencing issues",
-         "UNDERMAINTENANCE": "Under maintenance"][status, default: "Experiencing issues"]
+        let map = ["UP": "All systems operational", "HASISSUES": "Experiencing issues", "UNDERMAINTENANCE": "Under maintenance"]
+        return map[status, default: "Experiencing issues"]
     }
 
     private func mapInstatusComponentStatus(_ status: String) -> String {
-        ["OPERATIONAL": "operational", "DEGRADEDPERFORMANCE": "degraded_performance",
-         "PARTIALOUTAGE": "partial_outage", "MAJOROUTAGE": "major_outage",
-         "UNDERMAINTENANCE": "degraded_performance"][status, default: status.lowercased()]
+        let map = [
+            "OPERATIONAL": "operational",
+            "DEGRADEDPERFORMANCE": "degraded_performance",
+            "PARTIALOUTAGE": "partial_outage",
+            "MAJOROUTAGE": "major_outage",
+            "UNDERMAINTENANCE": "degraded_performance",
+        ]
+        return map[status, default: status.lowercased()]
     }
 
     // MARK: - Source Management
