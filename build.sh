@@ -154,7 +154,7 @@ if [ -n "${CODESIGN_IDENTITY:-}" ]; then
         --entitlements StatusBar.entitlements --timestamp "${APP_BUNDLE}"
 else
     # Ad-hoc signing (local development)
-    codesign --force --sign - --entitlements StatusBar.entitlements "${APP_BUNDLE}"
+    codesign --force --sign - --options runtime --entitlements StatusBar.entitlements "${APP_BUNDLE}"
 fi
 
 echo "✅ Built successfully: ${APP_BUNDLE}"
