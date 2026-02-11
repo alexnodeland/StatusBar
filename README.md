@@ -31,11 +31,19 @@
 
 ## 📦 Install
 
-Grab the latest universal binary from the [Releases page](https://github.com/alexnodeland/StatusBar/releases/latest):
+### Homebrew (recommended)
 
-1. Download `StatusBar-vX.Y.Z-universal.zip`
+```bash
+brew tap alexnodeland/tap
+brew install --cask statusbar
+```
+
+### Manual download
+
+1. Download `StatusBar-vX.Y.Z.zip` from the [Releases page](https://github.com/alexnodeland/StatusBar/releases/latest)
 2. Extract and drag `StatusBar.app` to `/Applications`
-3. On first launch, right-click → **Open** to bypass Gatekeeper (ad-hoc signed, not notarized)
+3. Remove quarantine: `xattr -cr /Applications/StatusBar.app`
+4. Launch normally
 
 Runs natively on both Apple Silicon and Intel Macs.
 
