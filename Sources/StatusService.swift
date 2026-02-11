@@ -188,23 +188,49 @@ final class StatusService: ObservableObject {
         if let old = oldIndicator, old != newIndicator {
             let oldSev = severityFor(old)
             if newSev > oldSev {
-                sendNotification(source: source, title: "\(name) \u{2014} Status Degraded", body: desc)
+                sendNotification(
+                    source: source, title: "\(name) \u{2014} Status Degraded",
+                    body: desc, summary: summary, event: "degraded"
+                )
             } else if newSev < oldSev && newIndicator == "none" {
-                sendNotification(source: source, title: "\(name) \u{2014} Recovered", body: "All systems operational")
+                sendNotification(
+                    source: source, title: "\(name) \u{2014} Recovered",
+                    body: "All systems operational", summary: summary, event: "recovered"
+                )
             }
         } else if oldIndicator == nil && newSev > 0 {
-            sendNotification(source: source, title: "\(name) \u{2014} Active Incident", body: desc)
+            sendNotification(
+                source: source, title: "\(name) \u{2014} Active Incident",
+                body: desc, summary: summary, event: "incident"
+            )
         }
     }
 
-    private func sendNotification(source: StatusSource, title: String, body: String) {
+    private func sendNotification(
+        source: StatusSource, title: String, body: String,
+        summary: SPSummary, event: String
+    ) {
         NotificationManager.shared.sendStatusChange(
             source: source.name, url: source.baseURL, title: title, body: body
         )
+
+        let affectedComponents = summary.components
+            .filter { $0.status != "operational" }
+            .map(\.name)
+
+        let webhookEvent = WebhookEvent(
+            source: source.name,
+            title: title,
+            body: body,
+            severity: summary.status.indicator,
+            event: event,
+            url: source.baseURL,
+            timestamp: ISO8601DateFormatter().string(from: Date()),
+            components: affectedComponents
+        )
+
         Task.detached {
-            await WebhookManager.shared.sendAll(
-                source: source.name, title: title, body: body
-            )
+            await WebhookManager.shared.sendAll(event: webhookEvent)
         }
         HookManager.shared.fireAll(
             event: .onStatusChange,

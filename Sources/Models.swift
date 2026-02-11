@@ -41,6 +41,19 @@ struct WebhookConfig: Codable, Identifiable, Equatable {
     }
 }
 
+// MARK: - Webhook Event
+
+struct WebhookEvent {
+    let source: String
+    let title: String
+    let body: String
+    let severity: String
+    let event: String
+    let url: String
+    let timestamp: String
+    let components: [String]
+}
+
 // MARK: - Uptime Trend
 
 struct UptimeTrend {
