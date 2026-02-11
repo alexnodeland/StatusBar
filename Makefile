@@ -1,4 +1,4 @@
-.PHONY: build release test lint format format-check check clean install help
+.PHONY: build release test lint format format-check check clean install setup dev help
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -26,6 +26,14 @@ check: lint format-check test ## Run lint + format check + tests (CI target)
 
 clean: ## Remove build artifacts
 	@rm -rf build/ .build-tests/
+
+setup: ## Install tools and git hooks (one-time bootstrap)
+	@brew bundle
+	@lefthook install
+	@echo "Setup complete."
+
+dev: build ## Build and open the app
+	@open ./build/StatusBar.app
 
 install: build ## Build and copy .app to /Applications
 	@cp -R build/StatusBar.app /Applications/

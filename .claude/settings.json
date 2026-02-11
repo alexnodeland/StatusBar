@@ -1,5 +1,22 @@
 {
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(make build:*)",
+      "Bash(make test:*)",
+      "Bash(make lint:*)",
+      "Bash(make format:*)",
+      "Bash(make format-check:*)",
+      "Bash(make check:*)",
+      "Bash(make clean:*)",
+      "Bash(make setup:*)",
+      "Bash(make dev:*)",
+      "Bash(./build.sh:*)",
+      "Bash(./test.sh:*)",
+      "Bash(swiftlint:*)",
+      "Bash(swift-format:*)"
+    ]
   }
 }
