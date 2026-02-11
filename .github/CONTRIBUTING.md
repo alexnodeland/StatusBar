@@ -1,5 +1,14 @@
 # Contributing
 
+## Getting Started
+
+```bash
+make setup         # Install tools (SwiftLint, swift-format, Lefthook) and git hooks
+make dev           # Build and open the app
+```
+
+This runs `brew bundle` to install dependencies from the `Brewfile` and `lefthook install` to set up pre-commit and pre-push hooks.
+
 ## Build from Source
 
 ```bash
@@ -28,14 +37,20 @@ make format        # Auto-format code with swift-format
 make format-check  # Check formatting without modifying files
 make check         # Run lint + format check + tests (CI target)
 make clean         # Remove build artifacts
+make setup         # Install tools and git hooks
+make dev           # Build and open the app
 make install       # Build and copy .app to /Applications
 ```
 
 ### Prerequisites
 
 - macOS 14+ with Xcode Command Line Tools
-- [SwiftLint](https://github.com/realm/SwiftLint): `brew install swiftlint`
-- [swift-format](https://github.com/swiftlang/swift-format): `brew install swift-format`
+- [Homebrew](https://brew.sh)
+
+All other dependencies are installed via `make setup` (which runs `brew bundle`):
+- [SwiftLint](https://github.com/realm/SwiftLint)
+- [swift-format](https://github.com/swiftlang/swift-format)
+- [Lefthook](https://github.com/evilmartians/lefthook) — git hooks manager
 
 ### Running Tests
 
@@ -50,6 +65,10 @@ Test files live in `Tests/` alongside JSON fixtures in `Tests/Fixtures/`. Test d
 ### Code Quality
 
 The project uses SwiftLint for style enforcement and swift-format for consistent formatting. CI runs `make check` on every push to `main` and every pull request.
+
+Lefthook hooks are installed automatically via `make setup` and enforce:
+- **pre-commit**: auto-formats code and runs lint
+- **pre-push**: runs the full `make check` suite
 
 Before submitting a PR:
 
