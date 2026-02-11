@@ -188,23 +188,36 @@ final class StatusService: ObservableObject {
         if let old = oldIndicator, old != newIndicator {
             let oldSev = severityFor(old)
             if newSev > oldSev {
-                sendNotification(source: source, title: "\(name) \u{2014} Status Degraded", body: desc)
+                sendNotification(
+                    source: source, title: "\(name) \u{2014} Status Degraded",
+                    body: desc, summary: summary, event: "degraded"
+                )
             } else if newSev < oldSev && newIndicator == "none" {
-                sendNotification(source: source, title: "\(name) \u{2014} Recovered", body: "All systems operational")
+                sendNotification(
+                    source: source, title: "\(name) \u{2014} Recovered",
+                    body: "All systems operational", summary: summary, event: "recovered"
+                )
             }
         } else if oldIndicator == nil && newSev > 0 {
-            sendNotification(source: source, title: "\(name) \u{2014} Active Incident", body: desc)
+            sendNotification(
+                source: source, title: "\(name) \u{2014} Active Incident",
+                body: desc, summary: summary, event: "incident"
+            )
         }
     }
 
-    private func sendNotification(source: StatusSource, title: String, body: String) {
+    private func sendNotification(
+        source: StatusSource, title: String, body: String,
+        summary: SPSummary, event: String
+    ) {
         NotificationManager.shared.sendStatusChange(
             source: source.name, url: source.baseURL, title: title, body: body
         )
+        let webhookEvent = WebhookEvent(
+            source: source, title: title, body: body, summary: summary, event: event
+        )
         Task.detached {
-            await WebhookManager.shared.sendAll(
-                source: source.name, title: title, body: body
-            )
+            await WebhookManager.shared.sendAll(event: webhookEvent)
         }
         HookManager.shared.fireAll(
             event: .onStatusChange,
@@ -238,13 +251,7 @@ final class StatusService: ObservableObject {
     }
 
     private func severityFor(_ indicator: String) -> Int {
-        switch indicator {
-        case "none": return 0
-        case "minor": return 1
-        case "major": return 2
-        case "critical": return 3
-        default: return -1
-        }
+        ["none": 0, "minor": 1, "major": 2, "critical": 3][indicator, default: -1]
     }
 
     // MARK: - Provider Detection
@@ -331,12 +338,8 @@ final class StatusService: ObservableObject {
     }
 
     private func deriveImpact(from status: String) -> String {
-        switch status.lowercased() {
-        case "investigating", "identified": return "major"
-        case "monitoring": return "minor"
-        case "resolved", "postmortem": return "none"
-        default: return "minor"
-        }
+        let map = ["investigating": "major", "identified": "major", "monitoring": "minor", "resolved": "none", "postmortem": "none"]
+        return map[status.lowercased(), default: "minor"]
     }
 
     private func deriveIndicator(from incidents: [IIOIncident]) -> String {
@@ -349,12 +352,12 @@ final class StatusService: ObservableObject {
     }
 
     private func deriveDescription(from indicator: String, incidentCount: Int) -> String {
-        switch indicator {
-        case "none": return "All systems operational"
-        case "minor": return "\(incidentCount) active incident\(incidentCount == 1 ? "" : "s")"
-        case "major": return "\(incidentCount) active incident\(incidentCount == 1 ? "" : "s")"
-        default: return "Status unknown"
+        if indicator == "none" { return "All systems operational" }
+        let suffix = incidentCount == 1 ? "" : "s"
+        if indicator == "minor" || indicator == "major" {
+            return "\(incidentCount) active incident\(suffix)"
         }
+        return "Status unknown"
     }
 
     // MARK: - Instatus Fetch + Mapping
@@ -413,32 +416,23 @@ final class StatusService: ObservableObject {
     }
 
     private func mapInstatusPageStatus(_ status: String) -> String {
-        switch status {
-        case "UP": return "none"
-        case "HASISSUES": return "minor"
-        case "UNDERMAINTENANCE": return "minor"
-        default: return "major"
-        }
+        ["UP": "none", "HASISSUES": "minor", "UNDERMAINTENANCE": "minor"][status, default: "major"]
     }
 
     private func mapInstatusDescription(_ status: String) -> String {
-        switch status {
-        case "UP": return "All systems operational"
-        case "HASISSUES": return "Experiencing issues"
-        case "UNDERMAINTENANCE": return "Under maintenance"
-        default: return "Experiencing issues"
-        }
+        let map = ["UP": "All systems operational", "HASISSUES": "Experiencing issues", "UNDERMAINTENANCE": "Under maintenance"]
+        return map[status, default: "Experiencing issues"]
     }
 
     private func mapInstatusComponentStatus(_ status: String) -> String {
-        switch status {
-        case "OPERATIONAL": return "operational"
-        case "DEGRADEDPERFORMANCE": return "degraded_performance"
-        case "PARTIALOUTAGE": return "partial_outage"
-        case "MAJOROUTAGE": return "major_outage"
-        case "UNDERMAINTENANCE": return "degraded_performance"
-        default: return status.lowercased()
-        }
+        let map = [
+            "OPERATIONAL": "operational",
+            "DEGRADEDPERFORMANCE": "degraded_performance",
+            "PARTIALOUTAGE": "partial_outage",
+            "MAJOROUTAGE": "major_outage",
+            "UNDERMAINTENANCE": "degraded_performance",
+        ]
+        return map[status, default: status.lowercased()]
     }
 
     // MARK: - Source Management
