@@ -231,6 +231,10 @@ extension StatusService {
             endpoints += batch
             if batch.count < pageSize { break }
         }
-        return SPSummary.fromGatus(endpoints, baseURL: baseURL)
+        // Older Gatus versions ignore pagination params and return everything on
+        // every page — dedupe by key so those instances don't produce duplicates.
+        var seen = Set<String>()
+        let unique = endpoints.filter { seen.insert($0.key ?? $0.displayName).inserted }
+        return SPSummary.fromGatus(unique, baseURL: baseURL)
     }
 }
