@@ -16,6 +16,7 @@ final class UpdateChecker: ObservableObject {
     @Published var isUpdateAvailable = false
     @Published var downloadURL: String?
     @Published var releaseURL: String?
+    @Published var releaseNotes: String?
     @Published var isChecking = false
     @Published var isAutoUpdating = false
     @Published var lastCheckError: String?
@@ -85,6 +86,7 @@ final class UpdateChecker: ObservableObject {
 
             latestVersion = remoteVersion
             releaseURL = release.htmlUrl
+            releaseNotes = release.body?.trimmingCharacters(in: .whitespacesAndNewlines)
 
             if let asset = release.assets.first(where: { $0.name.hasSuffix(".zip") }) {
                 downloadURL = asset.browserDownloadUrl

@@ -7,10 +7,11 @@ struct WebhooksSettingsTab: View {
     @ObservedObject private var webhookManager = WebhookManager.shared
     @State private var showingAddWebhook = false
     @State private var newWebhookURL = ""
+    @State private var newWebhookLabel = ""
     @State private var newWebhookPlatform: WebhookPlatform = .generic
     @FocusState private var isWebhookURLFocused: Bool
     @State private var sendingTestIDs: Set<UUID> = []
-    @State private var testSentIDs: Set<UUID> = []
+    @State private var testResults: [UUID: String?] = [:]
 
     var body: some View {
         Form {
@@ -19,6 +20,9 @@ struct WebhooksSettingsTab: View {
                     TextField("Webhook URL", text: $newWebhookURL)
                         .textFieldStyle(.roundedBorder)
                         .focused($isWebhookURLFocused)
+
+                    TextField("Label (optional, e.g. \u{201C}Ops channel\u{201D})", text: $newWebhookLabel)
+                        .textFieldStyle(.roundedBorder)
 
                     Picker("Platform", selection: $newWebhookPlatform) {
                         ForEach(WebhookPlatform.allCases, id: \.rawValue) { platform in
@@ -30,6 +34,7 @@ struct WebhooksSettingsTab: View {
                         Button("Cancel", role: .cancel) {
                             showingAddWebhook = false
                             newWebhookURL = ""
+                            newWebhookLabel = ""
                             newWebhookPlatform = .generic
                         }
 
@@ -38,10 +43,15 @@ struct WebhooksSettingsTab: View {
                         Button("Add Webhook") {
                             let url = newWebhookURL.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !url.isEmpty, URL(string: url) != nil else { return }
-                            let config = WebhookConfig(url: url, platform: newWebhookPlatform)
+                            let label = newWebhookLabel.trimmingCharacters(in: .whitespaces)
+                            let config = WebhookConfig(
+                                url: url, platform: newWebhookPlatform,
+                                label: label.isEmpty ? nil : label
+                            )
                             webhookManager.addConfig(config)
                             showingAddWebhook = false
                             newWebhookURL = ""
+                            newWebhookLabel = ""
                             newWebhookPlatform = .generic
                         }
                         .buttonStyle(.borderedProminent)
@@ -101,13 +111,26 @@ struct WebhooksSettingsTab: View {
             .labelsHidden()
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(config.platform.rawValue.capitalized)
-                    .font(.body.weight(.medium))
+                HStack(spacing: 6) {
+                    Text(config.displayName)
+                        .font(.body.weight(.medium))
+                    if config.label != nil {
+                        Text(config.platform.rawValue.capitalized)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
                 Text(config.url)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                if let result = testResults[config.id], let error = result {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .lineLimit(1)
+                }
             }
 
             Spacer()
@@ -115,9 +138,11 @@ struct WebhooksSettingsTab: View {
             if sendingTestIDs.contains(config.id) {
                 ProgressView()
                     .controlSize(.small)
-            } else if testSentIDs.contains(config.id) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+            } else if let result = testResults[config.id] {
+                Image(systemName: result == nil ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundStyle(result == nil ? .green : .red)
+                    .help(result ?? "Delivered")
+                    .accessibilityLabel(result.map { "Test failed: \($0)" } ?? "Test delivered")
             } else {
                 Button {
                     sendTestWebhook(config)
@@ -145,11 +170,16 @@ struct WebhooksSettingsTab: View {
     private func sendTestWebhook(_ config: WebhookConfig) {
         sendingTestIDs.insert(config.id)
         Task {
-            await webhookManager.sendTest(config: config)
+            let error = await webhookManager.sendTest(config: config)
             sendingTestIDs.remove(config.id)
-            testSentIDs.insert(config.id)
-            try? await Task.sleep(for: .seconds(2))
-            testSentIDs.remove(config.id)
+            testResults[config.id] = error
+            // Successful results clear quickly; failures stay visible until retried
+            if error == nil {
+                try? await Task.sleep(for: .seconds(3))
+                if testResults[config.id] == nil || testResults[config.id]! == nil {
+                    testResults.removeValue(forKey: config.id)
+                }
+            }
         }
     }
 }

@@ -32,12 +32,19 @@ struct WebhookConfig: Codable, Identifiable, Equatable {
     var url: String
     var enabled: Bool
     var platform: WebhookPlatform
+    var label: String?
 
-    init(id: UUID = UUID(), url: String, enabled: Bool = true, platform: WebhookPlatform = .generic) {
+    init(id: UUID = UUID(), url: String, enabled: Bool = true, platform: WebhookPlatform = .generic, label: String? = nil) {
         self.id = id
         self.url = url
         self.enabled = enabled
         self.platform = platform
+        self.label = label
+    }
+
+    var displayName: String {
+        if let label, !label.isEmpty { return label }
+        return platform.rawValue.capitalized
     }
 }
 
@@ -396,11 +403,13 @@ struct GitHubRelease: Codable {
     let tagName: String
     let name: String?
     let htmlUrl: String
+    let body: String?
     let assets: [GitHubAsset]
     enum CodingKeys: String, CodingKey {
         case tagName = "tag_name"
         case name
         case htmlUrl = "html_url"
+        case body
         case assets
     }
 }
