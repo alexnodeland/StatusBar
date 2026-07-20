@@ -14,11 +14,18 @@ import SwiftUI
 
 struct MenuBarLabel: View {
     @ObservedObject var service: StatusService
+    @AppStorage("menuBarShowCount") private var showCount = true
+    @AppStorage("menuBarMonochrome") private var monochrome = false
 
     var body: some View {
         HStack(spacing: 2) {
-            Image(systemName: service.menuBarIcon)
-            if service.issueCount > 0 {
+            if monochrome {
+                Image(systemName: service.menuBarIcon)
+            } else {
+                Image(systemName: service.menuBarIcon)
+                    .foregroundStyle(service.menuBarColor)
+            }
+            if showCount && service.issueCount > 0 {
                 Text("\(service.issueCount)")
                     .font(.caption2.monospacedDigit())
             }
@@ -49,6 +56,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let aboutItem = NSMenuItem(title: "About StatusBar", action: #selector(openAbout), keyEquivalent: "")
         aboutItem.target = self
         menu.addItem(aboutItem)
+
+        let supportItem = NSMenuItem(
+            title: "Support StatusBar\u{2026}", action: #selector(openSupport), keyEquivalent: "")
+        supportItem.target = self
+        menu.addItem(supportItem)
 
         menu.addItem(.separator())
 
@@ -140,6 +152,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    @objc private func openSupport() {
+        if let url = URL(string: kSupportURL) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
@@ -174,7 +192,6 @@ struct StatusBarApp: App {
         MenuBarExtra {
             RootView(service: service, updateChecker: updateChecker)
                 .onAppear {
-                    appDelegate.updateChecker = updateChecker
                     #if canImport(Sparkle)
                         updateChecker.setupSparkle()
                     #endif
@@ -182,7 +199,11 @@ struct StatusBarApp: App {
         } label: {
             MenuBarLabel(service: service)
                 .onAppear {
+                    // Wire the delegate at launch — the popover content's
+                    // onAppear only fires once the popover is first opened,
+                    // which would leave statusbar://settings dead until then.
                     appDelegate.service = service
+                    appDelegate.updateChecker = updateChecker
                 }
         }
         .menuBarExtraStyle(.window)

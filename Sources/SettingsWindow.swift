@@ -123,8 +123,9 @@ struct SettingsWindowContent: View {
 struct GeneralSettingsTab: View {
     @ObservedObject var service: StatusService
     @State private var launchAtLogin = false
-
-    private var hotkeyDisplayString: String { "\u{2303}\u{2325}S" }
+    @AppStorage("menuBarShowCount") private var menuBarShowCount = true
+    @AppStorage("menuBarMonochrome") private var menuBarMonochrome = false
+    @AppStorage(HotkeyConfig.enabledKey) private var hotkeyEnabled = true
 
     var body: some View {
         Form {
@@ -152,17 +153,21 @@ struct GeneralSettingsTab: View {
                     }
             }
 
+            Section("Menu Bar") {
+                Toggle("Show issue count", isOn: $menuBarShowCount)
+                Toggle("Monochrome icon", isOn: $menuBarMonochrome)
+            }
+
             Section("Keyboard") {
-                LabeledContent("Global Hotkey") {
-                    Text(hotkeyDisplayString)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+                Toggle("Global hotkey", isOn: $hotkeyEnabled)
+                    .onChange(of: hotkeyEnabled) {
+                        NotificationCenter.default.post(name: .statusBarHotkeyChanged, object: nil)
+                    }
+                if hotkeyEnabled {
+                    LabeledContent("Shortcut") {
+                        HotkeyRecorderView()
+                    }
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Global hotkey: \(hotkeyDisplayString)")
             }
 
             Section {
@@ -232,6 +237,7 @@ struct NotificationsSettingsTab: View {
 struct DataSettingsTab: View {
     @ObservedObject var service: StatusService
     @State private var importError: String?
+    @State private var statusMessage: String?
 
     var body: some View {
         Form {
@@ -283,8 +289,25 @@ struct DataSettingsTab: View {
                     Label(importError, systemImage: "exclamationmark.triangle").foregroundStyle(.red)
                 }
             }
+
+            if let statusMessage {
+                Section {
+                    Label(statusMessage, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                }
+            }
         }
         .formStyle(.grouped)
+    }
+
+    private func showStatus(_ message: String) {
+        importError = nil
+        statusMessage = message
+        Task {
+            try? await Task.sleep(for: .seconds(4))
+            if statusMessage == message {
+                statusMessage = nil
+            }
+        }
     }
 
     private func exportConfig() {
@@ -295,8 +318,14 @@ struct DataSettingsTab: View {
         panel.canCreateDirectories = true
 
         if panel.runModal() == .OK, let url = panel.url {
-            if let data = service.exportConfigJSON() {
-                try? data.write(to: url)
+            do {
+                guard let data = service.exportConfigJSON() else {
+                    throw CocoaError(.fileWriteUnknown)
+                }
+                try data.write(to: url)
+                showStatus("Configuration exported to \(url.lastPathComponent)")
+            } catch {
+                importError = "Export failed: \(error.localizedDescription)"
             }
         }
     }
@@ -311,7 +340,9 @@ struct DataSettingsTab: View {
 
         if panel.runModal() == .OK, let url = panel.url {
             if let data = try? Data(contentsOf: url) {
-                if !service.importConfigJSON(data) {
+                if service.importConfigJSON(data) {
+                    showStatus("Configuration imported")
+                } else {
                     importError = "Could not read configuration file. Check that it is a valid StatusBar JSON export."
                 }
             } else {
@@ -328,8 +359,14 @@ struct DataSettingsTab: View {
         panel.canCreateDirectories = true
 
         if panel.runModal() == .OK, let url = panel.url {
-            if let data = service.exportSourcesJSON() {
-                try? data.write(to: url)
+            do {
+                guard let data = service.exportSourcesJSON() else {
+                    throw CocoaError(.fileWriteUnknown)
+                }
+                try data.write(to: url)
+                showStatus("Sources exported to \(url.lastPathComponent)")
+            } catch {
+                importError = "Export failed: \(error.localizedDescription)"
             }
         }
     }
@@ -344,7 +381,9 @@ struct DataSettingsTab: View {
 
         if panel.runModal() == .OK, let url = panel.url {
             if let data = try? Data(contentsOf: url) {
-                if !service.importSourcesJSON(data) {
+                if service.importSourcesJSON(data) {
+                    showStatus("Sources imported")
+                } else {
                     importError = "Could not read sources file. Check that it is a valid JSON export."
                 }
             } else {
@@ -396,6 +435,16 @@ struct UpdatesSettingsTab: View {
                     Label("View on GitHub", systemImage: "arrow.up.right")
                 }
                 .buttonStyle(.borderless)
+
+                Button {
+                    if let url = URL(string: kSupportURL) {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Label("Support StatusBar", systemImage: "heart")
+                }
+                .buttonStyle(.borderless)
+                .help("StatusBar is free — support development on Gumroad")
             }
 
             Section {
@@ -459,6 +508,19 @@ struct UpdatesSettingsTab: View {
                                 updateChecker.openDownload()
                             }
                             .buttonStyle(.borderedProminent)
+                        }
+                    }
+
+                    if let notes = updateChecker.releaseNotes, !notes.isEmpty {
+                        DisclosureGroup("What\u{2019}s New") {
+                            ScrollView {
+                                Text(notes)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .textSelection(.enabled)
+                            }
+                            .frame(maxHeight: 140)
                         }
                     }
                 }

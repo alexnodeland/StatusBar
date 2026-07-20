@@ -24,14 +24,27 @@ final class HotkeyManager {
     private var eventHandler: EventHandlerRef?
     var onToggle: (() -> Void)?
 
-    // Default: Ctrl+Option+S
-    let modifiers: UInt32 = UInt32(controlKey | optionKey)
-    let keyCode: UInt32 = 1  // 's' key
+    private init() {
+        NotificationCenter.default.addObserver(
+            forName: .statusBarHotkeyChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.reregister()
+            }
+        }
+    }
 
-    var displayString: String { "\u{2303}\u{2325}S" }
+    var displayString: String { HotkeyConfig.displayString }
+
+    func reregister() {
+        unregister()
+        register()
+    }
 
     func register() {
-        guard hotkeyRef == nil else { return }
+        guard hotkeyRef == nil, HotkeyConfig.enabled else { return }
+        let keyCode = UInt32(HotkeyConfig.keyCode)
+        let modifiers = UInt32(HotkeyConfig.modifiers)
 
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),

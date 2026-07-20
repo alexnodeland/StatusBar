@@ -23,6 +23,9 @@ let kDefaultSources: [StatusSource] = [
 
 let kGitHubRepo = "alexnodeland/StatusBar"
 
+// Gumroad supporter purchase — the app is free; this is the tip-jar channel.
+let kSupportURL = "https://ournature.gumroad.com/l/statusbar"
+
 let kServiceCatalog: [CatalogEntry] = [
     CatalogEntry(name: "GitHub", url: "https://www.githubstatus.com", category: "Developer Tools"),
     CatalogEntry(name: "Cloudflare", url: "https://www.cloudflarestatus.com", category: "Infrastructure"),
@@ -56,6 +59,53 @@ let kRetryMaxDelay: TimeInterval = 8.0
 extension Notification.Name {
     static let statusBarNavigateToSource = Notification.Name("statusBarNavigateToSource")
     static let statusBarNavigateToSettingsTab = Notification.Name("statusBarNavigateToSettingsTab")
+    static let statusBarHotkeyChanged = Notification.Name("statusBarHotkeyChanged")
+}
+
+// MARK: - Global Hotkey Configuration
+
+// UserDefaults-backed so settings views never need to import Carbon
+// (HotkeyManager is excluded from the test target).
+enum HotkeyConfig {
+    static let keyCodeKey = "hotkeyKeyCode"
+    static let modifiersKey = "hotkeyModifiers"
+    static let charKey = "hotkeyChar"
+    static let enabledKey = "hotkeyEnabled"
+
+    static let defaultKeyCode = 1  // 's'
+    static let defaultModifiers = carbonControl | carbonOption
+    static let defaultChar = "S"
+
+    // Carbon modifier masks, mirrored to avoid importing Carbon
+    static let carbonCommand = 256
+    static let carbonShift = 512
+    static let carbonOption = 2048
+    static let carbonControl = 4096
+
+    static var keyCode: Int {
+        UserDefaults.standard.object(forKey: keyCodeKey) as? Int ?? defaultKeyCode
+    }
+
+    static var modifiers: Int {
+        UserDefaults.standard.object(forKey: modifiersKey) as? Int ?? defaultModifiers
+    }
+
+    static var char: String {
+        UserDefaults.standard.string(forKey: charKey) ?? defaultChar
+    }
+
+    static var enabled: Bool {
+        UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
+    }
+
+    static var displayString: String {
+        var symbols = ""
+        if modifiers & carbonControl != 0 { symbols += "\u{2303}" }
+        if modifiers & carbonOption != 0 { symbols += "\u{2325}" }
+        if modifiers & carbonShift != 0 { symbols += "\u{21E7}" }
+        if modifiers & carbonCommand != 0 { symbols += "\u{2318}" }
+        return symbols + char
+    }
 }
 
 // MARK: - Design System

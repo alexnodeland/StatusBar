@@ -5,21 +5,31 @@
 <h1 align="center">StatusBar</h1>
 
 <p align="center">
-  A single-file SwiftUI menu bar app that monitors multiple status pages simultaneously. Supports <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, <a href="https://instatus.com">Instatus</a>, and self-hosted <a href="https://gatus.io">Gatus</a> pages with automatic provider detection.
+  <strong>Every status page you care about — the services you depend on and the infrastructure you run — in one menu bar icon.</strong><br>
+  A native SwiftUI menu bar app supporting <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, <a href="https://instatus.com">Instatus</a>, and self-hosted <a href="https://gatus.io">Gatus</a> with automatic provider detection. Free, open source, zero telemetry.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+">
-  <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+">
+  <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
+  <a href="https://github.com/alexnodeland/StatusBar/actions/workflows/ci.yml"><img src="https://github.com/alexnodeland/StatusBar/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/alexnodeland/StatusBar/releases/latest"><img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release"></a>
   <a href="https://alexnodeland.github.io/StatusBar/"><img src="https://img.shields.io/badge/docs-website-blue" alt="Docs"></a>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/source_list.png" width="380" alt="StatusBar popover showing grouped sources with sparklines and a Cloudflare incident">
+  <img src="docs/screenshots/event_details.png" width="380" alt="Source detail view with active incidents, components, and uptime">
+</p>
+
 ## ✨ Features
 
-🟢 **Monitoring** — Menu bar icon reflects the worst status across all sources (green → yellow → orange → red) with a badge showing how many have issues. Drill into any source to see components, active incidents, and update timelines.
+🟢 **Monitoring** — Menu bar icon reflects the worst status across all sources (green → yellow → orange → red) with a badge showing how many have issues. Drill into any source to see components, active incidents, update timelines, and 24h/7d/30d uptime with per-check sparklines.
 
-📋 **Sources** — Add and remove sources visually with **+** / **−** buttons, or bulk import/export as JSON. Full configuration export bundles settings, sources, and webhooks into a single versioned file. Sources refresh concurrently on a configurable interval (1–15 min).
+📋 **Sources** — Add, edit, group, search, sort, and filter sources; snooze noisy ones for an hour or a day. Bulk import/export as JSON — full configuration export bundles settings, sources, and webhooks into a single versioned file. Sources refresh concurrently on a configurable interval (1–15 min).
+
+📣 **Webhooks** — Push status changes to Slack (Block Kit), Discord (embeds), Microsoft Teams (Adaptive Cards), or any JSON endpoint — with per-webhook labels and real delivery feedback on test sends.
 
 🔗 **URL Scheme** — Control the app from Terminal, browsers, Raycast, or Shortcuts with `statusbar://` deep links. Open the popover, navigate to a source, trigger a refresh, add/remove sources, or jump to a settings tab.
 
@@ -27,7 +37,7 @@
 
 🍎 **AppleScript** — Full Cocoa Scripting support. Query sources and status from Script Editor, JXA, `osascript` one-liners, or any OSA-compatible tool. Refresh, add, and remove sources programmatically.
 
-⚙️ **Settings** — Status change notifications, automatic update checks, and launch at login. Runs as a pure menu bar agent with no Dock icon.
+⚙️ **Settings** — Status change notifications with per-source alert levels, a rebindable global hotkey (default ⌃⌥S), menu bar display options, automatic update checks with in-app release notes, and launch at login. Runs as a pure menu bar agent with no Dock icon.
 
 ## 📦 Install
 
@@ -40,8 +50,8 @@ brew install --cask statusbar
 
 ### Manual download
 
-1. Download `StatusBar-vX.Y.Z.zip` from the [Releases page](https://github.com/alexnodeland/StatusBar/releases/latest)
-2. Extract and drag `StatusBar.app` to `/Applications`
+1. Download `StatusBar-vX.Y.Z.dmg` (or the `.zip`) from the [Releases page](https://github.com/alexnodeland/StatusBar/releases/latest)
+2. Drag `StatusBar.app` to `/Applications`
 3. Remove quarantine: `xattr -cr /Applications/StatusBar.app`
 4. Launch normally
 
@@ -173,6 +183,12 @@ osascript -e 'tell application "StatusBar" to refresh'
 | `group` | text | Group name (empty string if ungrouped) |
 
 </details>
+
+## ❤️ Support
+
+StatusBar is free and open source. If it saves you a tab or a headache, you can [support development on Gumroad](https://ournature.gumroad.com/l/statusbar) for $2.99 — or star the repo and tell a friend.
+
+Questions or problems? [Open an issue](https://github.com/alexnodeland/StatusBar/issues) or email [alex@ournature.studio](mailto:alex@ournature.studio). See the [changelog](CHANGELOG.md) and [privacy policy](PRIVACY.md) (short version: zero telemetry).
 
 ## 🛠 Development
 

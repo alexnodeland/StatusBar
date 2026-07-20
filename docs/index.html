@@ -5,12 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StatusBar — Monitor Status Pages from Your Menu Bar</title>
   <meta name="description" content="A native macOS menu bar app that monitors multiple status pages simultaneously. Supports Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus with automatic provider detection.">
-  <meta property="og:title" content="StatusBar">
-  <meta property="og:description" content="Monitor multiple status pages from your macOS menu bar. Supports Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus.">
-  <meta property="og:image" content="icon.png">
+  <meta property="og:title" content="StatusBar — Every status page in one menu bar icon">
+  <meta property="og:description" content="Monitor the services you depend on and the infrastructure you run — Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus — from the macOS menu bar. Free, open source, zero telemetry.">
+  <meta property="og:image" content="https://alexnodeland.github.io/StatusBar/og.png">
+  <meta property="og:url" content="https://alexnodeland.github.io/StatusBar/">
   <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://alexnodeland.github.io/StatusBar/og.png">
+  <link rel="canonical" href="https://alexnodeland.github.io/StatusBar/">
+  <meta name="theme-color" content="#101218">
   <link rel="icon" href="icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "StatusBar",
+    "operatingSystem": "macOS 26+",
+    "applicationCategory": "UtilitiesApplication",
+    "description": "Native macOS menu bar app that monitors status pages: Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "url": "https://alexnodeland.github.io/StatusBar/",
+    "downloadUrl": "https://github.com/alexnodeland/StatusBar/releases/latest",
+    "author": { "@type": "Person", "name": "Alex Nodeland" },
+    "license": "https://github.com/alexnodeland/StatusBar/blob/main/LICENSE"
+  }
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,6 +55,7 @@
         <li><a href="#status-colors">Status</a></li>
         <li><a href="#get-started">Get Started</a></li>
         <li><a href="#docs">Docs</a></li>
+        <li><a href="#faq">FAQ</a></li>
         <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
       </ul>
     </div>
@@ -45,7 +66,7 @@
     <div class="container">
       <img src="icon.png" alt="StatusBar app icon" class="hero-icon" width="128" height="128">
       <h1>StatusBar</h1>
-      <p class="hero-tagline">A native macOS menu bar app that monitors all your status pages in one place. Supports Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus with automatic provider detection. No Dock icon. No Electron. Just a single icon that tells you everything.</p>
+      <p class="hero-tagline">Every status page you care about &mdash; the services you depend on and the infrastructure you run &mdash; in one native menu bar icon. Auto-detects Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus. No Dock icon. No Electron. Zero telemetry.</p>
       <div class="hero-ctas">
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
@@ -55,7 +76,12 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
           View on GitHub
         </a>
+        <a href="https://ournature.gumroad.com/l/statusbar" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14.25l-.345-.666C4.451 10.048 1.75 7.717 1.75 5.5 1.75 3.71 3.16 2.25 4.9 2.25c1.093 0 2.145.543 3.1 1.582.955-1.039 2.007-1.582 3.1-1.582 1.74 0 3.15 1.46 3.15 3.25 0 2.217-2.701 4.548-5.905 8.084L8 14.25z"/></svg>
+          Support &mdash; $2.99
+        </a>
       </div>
+      <p class="hero-note">Free &amp; open source. The Gumroad purchase is a way to support development.</p>
       <div class="hero-badges">
         <img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+" width="76" height="20">
         <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6" width="80" height="20">
@@ -77,7 +103,7 @@
         </div>
         <div class="showcase-text">
           <h3>All Your Services, One Icon</h3>
-          <p>Click the menu bar icon to see every service at once. Color-coded indicators show what&rsquo;s healthy and what needs attention. A badge on the icon tells you how many sources have issues &mdash; without opening the popover.</p>
+          <p>Click the menu bar icon &mdash; or press the global hotkey &mdash; to see every service at once, with per-check sparklines and grouping. Search, sort, and filter when the list grows. A badge on the icon tells you how many sources have issues without opening the popover.</p>
         </div>
       </div>
 
@@ -103,7 +129,7 @@
         </div>
         <div class="showcase-text">
           <h3>Native macOS Integration</h3>
-          <p>Lives in the menu bar as a checkmark when all clear, or a warning with a badge count when issues arise. Enable notifications to get native macOS alerts the moment a service status changes.</p>
+          <p>Lives in the menu bar as a checkmark when all clear, or a warning with a badge count when issues arise. Native notifications fire the moment a status changes &mdash; and recover alerts when it clears. Snooze noisy sources for an hour or a day.</p>
         </div>
       </div>
     </div>
@@ -471,15 +497,53 @@ open ./build/StatusBar.app</code></pre>
     </div>
   </section>
 
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <p class="section-label">FAQ</p>
+      <h2>Questions, answered</h2>
+      <div class="status-grid">
+        <div class="glass-card status-card">
+          <h3>Is StatusBar free?</h3>
+          <p>Yes &mdash; free and open source under the MIT license. If it saves you a tab or a headache, you can <a href="https://ournature.gumroad.com/l/statusbar">support development on Gumroad</a> for $2.99.</p>
+        </div>
+        <div class="glass-card status-card">
+          <h3>What can it monitor?</h3>
+          <p>Any Atlassian Statuspage, incident.io, or Instatus status page &mdash; plus your own infrastructure via self-hosted <a href="https://gatus.io">Gatus</a>. The provider is detected automatically from the URL.</p>
+        </div>
+        <div class="glass-card status-card">
+          <h3>What data does it collect?</h3>
+          <p>None. Zero telemetry, no analytics, no intermediary servers &mdash; your Mac talks directly to the status pages you configure. Read the <a href="https://github.com/alexnodeland/StatusBar/blob/main/PRIVACY.md">privacy policy</a>.</p>
+        </div>
+        <div class="glass-card status-card">
+          <h3>Why does Gatekeeper warn me?</h3>
+          <p>Current builds are ad-hoc signed rather than notarized, so macOS shows a one-time warning. Approve the app under System Settings &rarr; Privacy &amp; Security, or build from source.</p>
+        </div>
+        <div class="glass-card status-card">
+          <h3>How do updates work?</h3>
+          <p>StatusBar checks GitHub Releases and can download and install updates automatically &mdash; or via <code>brew upgrade</code> if you installed with Homebrew. Release notes appear right in Settings.</p>
+        </div>
+        <div class="glass-card status-card">
+          <h3>Where do I get help?</h3>
+          <p>Open a <a href="https://github.com/alexnodeland/StatusBar/issues">GitHub issue</a> or email <a href="mailto:alex@ournature.studio">alex@ournature.studio</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <nav class="footer-links">
         <a href="https://github.com/alexnodeland/StatusBar">GitHub</a>
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases</a>
-        <a href="https://github.com/alexnodeland/StatusBar/issues">Issues</a>
+        <a href="https://github.com/alexnodeland/StatusBar/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/alexnodeland/StatusBar/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://ournature.gumroad.com/l/statusbar">Support</a>
+        <a href="mailto:alex@ournature.studio">Contact</a>
       </nav>
-      <p class="footer-attr">Built with SwiftUI. Open source under MIT.</p>
+      <p class="footer-attr">Built with SwiftUI. Free &amp; open source under <a href="https://github.com/alexnodeland/StatusBar/blob/main/LICENSE">MIT</a>. Zero telemetry.</p>
     </div>
   </footer>
 

@@ -32,12 +32,19 @@ struct WebhookConfig: Codable, Identifiable, Equatable {
     var url: String
     var enabled: Bool
     var platform: WebhookPlatform
+    var label: String?
 
-    init(id: UUID = UUID(), url: String, enabled: Bool = true, platform: WebhookPlatform = .generic) {
+    init(id: UUID = UUID(), url: String, enabled: Bool = true, platform: WebhookPlatform = .generic, label: String? = nil) {
         self.id = id
         self.url = url
         self.enabled = enabled
         self.platform = platform
+        self.label = label
+    }
+
+    var displayName: String {
+        if let label, !label.isEmpty { return label }
+        return platform.rawValue.capitalized
     }
 }
 
@@ -89,18 +96,23 @@ struct StatusSource: Identifiable, Equatable, Codable {
     var alertLevel: AlertLevel
     var group: String?
     var sortOrder: Int
+    var snoozedUntil: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, baseURL, alertLevel, group, sortOrder
+        case id, name, baseURL, alertLevel, group, sortOrder, snoozedUntil
     }
 
-    init(id: UUID = UUID(), name: String, baseURL: String, alertLevel: AlertLevel = .all, group: String? = nil, sortOrder: Int = 0) {
+    init(
+        id: UUID = UUID(), name: String, baseURL: String, alertLevel: AlertLevel = .all,
+        group: String? = nil, sortOrder: Int = 0, snoozedUntil: Date? = nil
+    ) {
         self.id = id
         self.name = name
         self.baseURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         self.alertLevel = alertLevel
         self.group = group
         self.sortOrder = sortOrder
+        self.snoozedUntil = snoozedUntil
     }
 
     init(from decoder: Decoder) throws {
@@ -112,6 +124,13 @@ struct StatusSource: Identifiable, Equatable, Codable {
         alertLevel = try container.decodeIfPresent(AlertLevel.self, forKey: .alertLevel) ?? .all
         group = try container.decodeIfPresent(String.self, forKey: .group)
         sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        snoozedUntil = try container.decodeIfPresent(Date.self, forKey: .snoozedUntil)
+    }
+
+    /// Whether notifications for this source are temporarily muted.
+    var isSnoozed: Bool {
+        guard let snoozedUntil else { return false }
+        return snoozedUntil > Date()
     }
 
     static func decode(from json: String) -> [StatusSource] {
@@ -384,11 +403,13 @@ struct GitHubRelease: Codable {
     let tagName: String
     let name: String?
     let htmlUrl: String
+    let body: String?
     let assets: [GitHubAsset]
     enum CodingKeys: String, CodingKey {
         case tagName = "tag_name"
         case name
         case htmlUrl = "html_url"
+        case body
         case assets
     }
 }

@@ -64,7 +64,8 @@ final class WebhookManager: ObservableObject {
         }
     }
 
-    func sendTest(config: WebhookConfig) async {
+    /// Returns nil on success, or a human-readable delivery error.
+    func sendTest(config: WebhookConfig) async -> String? {
         let event = WebhookEvent(
             source: "StatusBar Test",
             title: "StatusBar Test — Status Degraded",
@@ -75,13 +76,16 @@ final class WebhookManager: ObservableObject {
             timestamp: isoFormatterNoFrac.string(from: Date()),
             components: ["API", "Dashboard"]
         )
-        await send(config: config, event: event)
+        return await send(config: config, event: event)
     }
 
-    private func send(config: WebhookConfig, event: WebhookEvent) async {
-        guard let url = URL(string: config.url) else { return }
+    @discardableResult
+    private func send(config: WebhookConfig, event: WebhookEvent) async -> String? {
+        guard let url = URL(string: config.url) else { return "Invalid webhook URL" }
         let payload = Self.buildPayload(platform: config.platform, event: event)
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else { return }
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            return "Could not encode payload"
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -89,7 +93,15 @@ final class WebhookManager: ObservableObject {
         request.httpBody = jsonData
         request.timeoutInterval = 10
 
-        _ = try? await URLSession.shared.data(for: request)
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                return "Server returned status \(http.statusCode)"
+            }
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
     }
 
     // MARK: - Payload Construction

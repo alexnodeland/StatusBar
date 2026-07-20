@@ -59,6 +59,14 @@ struct SourceRow: View {
 
             Spacer()
 
+            if source.isSnoozed {
+                Image(systemName: "bell.slash.fill")
+                    .font(Design.Typography.micro)
+                    .foregroundStyle(.tertiary)
+                    .help("Notifications snoozed")
+                    .accessibilityLabel("Notifications snoozed")
+            }
+
             let activeCount = state.activeIncidents.count
             if activeCount > 0 {
                 BadgeView(
@@ -123,6 +131,12 @@ struct CompactSourceRow: View {
                 .font(Design.Typography.caption)
                 .lineLimit(1)
             Spacer()
+            if source.isSnoozed {
+                Image(systemName: "bell.slash.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityLabel("Notifications snoozed")
+            }
             if state.isStale {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 8))
@@ -165,7 +179,15 @@ extension SourceListView {
             Label("Refresh", systemImage: "arrow.clockwise")
         }
 
+        Button {
+            editingSource = source
+        } label: {
+            Label("Edit\u{2026}", systemImage: "pencil")
+        }
+
         Divider()
+
+        snoozeMenu(for: source)
 
         Menu {
             ForEach(AlertLevel.allCases, id: \.self) { level in
@@ -185,6 +207,66 @@ extension SourceListView {
             Label("Alert Level", systemImage: "bell")
         }
 
+        moveToGroupMenu(for: source)
+
+        Divider()
+
+        Button {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(
+                source.baseURL, forType: .string
+            )
+        } label: {
+            Label("Copy URL", systemImage: "doc.on.doc")
+        }
+
+        Button {
+            if let url = URL(string: source.baseURL) {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            Label("Open in Browser", systemImage: "safari")
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            service.removeSource(id: source.id)
+        } label: {
+            Label("Remove", systemImage: "trash")
+        }
+    }
+
+    @ViewBuilder
+    private func snoozeMenu(for source: StatusSource) -> some View {
+        Menu {
+            if source.isSnoozed {
+                Button {
+                    service.snooze(sourceID: source.id, until: nil)
+                } label: {
+                    Label("Unsnooze", systemImage: "bell")
+                }
+                Divider()
+            }
+            Button("For 1 Hour") {
+                service.snooze(sourceID: source.id, until: Date().addingTimeInterval(3600))
+            }
+            Button("For 8 Hours") {
+                service.snooze(sourceID: source.id, until: Date().addingTimeInterval(8 * 3600))
+            }
+            Button("For 24 Hours") {
+                service.snooze(sourceID: source.id, until: Date().addingTimeInterval(24 * 3600))
+            }
+        } label: {
+            Label(
+                source.isSnoozed ? "Snoozed" : "Snooze",
+                systemImage: source.isSnoozed ? "bell.slash.fill" : "bell.slash"
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func moveToGroupMenu(for source: StatusSource) -> some View {
         Menu {
             let groups = Set(
                 service.sources.compactMap(\.group)
@@ -220,32 +302,39 @@ extension SourceListView {
         } label: {
             Label("Move to Group", systemImage: "folder")
         }
+    }
 
-        Divider()
-
+    @ViewBuilder
+    func groupContextMenu(for name: String) -> some View {
         Button {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(
-                source.baseURL, forType: .string
-            )
+            promptForRenameGroup(named: name)
         } label: {
-            Label("Copy URL", systemImage: "doc.on.doc")
+            Label("Rename Group\u{2026}", systemImage: "pencil")
         }
-
         Button {
-            if let url = URL(string: source.baseURL) {
-                NSWorkspace.shared.open(url)
+            service.ungroupAll(named: name)
+        } label: {
+            Label("Ungroup All", systemImage: "folder.badge.minus")
+        }
+    }
+
+    func promptForRenameGroup(named oldName: String) {
+        let alert = NSAlert()
+        alert.messageText = "Rename Group"
+        alert.informativeText = "Enter a new name for \u{201C}\(oldName)\u{201D}:"
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        let field = NSTextField(
+            frame: NSRect(x: 0, y: 0, width: 200, height: 24)
+        )
+        field.stringValue = oldName
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        if alert.runModal() == .alertFirstButtonReturn {
+            let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+            if !name.isEmpty && name != oldName {
+                service.renameGroup(from: oldName, to: name)
             }
-        } label: {
-            Label("Open in Browser", systemImage: "safari")
-        }
-
-        Divider()
-
-        Button(role: .destructive) {
-            service.removeSource(id: source.id)
-        } label: {
-            Label("Remove", systemImage: "trash")
         }
     }
 

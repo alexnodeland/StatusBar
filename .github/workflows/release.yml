@@ -86,4 +86,5 @@ jobs:
           generate_release_notes: true
           files: |
             build/StatusBar-${{ steps.version.outputs.version }}.zip
+            build/StatusBar-${{ steps.version.outputs.version }}.dmg
             build/StatusBar-universal.zip
