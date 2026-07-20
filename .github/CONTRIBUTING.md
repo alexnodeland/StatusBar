@@ -93,10 +93,12 @@ Sources/
 ├── Models.swift              — StatusSource, API models, StatusProvider, sort/filter enums, SourceState
 ├── Helpers.swift             — date formatters/functions, indicator color/icon mappers, compareVersions
 ├── StatusService.swift       — @MainActor ObservableObject managing all sources concurrently
-│   ├─ detectProvider         — auto-detects provider by probing /api/v2/summary.json
-│   ├─ fetchSummary           — Atlassian Statuspage API
-│   ├─ fetchIncidentIO        — incident.io /proxy/widget fallback
-│   └─ fetchInstatus          — Instatus summary + components mapping
+├── StatusService+Providers.swift — provider detection + per-provider fetches (Atlassian, incident.io, Instatus, Gatus)
+├── ProviderMappings.swift    — pure response→SPSummary mappings, unit-tested
+├── HistoryStore.swift        — file-based status history (sparklines, uptime), debounced atomic writes
+├── HotkeyManager.swift       — Carbon global hotkey (configured via HotkeyConfig in Constants)
+├── HotkeyRecorder.swift      — settings UI for recording a new hotkey (no Carbon import)
+├── AppleScriptBridge.swift   — Cocoa Scripting support (sources, refresh, add/remove)
 ├── HookManager.swift         — script hook discovery, execution with timeout, env vars + JSON stdin
 ├── URLSchemeHandler.swift    — statusbar:// URL route parsing and source name derivation
 ├── NotificationManager.swift — macOS notification delivery and permission handling
@@ -104,9 +106,15 @@ Sources/
 ├── UpdateChecker.swift       — checks GitHub Releases API for app updates (daily)
 ├── SharedComponents.swift    — VisualEffectBackground, HoverEffect, GlassButtonStyle, GlassCard
 ├── RootView.swift            — root navigation, source navigation via NotificationCenter
-├── SourceListView.swift      — SourceListView, SourceRow
+├── OnboardingView.swift      — first-run welcome screen
+├── SourceListView.swift      — source list with search, sort, filter, groups
+├── SourceRowViews.swift      — row views, context menus (snooze, edit, groups)
+├── SourceEditViews.swift     — add-source form and edit-source sheet
 ├── SourceDetailView.swift    — SourceDetailView, ComponentRow, IncidentCard
-└── SettingsWindow.swift      — native settings window with sidebar tabs (incl. Hooks tab)
+├── ServiceCatalog.swift      — built-in catalog of popular status pages
+├── WebhooksSettingsTab.swift — webhook configuration UI
+├── HooksSettingsTab.swift    — script hooks configuration UI
+└── SettingsWindow.swift      — native settings window with sidebar tabs
 ```
 
 ## Supported Providers
