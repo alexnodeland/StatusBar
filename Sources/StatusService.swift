@@ -194,6 +194,11 @@ final class StatusService: ObservableObject {
         source: StatusSource, summary: SPSummary,
         newIndicator: String, oldIndicator: String?
     ) {
+        // Re-read the live source: snooze state may have changed since this
+        // refresh started, and snooze quiets notifications, webhooks, and hooks.
+        let current = sources.first { $0.id == source.id } ?? source
+        guard !current.isSnoozed else { return }
+
         let newSev = severityFor(newIndicator)
         // Gate on the transition's peak severity: a recovery has newSev == 0,
         // but should still alert when the incident it clears was above the
@@ -332,6 +337,48 @@ final class StatusService: ObservableObject {
     func updateAlertLevel(sourceID: UUID, level: AlertLevel) {
         guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
         sources[idx].alertLevel = level
+        persistSources()
+    }
+
+    func updateSource(sourceID: UUID, name: String, baseURL: String) {
+        guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
+        let trimmedURL = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let urlChanged = sources[idx].baseURL != trimmedURL
+        sources[idx].name = name
+        sources[idx].baseURL = trimmedURL
+        persistSources()
+        if urlChanged {
+            providerCache.removeValue(forKey: sourceID)
+            states[sourceID] = SourceState()
+            previousIndicators.removeValue(forKey: sourceID)
+            let updated = sources[idx]
+            Task { await refresh(source: updated) }
+        }
+    }
+
+    func snooze(sourceID: UUID, until date: Date?) {
+        guard let idx = sources.firstIndex(where: { $0.id == sourceID }) else { return }
+        sources[idx].snoozedUntil = date
+        persistSources()
+    }
+
+    var groupNames: [String] {
+        Array(Set(sources.compactMap(\.group))).sorted()
+    }
+
+    func renameGroup(from oldName: String, to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        for idx in sources.indices where sources[idx].group == oldName {
+            sources[idx].group = trimmed
+        }
+        persistSources()
+    }
+
+    func ungroupAll(named groupName: String) {
+        for idx in sources.indices where sources[idx].group == groupName {
+            sources[idx].group = nil
+        }
         persistSources()
     }
 

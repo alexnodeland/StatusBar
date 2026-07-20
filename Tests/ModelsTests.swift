@@ -474,6 +474,34 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(decoded[0].name, "A")
     }
 
+    // MARK: - Snooze
+
+    func testSnoozeStateFromDate() {
+        var source = StatusSource(name: "S", baseURL: "https://s.com")
+        XCTAssertFalse(source.isSnoozed)
+        source.snoozedUntil = Date().addingTimeInterval(3600)
+        XCTAssertTrue(source.isSnoozed)
+        source.snoozedUntil = Date().addingTimeInterval(-1)
+        XCTAssertFalse(source.isSnoozed)
+    }
+
+    func testSnoozeCodableRoundTrip() throws {
+        let until = Date(timeIntervalSince1970: 2_000_000_000)
+        let source = StatusSource(name: "S", baseURL: "https://s.com", snoozedUntil: until)
+        let data = try JSONEncoder().encode([source])
+        let decoded = try JSONDecoder().decode([StatusSource].self, from: data)
+        XCTAssertEqual(decoded[0].snoozedUntil, until)
+    }
+
+    func testSnoozeDecodesAsNilWhenAbsent() throws {
+        let json = """
+            [{"id":"12345678-1234-1234-1234-123456789012","name":"Test","baseURL":"https://test.com"}]
+            """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode([StatusSource].self, from: json)
+        XCTAssertNil(decoded[0].snoozedUntil)
+        XCTAssertFalse(decoded[0].isSnoozed)
+    }
+
     // MARK: - AlertLevel
 
     func testAlertLevelMinimumSeverity() {

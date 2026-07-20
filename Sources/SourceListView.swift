@@ -21,20 +21,15 @@ struct SourceListView: View {
     @AppStorage("compactViewMode") private var isCompact = false
     @State private var collapsedGroups: Set<String> = []
     @State private var showingAddSource = false
-    @State private var newSourceName = ""
-    @State private var newSourceURL = ""
+    @State var editingSource: StatusSource?
+    @State private var showingSearch = false
+    @State private var searchText = ""
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @FocusState private var focusedField: AddSourceField?
-    @State private var urlAnnouncementTask: Task<Void, Never>?
-
-    private enum AddSourceField: Hashable {
-        case name
-        case url
-    }
+    @FocusState private var searchFocused: Bool
 
     private var filteredAndSortedSources: [StatusSource] {
-        let filtered: [StatusSource]
+        var filtered: [StatusSource]
         if let indicator = statusFilter.indicator {
             filtered = service.sources.filter { source in
                 let matches = service.state(for: source).indicator == indicator
@@ -42,6 +37,11 @@ struct SourceListView: View {
             }
         } else {
             filtered = service.sources
+        }
+
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        if showingSearch, !query.isEmpty {
+            filtered = filtered.filter { $0.name.localizedCaseInsensitiveContains(query) }
         }
 
         switch sortOrder {
@@ -97,90 +97,54 @@ struct SourceListView: View {
         service.sources.contains { $0.group != nil }
     }
 
-    private var urlValidation: URLValidationResult {
-        validateSourceURL(newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines))
-    }
-
     private var isFilterActive: Bool { statusFilter != .all || filterExcludes }
 
     var body: some View {
         VStack(spacing: 0) {
             headerSection
             ChromeDivider()
+            if showingSearch {
+                searchField
+                ChromeDivider()
+            }
             if showingAddSource {
-                addSourceForm
+                AddSourceForm(service: service, isPresented: $showingAddSource)
                 ChromeDivider()
             }
             sourceList
             ChromeDivider()
             footerSection
         }
-        .onChange(of: newSourceURL) { _, newValue in
-            urlAnnouncementTask?.cancel()
-            urlAnnouncementTask = Task {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                guard !Task.isCancelled else { return }
-                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return }
-                let result = validateSourceURL(trimmed)
-                if let message = result.message {
-                    AccessibilityNotification.Announcement(message).post()
-                }
-            }
+        .sheet(item: $editingSource) { source in
+            EditSourceSheet(service: service, source: source)
         }
     }
 
-    // MARK: - Add Source Form
+    // MARK: - Search
 
-    private var addSourceForm: some View {
-        VStack(spacing: Design.Spacing.cellInner) {
-            TextField("Name", text: $newSourceName)
+    private var searchField: some View {
+        HStack(spacing: Design.Spacing.cellInner) {
+            Image(systemName: "magnifyingglass")
                 .font(Design.Typography.caption)
-                .textFieldStyle(.roundedBorder)
-                .focused($focusedField, equals: .name)
-
-            TextField("URL (e.g. https://status.example.com)", text: $newSourceURL)
+                .foregroundStyle(.secondary)
+            TextField("Search sources", text: $searchText)
                 .font(Design.Typography.caption)
-                .textFieldStyle(.roundedBorder)
-                .focused($focusedField, equals: .url)
-
-            if !newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                let message = urlValidation.message
-            {
-                HStack(spacing: 4) {
-                    Image(systemName: urlValidation.isAcceptable ? "exclamationmark.triangle.fill" : "xmark.circle.fill")
-                        .font(Design.Typography.micro)
-                    Text(message)
-                        .font(Design.Typography.micro)
+                .textFieldStyle(.plain)
+                .focused($searchFocused)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(Design.Typography.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .foregroundStyle(urlValidation.isAcceptable ? .orange : .red)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            HStack {
-                Spacer()
-                Button("Add") {
-                    let name = newSourceName.trimmingCharacters(in: .whitespaces)
-                    let url = newSourceURL.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !name.isEmpty, urlValidation.isAcceptable else { return }
-                    withAnimation(reduceMotionAnimation(Design.Timing.expand, reduceMotion: reduceMotion)) {
-                        service.addSource(name: name, baseURL: url)
-                        showingAddSource = false
-                        newSourceName = ""
-                        newSourceURL = ""
-                    }
-                }
-                .font(Design.Typography.caption)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(
-                    newSourceName.trimmingCharacters(in: .whitespaces).isEmpty
-                        || !urlValidation.isAcceptable
-                )
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Clear search")
             }
         }
         .padding(.horizontal, Design.Spacing.sectionH)
-        .padding(.vertical, Design.Spacing.sectionV)
+        .padding(.vertical, Design.Spacing.cellInner)
         .accessibleTransition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -237,6 +201,21 @@ struct SourceListView: View {
                     .buttonStyle(.glass)
                     .help(isCompact ? "Expand view" : "Compact view")
                     .accessibilityLabel(isCompact ? "Switch to expanded view" : "Switch to compact view")
+
+                    Button {
+                        withAnimation(reduceMotionAnimation(Design.Timing.transition, reduceMotion: reduceMotion)) {
+                            showingSearch.toggle()
+                            searchText = ""
+                            searchFocused = showingSearch
+                        }
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(Design.Typography.caption)
+                    }
+                    .buttonStyle(.glass)
+                    .foregroundStyle(showingSearch ? Color.accentColor : .secondary)
+                    .help("Search sources")
+                    .accessibilityLabel(showingSearch ? "Hide search" : "Search sources")
 
                     sortMenuButton
                     filterMenuButton
@@ -357,19 +336,25 @@ struct SourceListView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
             } else if sources.isEmpty {
-                // Sources exist but none match filter
+                // Sources exist but none match search/filter
                 VStack(spacing: Design.Spacing.cellInner) {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.title3)
                         .foregroundStyle(.tertiary)
                         .symbolRenderingMode(.hierarchical)
-                    Text("No sources match filter")
-                        .font(Design.Typography.caption)
-                        .foregroundStyle(.secondary)
-                    Text("Try changing the filter to \"\(filterExcludes ? "Include" : "All")\" or selecting a different status level.")
-                        .font(Design.Typography.micro)
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.center)
+                    if showingSearch, !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text("No sources match \u{201C}\(searchText)\u{201D}")
+                            .font(Design.Typography.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("No sources match filter")
+                            .font(Design.Typography.caption)
+                            .foregroundStyle(.secondary)
+                        Text("Try changing the filter to \"\(filterExcludes ? "Include" : "All")\" or selecting a different status level.")
+                            .font(Design.Typography.micro)
+                            .foregroundStyle(.tertiary)
+                            .multilineTextAlignment(.center)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
@@ -428,6 +413,7 @@ struct SourceListView: View {
                 .padding(.vertical, Design.Spacing.compactV)
             }
             .buttonStyle(.borderless)
+            .contextMenu { groupContextMenu(for: name) }
 
             if !collapsedGroups.contains(name) {
                 ForEach(sources) { source in
@@ -515,9 +501,6 @@ struct SourceListView: View {
                     )
                 ) {
                     showingAddSource.toggle()
-                    newSourceName = ""
-                    newSourceURL = ""
-                    focusedField = showingAddSource ? .name : nil
                 }
             } label: {
                 Image(
