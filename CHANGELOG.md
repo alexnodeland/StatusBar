@@ -3,7 +3,7 @@
 All notable changes to StatusBar. Full release notes with downloads live on the
 [GitHub Releases page](https://github.com/alexnodeland/StatusBar/releases).
 
-## Unreleased
+## v0.3.0 — 2026-07-20
 
 - Edit a source's name and URL without losing its history
 - Snooze notifications per source (1h / 8h / 24h)
@@ -17,6 +17,8 @@ All notable changes to StatusBar. Full release notes with downloads live on the
 - Export/import confirmation feedback in Settings → Data
 - Release builds now also ship as a DMG
 - Fixed: `statusbar://settings` did nothing until the popover was first opened
+- Fixed: uptime treated minor degradation as downtime; only major/critical outages count as down now
+- Added MIT LICENSE, privacy policy, and a reworked website with fresh screenshots
 
 ## v0.2.1 — 2026-07-20
 
