@@ -142,6 +142,83 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(apiComp.children[0].children.count, 0)
     }
 
+    // MARK: - Gatus Models
+
+    func testGatusEndpointStatusDecode() {
+        let data = loadFixture("gatus_statuses.json")
+        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: data)
+        XCTAssertEqual(endpoints.count, 3)
+        XCTAssertEqual(endpoints[0].name, "frontend")
+        XCTAssertEqual(endpoints[0].group, "core")
+        XCTAssertEqual(endpoints[0].key, "core_frontend")
+        XCTAssertEqual(endpoints[0].results.count, 2)
+        XCTAssertEqual(endpoints[2].results.count, 0)
+    }
+
+    func testGatusEndpointStatusMissingResultsDefaultsToEmpty() {
+        let json = """
+            [{"name":"db","group":"infra","key":"infra_db"}]
+            """.data(using: .utf8)!
+        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: json)
+        XCTAssertEqual(endpoints[0].results.count, 0)
+        XCTAssertNil(endpoints[0].latestResult)
+    }
+
+    func testGatusLatestResultIsLast() {
+        let data = loadFixture("gatus_statuses.json")
+        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: data)
+        // Gatus appends results chronologically; the last entry is the newest check
+        XCTAssertEqual(endpoints[0].latestResult?.success, true)
+        XCTAssertEqual(endpoints[1].latestResult?.success, false)
+    }
+
+    func testGatusDisplayNameIncludesGroup() {
+        let grouped = GatusEndpointStatus(name: "api", group: "core", key: "core_api", results: [])
+        let ungrouped = GatusEndpointStatus(name: "backups", group: "", key: "_backups", results: [])
+        XCTAssertEqual(grouped.displayName, "core / api")
+        XCTAssertEqual(ungrouped.displayName, "backups")
+    }
+
+    func testGatusSummaryMappingPartialOutage() {
+        let data = loadFixture("gatus_statuses.json")
+        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: data)
+        let summary = SPSummary.fromGatus(endpoints, baseURL: "https://status.example.org")
+        XCTAssertEqual(summary.status.indicator, "major")
+        XCTAssertEqual(summary.status.description, "1 of 2 endpoints down")
+        XCTAssertEqual(summary.components.count, 3)
+        XCTAssertEqual(summary.components[0].name, "core / frontend")
+        XCTAssertEqual(summary.components[0].status, "operational")
+        XCTAssertEqual(summary.components[1].status, "major_outage")
+        XCTAssertEqual(summary.components[2].status, "unknown")
+        XCTAssertEqual(summary.incidents.count, 0)
+    }
+
+    func testGatusSummaryMappingAllUp() {
+        let endpoints = [
+            GatusEndpointStatus(name: "a", group: nil, key: "a", results: [GatusResult(success: true, timestamp: nil)]),
+            GatusEndpointStatus(name: "b", group: nil, key: "b", results: [GatusResult(success: true, timestamp: nil)]),
+        ]
+        let summary = SPSummary.fromGatus(endpoints, baseURL: "https://status.example.org")
+        XCTAssertEqual(summary.status.indicator, "none")
+        XCTAssertEqual(summary.status.description, "All systems operational")
+    }
+
+    func testGatusSummaryMappingAllDown() {
+        let endpoints = [
+            GatusEndpointStatus(name: "a", group: nil, key: "a", results: [GatusResult(success: false, timestamp: nil)]),
+            GatusEndpointStatus(name: "b", group: nil, key: "b", results: [GatusResult(success: false, timestamp: nil)]),
+        ]
+        let summary = SPSummary.fromGatus(endpoints, baseURL: "https://status.example.org")
+        XCTAssertEqual(summary.status.indicator, "critical")
+        XCTAssertEqual(summary.status.description, "All 2 endpoints down")
+    }
+
+    func testGatusSummaryMappingEmpty() {
+        let summary = SPSummary.fromGatus([], baseURL: "https://status.example.org")
+        XCTAssertEqual(summary.status.indicator, "none")
+        XCTAssertEqual(summary.components.count, 0)
+    }
+
     // MARK: - GitHub Models
 
     func testGitHubReleaseFullFixture() {
