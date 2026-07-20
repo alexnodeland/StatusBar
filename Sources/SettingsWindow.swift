@@ -123,8 +123,9 @@ struct SettingsWindowContent: View {
 struct GeneralSettingsTab: View {
     @ObservedObject var service: StatusService
     @State private var launchAtLogin = false
-
-    private var hotkeyDisplayString: String { "\u{2303}\u{2325}S" }
+    @AppStorage("menuBarShowCount") private var menuBarShowCount = true
+    @AppStorage("menuBarMonochrome") private var menuBarMonochrome = false
+    @AppStorage(HotkeyConfig.enabledKey) private var hotkeyEnabled = true
 
     var body: some View {
         Form {
@@ -152,17 +153,21 @@ struct GeneralSettingsTab: View {
                     }
             }
 
+            Section("Menu Bar") {
+                Toggle("Show issue count", isOn: $menuBarShowCount)
+                Toggle("Monochrome icon", isOn: $menuBarMonochrome)
+            }
+
             Section("Keyboard") {
-                LabeledContent("Global Hotkey") {
-                    Text(hotkeyDisplayString)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+                Toggle("Global hotkey", isOn: $hotkeyEnabled)
+                    .onChange(of: hotkeyEnabled) {
+                        NotificationCenter.default.post(name: .statusBarHotkeyChanged, object: nil)
+                    }
+                if hotkeyEnabled {
+                    LabeledContent("Shortcut") {
+                        HotkeyRecorderView()
+                    }
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Global hotkey: \(hotkeyDisplayString)")
             }
 
             Section {
