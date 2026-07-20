@@ -45,6 +45,9 @@
   --glow-orange: rgba(255, 159, 10, 0.6);
   --glow-red: rgba(255, 59, 48, 0.6);
 
+  /* Opaque copy-button surface (matches code chip over card over page) */
+  --copy-btn-bg: #232329;
+
   /* Layout */
   --max-width: 960px;
   --nav-height: 56px;
@@ -67,6 +70,7 @@
     --glow-yellow: rgba(255, 214, 10, 0.25);
     --glow-orange: rgba(255, 159, 10, 0.25);
     --glow-red: rgba(255, 59, 48, 0.25);
+    --copy-btn-bg: #e4e4e9;
   }
 }
 
@@ -353,16 +357,17 @@ section {
   margin-top: 48px;
 }
 
-.showcase-reverse {
-  direction: rtl;
+.showcase-reverse .showcase-image {
+  order: 2;
 }
 
-.showcase-reverse > * {
-  direction: ltr;
+.showcase-reverse .showcase-text {
+  order: 1;
 }
 
 .showcase-image {
   max-width: 380px;
+  min-width: 0;
 }
 
 .showcase-reverse .showcase-image {
@@ -370,6 +375,9 @@ section {
 }
 
 .screenshot {
+  display: block;
+  width: 100%;
+  height: auto;
   border-radius: 14px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 0 0 0.5px var(--glass-border);
 }
@@ -419,7 +427,8 @@ section {
 }
 
 .native-notification {
-  max-width: 380px;
+  max-width: min(380px, 100%);
+  height: auto;
   border-radius: 14px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3), 0 0 0 0.5px var(--glass-border);
 }
@@ -437,8 +446,9 @@ section {
     text-align: center;
   }
 
-  .showcase-reverse {
-    direction: ltr;
+  .showcase-reverse .showcase-image,
+  .showcase-reverse .showcase-text {
+    order: initial;
   }
 
   .showcase-image {
@@ -529,8 +539,26 @@ section {
 }
 
 .url-example .code-block-wrapper pre {
-  padding: 8px 12px;
+  padding: 8px 58px 8px 12px;
   font-size: 0.75rem;
+}
+
+/* Right-edge fade so scrolled code disappears cleanly behind the Copy button */
+.url-example .code-block-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  right: 1px;
+  width: 64px;
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
+  background: linear-gradient(to right, transparent, var(--copy-btn-bg) 55%);
+  pointer-events: none;
+}
+
+.url-example .copy-btn {
+  z-index: 1;
+  box-shadow: none;
 }
 
 .url-label {
@@ -788,6 +816,19 @@ section {
 .code-block-wrapper {
   position: relative;
   margin: 16px 0;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Grid/flex items default to min-width:auto, letting long code lines widen
+   the page — allow them to shrink so pre scrolls inside its card instead. */
+.url-examples-grid > *,
+.automate-row > *,
+.applescript-layout > *,
+.showcase > *,
+.glass-card,
+.url-example {
+  min-width: 0;
 }
 
 .code-block-wrapper pre {
@@ -807,7 +848,10 @@ section {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: var(--glass-bg);
+  /* Opaque so code scrolled beneath never shows through, with a soft
+     fade on the leading edge */
+  background: var(--copy-btn-bg, #1e1e22);
+  box-shadow: -10px 0 10px -6px var(--copy-btn-bg, #1e1e22);
   border: 0.5px solid var(--glass-border);
   border-radius: var(--radius-small);
   color: var(--text-secondary);
@@ -1125,7 +1169,8 @@ section {
 
 .footer-links {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 12px 24px;
   justify-content: center;
   margin-bottom: 16px;
 }
@@ -1165,6 +1210,59 @@ section {
 
   .status-strip {
     gap: 12px;
+  }
+}
+
+/* --- FAQ Grid --- */
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.status-card {
+  padding: 20px;
+}
+
+.status-card h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.status-card p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.status-card a {
+  color: var(--accent, #2f81f7);
+}
+
+@media (max-width: 768px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reserve room for the floating Copy button so scrolled code never
+   slides underneath it */
+.code-block-wrapper pre {
+  padding-right: 64px;
+}
+
+/* Reduced motion: no smooth scrolling or animated transforms */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

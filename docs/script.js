@@ -9,14 +9,18 @@
   const links = document.getElementById('nav-links');
 
   if (toggle && links) {
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'nav-links');
     toggle.addEventListener('click', function () {
-      links.classList.toggle('open');
+      var open = links.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
 
     // Close mobile nav when a link is clicked
     links.addEventListener('click', function (e) {
       if (e.target.tagName === 'A') {
         links.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
       }
     });
   }
@@ -56,9 +60,12 @@
     var contentId = trigger.id.replace('-trigger', '-content');
     var content = document.getElementById(contentId);
     if (content) {
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.setAttribute('aria-controls', contentId);
       trigger.addEventListener('click', function () {
-        trigger.classList.toggle('open');
+        var open = trigger.classList.toggle('open');
         content.classList.toggle('open');
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
     }
   });
