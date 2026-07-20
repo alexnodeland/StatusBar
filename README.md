@@ -5,7 +5,7 @@
 <h1 align="center">StatusBar</h1>
 
 <p align="center">
-  A single-file SwiftUI menu bar app that monitors multiple status pages simultaneously. Supports <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, and <a href="https://instatus.com">Instatus</a>-powered pages with automatic provider detection.
+  A single-file SwiftUI menu bar app that monitors multiple status pages simultaneously. Supports <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, <a href="https://instatus.com">Instatus</a>, and self-hosted <a href="https://gatus.io">Gatus</a> pages with automatic provider detection.
 </p>
 
 <p align="center">
@@ -70,10 +70,11 @@ Open **Settings** and click **+** to add more. The app auto-detects the provider
 | Notion | Atlassian Statuspage | `https://status.notion.so` |
 | Zed | Instatus | `https://status.zed.dev` |
 | Deno | Instatus | `https://denostatus.com` |
+| Gatus demo | Gatus | `https://status.twin.sh` |
 
 </details>
 
-> **Note:** Incident history detail varies by provider. Atlassian Statuspage sources include full incident timelines. incident.io and Instatus sources may have limited or unavailable incident details due to provider API restrictions.
+> **Note:** Incident history detail varies by provider. Atlassian Statuspage sources include full incident timelines. incident.io and Instatus sources may have limited or unavailable incident details due to provider API restrictions. Gatus sources report per-endpoint health (each endpoint appears as a component) but have no incident history.
 
 Sources are persisted as JSON via `@AppStorage` and survive restarts. Use **Settings → Data** to export/import a full configuration (settings, sources, webhooks) or sources only.
 

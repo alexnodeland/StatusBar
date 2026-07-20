@@ -201,7 +201,7 @@ struct SourceDetailView: View {
 
     private var providerLimitationNotice: String? {
         switch state.provider {
-        case .instatus:
+        case .instatus, .gatus:
             return "Incident history is not available for this status page provider"
         case .incidentIO, .incidentIOCompat:
             return "Incident details are not available for this status page provider"

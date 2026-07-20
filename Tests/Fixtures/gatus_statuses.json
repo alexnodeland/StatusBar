@@ -1,0 +1,62 @@
+[
+    {
+        "name": "frontend",
+        "group": "core",
+        "key": "core_frontend",
+        "results": [
+            {
+                "status": 200,
+                "hostname": "example.org",
+                "duration": 149819678,
+                "conditionResults": [
+                    { "condition": "[STATUS] == 200", "success": true }
+                ],
+                "success": true,
+                "timestamp": "2026-07-19T10:00:00Z"
+            },
+            {
+                "status": 200,
+                "hostname": "example.org",
+                "duration": 131201233,
+                "conditionResults": [
+                    { "condition": "[STATUS] == 200", "success": true }
+                ],
+                "success": true,
+                "timestamp": "2026-07-19T10:05:00Z"
+            }
+        ]
+    },
+    {
+        "name": "api",
+        "group": "core",
+        "key": "core_api",
+        "results": [
+            {
+                "status": 200,
+                "hostname": "api.example.org",
+                "duration": 93214111,
+                "conditionResults": [
+                    { "condition": "[STATUS] == 200", "success": true }
+                ],
+                "success": true,
+                "timestamp": "2026-07-19T10:00:00Z"
+            },
+            {
+                "status": 500,
+                "hostname": "api.example.org",
+                "duration": 87301998,
+                "conditionResults": [
+                    { "condition": "[STATUS] == 200", "success": false }
+                ],
+                "success": false,
+                "timestamp": "2026-07-19T10:05:00Z"
+            }
+        ]
+    },
+    {
+        "name": "backups",
+        "group": "",
+        "key": "_backups",
+        "results": []
+    }
+]

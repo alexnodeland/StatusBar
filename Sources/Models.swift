@@ -337,6 +337,91 @@ struct InstatusComponent: Codable {
     let children: [InstatusComponent]
 }
 
+// MARK: - Gatus API Models
+
+struct GatusEndpointStatus: Codable {
+    let name: String
+    let group: String?
+    let key: String?
+    let results: [GatusResult]
+
+    enum CodingKeys: String, CodingKey {
+        case name, group, key, results
+    }
+
+    init(name: String, group: String?, key: String?, results: [GatusResult]) {
+        self.name = name
+        self.group = group
+        self.key = key
+        self.results = results
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        group = try container.decodeIfPresent(String.self, forKey: .group)
+        key = try container.decodeIfPresent(String.self, forKey: .key)
+        results = try container.decodeIfPresent([GatusResult].self, forKey: .results) ?? []
+    }
+
+    // Gatus appends results chronologically; the last entry is the most recent check.
+    var latestResult: GatusResult? { results.last }
+
+    var displayName: String {
+        guard let group, !group.isEmpty else { return name }
+        return "\(group) / \(name)"
+    }
+}
+
+struct GatusResult: Codable {
+    let success: Bool
+    let timestamp: String?
+}
+
+extension SPSummary {
+    static func fromGatus(_ endpoints: [GatusEndpointStatus], baseURL: String) -> SPSummary {
+        let components = endpoints.enumerated().map { index, endpoint -> SPComponent in
+            let status: String
+            if let latest = endpoint.latestResult {
+                status = latest.success ? "operational" : "major_outage"
+            } else {
+                status = "unknown"
+            }
+            return SPComponent(
+                id: endpoint.key ?? endpoint.name,
+                name: endpoint.displayName,
+                status: status,
+                description: nil,
+                position: index,
+                groupId: nil
+            )
+        }
+
+        let checked = endpoints.filter { $0.latestResult != nil }
+        let downCount = checked.filter { $0.latestResult?.success == false }.count
+
+        let indicator: String
+        let description: String
+        if checked.isEmpty || downCount == 0 {
+            indicator = "none"
+            description = "All systems operational"
+        } else if downCount == checked.count {
+            indicator = "critical"
+            description = "All \(checked.count) endpoints down"
+        } else {
+            indicator = "major"
+            description = "\(downCount) of \(checked.count) endpoints down"
+        }
+
+        return SPSummary(
+            page: SPPage(id: baseURL, name: baseURL, url: baseURL, updatedAt: "", timeZone: nil),
+            status: SPStatus(indicator: indicator, description: description),
+            components: components,
+            incidents: []
+        )
+    }
+}
+
 // MARK: - GitHub Release Model
 
 struct GitHubRelease: Codable {
@@ -414,6 +499,7 @@ enum StatusProvider: Equatable {
     case incidentIOCompat  // incident.io pages serving Atlassian-compatible API (no update details)
     case incidentIO  // pure incident.io fallback via /proxy/widget
     case instatus
+    case gatus  // self-hosted Gatus instances via /api/v1/endpoints/statuses
 }
 
 // MARK: - Status History
