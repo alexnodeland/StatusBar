@@ -79,6 +79,18 @@ final class HistoryStoreTests: XCTestCase {
             StatusCheckpoint(date: Date(), indicator: "none"),
             StatusCheckpoint(date: Date(), indicator: "major"),
         ]
+        // Minor degradation counts as up; only major/critical count as down
+        let fraction = store.uptimeFraction(for: id, since: Date().addingTimeInterval(-3600))
+        XCTAssertEqual(fraction, 0.75, accuracy: 0.001)
+    }
+
+    @MainActor
+    func testUptimeFractionCriticalCountsAsDown() {
+        let id = UUID()
+        store.data[id] = [
+            StatusCheckpoint(date: Date(), indicator: "critical"),
+            StatusCheckpoint(date: Date(), indicator: "none"),
+        ]
         let fraction = store.uptimeFraction(for: id, since: Date().addingTimeInterval(-3600))
         XCTAssertEqual(fraction, 0.5, accuracy: 0.001)
     }

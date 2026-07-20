@@ -41,8 +41,9 @@ final class HistoryStore {
     func uptimeFraction(for sourceID: UUID, since: Date) -> Double {
         let recent = checkpoints(for: sourceID, since: since)
         guard !recent.isEmpty else { return 1.0 }
-        let operational = recent.filter { $0.indicator == "none" }.count
-        return Double(operational) / Double(recent.count)
+        // Minor degradation is not downtime — only major/critical outages count as down.
+        let down = recent.filter { $0.indicator == "major" || $0.indicator == "critical" }.count
+        return Double(recent.count - down) / Double(recent.count)
     }
 
     // MARK: - Cleanup

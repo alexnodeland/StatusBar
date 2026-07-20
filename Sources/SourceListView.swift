@@ -166,7 +166,7 @@ struct SourceListView: View {
                     }())
 
             VStack(alignment: .leading, spacing: Design.Spacing.listGap) {
-                Text("Status Monitor")
+                Text("StatusBar")
                     .font(Design.Typography.bodyMedium)
                 Group {
                     if service.issueCount == 0 {

@@ -1167,3 +1167,10 @@ section {
     gap: 12px;
   }
 }
+
+/* Hero support note */
+.hero-note {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--text-tertiary, rgba(255, 255, 255, 0.45));
+}
