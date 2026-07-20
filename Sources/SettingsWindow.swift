@@ -435,6 +435,16 @@ struct UpdatesSettingsTab: View {
                     Label("View on GitHub", systemImage: "arrow.up.right")
                 }
                 .buttonStyle(.borderless)
+
+                Button {
+                    if let url = URL(string: kSupportURL) {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Label("Support StatusBar", systemImage: "heart")
+                }
+                .buttonStyle(.borderless)
+                .help("StatusBar is free — support development on Gumroad")
             }
 
             Section {

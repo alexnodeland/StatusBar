@@ -23,6 +23,9 @@ let kDefaultSources: [StatusSource] = [
 
 let kGitHubRepo = "alexnodeland/StatusBar"
 
+// Gumroad supporter purchase — the app is free; this is the tip-jar channel.
+let kSupportURL = "https://ournature.gumroad.com/l/statusbar"
+
 let kServiceCatalog: [CatalogEntry] = [
     CatalogEntry(name: "GitHub", url: "https://www.githubstatus.com", category: "Developer Tools"),
     CatalogEntry(name: "Cloudflare", url: "https://www.cloudflarestatus.com", category: "Infrastructure"),

@@ -57,6 +57,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         aboutItem.target = self
         menu.addItem(aboutItem)
 
+        let supportItem = NSMenuItem(
+            title: "Support StatusBar\u{2026}", action: #selector(openSupport), keyEquivalent: "")
+        supportItem.target = self
+        menu.addItem(supportItem)
+
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: "Quit StatusBar", action: #selector(quitApp), keyEquivalent: "q")
@@ -143,6 +148,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openAbout() {
         if let url = URL(string: "https://github.com/\(kGitHubRepo)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc private func openSupport() {
+        if let url = URL(string: kSupportURL) {
             NSWorkspace.shared.open(url)
         }
     }

@@ -183,6 +183,19 @@ if [ "$RELEASE" = true ]; then
         ditto -c -k --keepParent "${APP_BUNDLE}" "${BUILD_DIR}/${ZIP_NAME}"
         echo "✅ Notarized and stapled"
     fi
+
+    # Create DMG with a drag-to-Applications layout
+    DMG_NAME="${APP_NAME}-${VERSION:-universal}.dmg"
+    echo "📀 Creating ${DMG_NAME}..."
+    DMG_STAGING="${BUILD_DIR}/dmg-staging"
+    rm -rf "${DMG_STAGING}" "${BUILD_DIR}/${DMG_NAME}"
+    mkdir -p "${DMG_STAGING}"
+    cp -R "${APP_BUNDLE}" "${DMG_STAGING}/"
+    ln -s /Applications "${DMG_STAGING}/Applications"
+    hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING}" \
+        -format UDZO -quiet "${BUILD_DIR}/${DMG_NAME}"
+    rm -rf "${DMG_STAGING}"
+    echo "✅ Disk image: ${BUILD_DIR}/${DMG_NAME}"
 else
     echo ""
     echo "Run with:  open ${APP_BUNDLE}"
