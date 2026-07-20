@@ -59,7 +59,7 @@ extension WebhookEvent {
         self.init(
             source: source.name, title: title, body: body,
             severity: summary.status.indicator, event: event, url: source.baseURL,
-            timestamp: ISO8601DateFormatter().string(from: Date()),
+            timestamp: isoFormatterNoFrac.string(from: Date()),
             components: summary.components.filter { $0.status != "operational" }.map(\.name)
         )
     }
@@ -146,7 +146,7 @@ struct StatusBarConfig: Codable, Equatable {
 
     init(settings: ConfigSettings, sources: [StatusSource], webhooks: [WebhookConfig]) {
         self.version = Self.currentVersion
-        self.exportedAt = ISO8601DateFormatter().string(from: Date())
+        self.exportedAt = isoFormatterNoFrac.string(from: Date())
         self.settings = settings
         self.sources = sources
         self.webhooks = webhooks
@@ -376,50 +376,6 @@ struct GatusEndpointStatus: Codable {
 struct GatusResult: Codable {
     let success: Bool
     let timestamp: String?
-}
-
-extension SPSummary {
-    static func fromGatus(_ endpoints: [GatusEndpointStatus], baseURL: String) -> SPSummary {
-        let components = endpoints.enumerated().map { index, endpoint -> SPComponent in
-            let status: String
-            if let latest = endpoint.latestResult {
-                status = latest.success ? "operational" : "major_outage"
-            } else {
-                status = "unknown"
-            }
-            return SPComponent(
-                id: endpoint.key ?? endpoint.name,
-                name: endpoint.displayName,
-                status: status,
-                description: nil,
-                position: index,
-                groupId: nil
-            )
-        }
-
-        let checked = endpoints.filter { $0.latestResult != nil }
-        let downCount = checked.filter { $0.latestResult?.success == false }.count
-
-        let indicator: String
-        let description: String
-        if checked.isEmpty || downCount == 0 {
-            indicator = "none"
-            description = "All systems operational"
-        } else if downCount == checked.count {
-            indicator = "critical"
-            description = "All \(checked.count) endpoints down"
-        } else {
-            indicator = "major"
-            description = "\(downCount) of \(checked.count) endpoints down"
-        }
-
-        return SPSummary(
-            page: SPPage(id: baseURL, name: baseURL, url: baseURL, updatedAt: "", timeZone: nil),
-            status: SPStatus(indicator: indicator, description: description),
-            components: components,
-            incidents: []
-        )
-    }
 }
 
 // MARK: - GitHub Release Model

@@ -30,7 +30,7 @@ jobs:
           fi
 
       - name: Import signing certificate
-        if: env.APPLE_CERTIFICATE != ''
+        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -47,7 +47,7 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
       - name: Setup notarization profile
-        if: env.NOTARIZE_APPLE_ID != ''
+        if: ${{ secrets.NOTARIZE_APPLE_ID != '' }}
         env:
           NOTARIZE_APPLE_ID: ${{ secrets.NOTARIZE_APPLE_ID }}
           NOTARIZE_PASSWORD: ${{ secrets.NOTARIZE_PASSWORD }}

@@ -146,6 +146,32 @@ func validateSourceURL(_ rawURL: String) -> URLValidationResult {
 
 // MARK: - Network Retry
 
+enum FetchError: LocalizedError, Equatable {
+    case invalidURL
+    case httpStatus(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL: return "Invalid URL"
+        case .httpStatus(let code): return "Server returned status \(code)"
+        }
+    }
+
+    /// Client errors (4xx) and unparseable URLs won't succeed on retry.
+    var isRetryable: Bool {
+        switch self {
+        case .invalidURL: return false
+        case .httpStatus(let code): return code >= 500
+        }
+    }
+}
+
+func isRetryableError(_ error: Error) -> Bool {
+    if error is DecodingError { return false }
+    if let fetchError = error as? FetchError { return fetchError.isRetryable }
+    return true
+}
+
 func withRetry<T>(
     maxAttempts: Int = kMaxRetries,
     baseDelay: TimeInterval = kRetryBaseDelay,
@@ -157,6 +183,7 @@ func withRetry<T>(
         do {
             return try await operation()
         } catch {
+            guard isRetryableError(error) else { throw error }
             lastError = error
             if attempt < maxAttempts - 1 {
                 let delay = min(baseDelay * pow(2.0, Double(attempt)), maxDelay)

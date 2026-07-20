@@ -14,9 +14,9 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - Atlassian Models
 
-    func testSPSummaryDecodeFullFixture() {
+    func testSPSummaryDecodeFullFixture() throws {
         let data = loadFixture("atlassian_summary.json")
-        let summary = try! JSONDecoder().decode(SPSummary.self, from: data)
+        let summary = try JSONDecoder().decode(SPSummary.self, from: data)
         XCTAssertEqual(summary.page.id, "kctbh9vrtdwd")
         XCTAssertEqual(summary.page.name, "GitHub")
         XCTAssertEqual(summary.page.timeZone, "Etc/UTC")
@@ -26,39 +26,39 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(summary.incidents.count, 1)
     }
 
-    func testSPSummaryDecodeMissingArraysDefaultToEmpty() {
+    func testSPSummaryDecodeMissingArraysDefaultToEmpty() throws {
         let json = """
             {
                 "page": {"id":"p1","name":"Test","url":"https://test.com","updated_at":"2024-01-01T00:00:00Z"},
                 "status": {"indicator":"none","description":"All good"}
             }
             """.data(using: .utf8)!
-        let summary = try! JSONDecoder().decode(SPSummary.self, from: json)
+        let summary = try JSONDecoder().decode(SPSummary.self, from: json)
         XCTAssertEqual(summary.components.count, 0)
         XCTAssertEqual(summary.incidents.count, 0)
     }
 
-    func testSPPageCodingKeys() {
+    func testSPPageCodingKeys() throws {
         let json = """
             {"id":"p1","name":"Test","url":"https://test.com","updated_at":"2024-01-01T00:00:00Z","time_zone":"US/Pacific"}
             """.data(using: .utf8)!
-        let page = try! JSONDecoder().decode(SPPage.self, from: json)
+        let page = try JSONDecoder().decode(SPPage.self, from: json)
         XCTAssertEqual(page.updatedAt, "2024-01-01T00:00:00Z")
         XCTAssertEqual(page.timeZone, "US/Pacific")
     }
 
-    func testSPComponentCodingKeys() {
+    func testSPComponentCodingKeys() throws {
         let json = """
             {"id":"c1","name":"API","status":"operational","description":null,"position":1,"group_id":"g1"}
             """.data(using: .utf8)!
-        let component = try! JSONDecoder().decode(SPComponent.self, from: json)
+        let component = try JSONDecoder().decode(SPComponent.self, from: json)
         XCTAssertEqual(component.groupId, "g1")
         XCTAssertEqual(component.position, 1)
     }
 
-    func testSPIncidentWithUpdates() {
+    func testSPIncidentWithUpdates() throws {
         let data = loadFixture("atlassian_summary.json")
-        let summary = try! JSONDecoder().decode(SPSummary.self, from: data)
+        let summary = try JSONDecoder().decode(SPSummary.self, from: data)
         let incident = summary.incidents[0]
         XCTAssertEqual(incident.id, "inc1")
         XCTAssertEqual(incident.name, "Elevated error rates")
@@ -69,9 +69,9 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(incident.incidentUpdates[0].body, "We are investigating elevated error rates.")
     }
 
-    func testSPIncidentsResponse() {
+    func testSPIncidentsResponse() throws {
         let data = loadFixture("atlassian_incidents.json")
-        let response = try! JSONDecoder().decode(SPIncidentsResponse.self, from: data)
+        let response = try JSONDecoder().decode(SPIncidentsResponse.self, from: data)
         XCTAssertEqual(response.page.id, "kctbh9vrtdwd")
         XCTAssertEqual(response.incidents.count, 2)
         XCTAssertEqual(response.incidents[0].id, "inc1")
@@ -81,9 +81,9 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - incident.io Models
 
-    func testIIOWidgetResponseDecode() {
+    func testIIOWidgetResponseDecode() throws {
         let data = loadFixture("incidentio_widget.json")
-        let widget = try! JSONDecoder().decode(IIOWidgetResponse.self, from: data)
+        let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: data)
         XCTAssertEqual(widget.ongoingIncidents?.count, 1)
         XCTAssertEqual(widget.inProgressMaintenances?.count, 1)
         XCTAssertEqual(widget.scheduledMaintenances?.count, 1)
@@ -91,19 +91,19 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(widget.ongoingIncidents?[0].affectedComponents?.count, 2)
     }
 
-    func testIIOWidgetResponseEmptyJSON() {
+    func testIIOWidgetResponseEmptyJSON() throws {
         let json = "{}".data(using: .utf8)!
-        let widget = try! JSONDecoder().decode(IIOWidgetResponse.self, from: json)
+        let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: json)
         XCTAssertNil(widget.ongoingIncidents)
         XCTAssertNil(widget.inProgressMaintenances)
         XCTAssertNil(widget.scheduledMaintenances)
     }
 
-    func testIIOIncidentOptionalFields() {
+    func testIIOIncidentOptionalFields() throws {
         let json = """
             {"id":"x","name":null,"status":null,"last_update_message":null,"affected_components":null,"created_at":null,"updated_at":null}
             """.data(using: .utf8)!
-        let incident = try! JSONDecoder().decode(IIOIncident.self, from: json)
+        let incident = try JSONDecoder().decode(IIOIncident.self, from: json)
         XCTAssertEqual(incident.id, "x")
         XCTAssertNil(incident.name)
         XCTAssertNil(incident.status)
@@ -113,17 +113,17 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - Instatus Models
 
-    func testInstatusSummaryDecode() {
+    func testInstatusSummaryDecode() throws {
         let data = loadFixture("instatus_summary.json")
-        let summary = try! JSONDecoder().decode(InstatusSummary.self, from: data)
+        let summary = try JSONDecoder().decode(InstatusSummary.self, from: data)
         XCTAssertEqual(summary.page.name, "Acme Status")
         XCTAssertEqual(summary.page.url, "https://status.acme.com")
         XCTAssertEqual(summary.page.status, "UP")
     }
 
-    func testInstatusComponentsDecode() {
+    func testInstatusComponentsDecode() throws {
         let data = loadFixture("instatus_components.json")
-        let response = try! JSONDecoder().decode(InstatusComponentsResponse.self, from: data)
+        let response = try JSONDecoder().decode(InstatusComponentsResponse.self, from: data)
         XCTAssertEqual(response.components.count, 2)
         XCTAssertEqual(response.components[0].name, "API")
         XCTAssertTrue(response.components[0].isParent)
@@ -131,9 +131,9 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(response.components[1].status, "MAJOROUTAGE")
     }
 
-    func testInstatusNestedChildren() {
+    func testInstatusNestedChildren() throws {
         let data = loadFixture("instatus_components.json")
-        let response = try! JSONDecoder().decode(InstatusComponentsResponse.self, from: data)
+        let response = try JSONDecoder().decode(InstatusComponentsResponse.self, from: data)
         let apiComp = response.components[0]
         XCTAssertEqual(apiComp.children.count, 2)
         XCTAssertEqual(apiComp.children[0].name, "REST API")
@@ -144,9 +144,9 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - Gatus Models
 
-    func testGatusEndpointStatusDecode() {
+    func testGatusEndpointStatusDecode() throws {
         let data = loadFixture("gatus_statuses.json")
-        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: data)
+        let endpoints = try JSONDecoder().decode([GatusEndpointStatus].self, from: data)
         XCTAssertEqual(endpoints.count, 3)
         XCTAssertEqual(endpoints[0].name, "frontend")
         XCTAssertEqual(endpoints[0].group, "core")
@@ -155,18 +155,18 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(endpoints[2].results.count, 0)
     }
 
-    func testGatusEndpointStatusMissingResultsDefaultsToEmpty() {
+    func testGatusEndpointStatusMissingResultsDefaultsToEmpty() throws {
         let json = """
             [{"name":"db","group":"infra","key":"infra_db"}]
             """.data(using: .utf8)!
-        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: json)
+        let endpoints = try JSONDecoder().decode([GatusEndpointStatus].self, from: json)
         XCTAssertEqual(endpoints[0].results.count, 0)
         XCTAssertNil(endpoints[0].latestResult)
     }
 
-    func testGatusLatestResultIsLast() {
+    func testGatusLatestResultIsLast() throws {
         let data = loadFixture("gatus_statuses.json")
-        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: data)
+        let endpoints = try JSONDecoder().decode([GatusEndpointStatus].self, from: data)
         // Gatus appends results chronologically; the last entry is the newest check
         XCTAssertEqual(endpoints[0].latestResult?.success, true)
         XCTAssertEqual(endpoints[1].latestResult?.success, false)
@@ -179,9 +179,9 @@ final class ModelsTests: XCTestCase {
         XCTAssertEqual(ungrouped.displayName, "backups")
     }
 
-    func testGatusSummaryMappingPartialOutage() {
+    func testGatusSummaryMappingPartialOutage() throws {
         let data = loadFixture("gatus_statuses.json")
-        let endpoints = try! JSONDecoder().decode([GatusEndpointStatus].self, from: data)
+        let endpoints = try JSONDecoder().decode([GatusEndpointStatus].self, from: data)
         let summary = SPSummary.fromGatus(endpoints, baseURL: "https://status.example.org")
         XCTAssertEqual(summary.status.indicator, "major")
         XCTAssertEqual(summary.status.description, "1 of 2 endpoints down")
@@ -221,9 +221,9 @@ final class ModelsTests: XCTestCase {
 
     // MARK: - GitHub Models
 
-    func testGitHubReleaseFullFixture() {
+    func testGitHubReleaseFullFixture() throws {
         let data = loadFixture("github_release.json")
-        let release = try! JSONDecoder().decode(GitHubRelease.self, from: data)
+        let release = try JSONDecoder().decode(GitHubRelease.self, from: data)
         XCTAssertEqual(release.tagName, "v1.2.3")
         XCTAssertEqual(release.name, "Release v1.2.3")
         XCTAssertEqual(release.htmlUrl, "https://github.com/alexnodeland/StatusBar/releases/tag/v1.2.3")
@@ -232,11 +232,11 @@ final class ModelsTests: XCTestCase {
         XCTAssertTrue(release.assets[0].browserDownloadUrl.contains("v1.2.3"))
     }
 
-    func testGitHubReleaseOptionalNameEmptyAssets() {
+    func testGitHubReleaseOptionalNameEmptyAssets() throws {
         let json = """
             {"tag_name":"v0.1.0","name":null,"html_url":"https://example.com","assets":[]}
             """.data(using: .utf8)!
-        let release = try! JSONDecoder().decode(GitHubRelease.self, from: json)
+        let release = try JSONDecoder().decode(GitHubRelease.self, from: json)
         XCTAssertEqual(release.tagName, "v0.1.0")
         XCTAssertNil(release.name)
         XCTAssertEqual(release.assets.count, 0)

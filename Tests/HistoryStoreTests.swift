@@ -165,12 +165,12 @@ final class HistoryStoreTests: XCTestCase {
     // MARK: - Migration
 
     @MainActor
-    func testMigrateFromAppStorage() {
+    func testMigrateFromAppStorage() throws {
         let id = UUID()
         let checkpoint = StatusCheckpoint(date: Date(timeIntervalSince1970: 1700000000), indicator: "minor")
         var legacy: [String: [StatusCheckpoint]] = [:]
         legacy[id.uuidString] = [checkpoint]
-        let json = String(data: try! JSONEncoder().encode(legacy), encoding: .utf8)!
+        let json = String(data: try JSONEncoder().encode(legacy), encoding: .utf8)!
 
         store.migrateFromAppStorage(json)
 

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+">
   <a href="https://github.com/alexnodeland/StatusBar/releases/latest"><img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release"></a>
   <a href="https://alexnodeland.github.io/StatusBar/"><img src="https://img.shields.io/badge/docs-website-blue" alt="Docs"></a>
@@ -141,7 +141,7 @@ StatusBar exposes a full scripting dictionary for AppleScript and JXA (JavaScrip
 ```applescript
 tell application "StatusBar"
     get name of every source           -- list source names
-    get status of source "GitHub"      -- "none" / "minor" / "major" / "critical"
+    get status of source "GitHub"      -- "none" / "minor" / "major" / "critical" / "unknown"
     get worst status                   -- aggregate worst status
     get issue count                    -- number of sources with issues
 
@@ -164,6 +164,7 @@ osascript -e 'tell application "StatusBar" to refresh'
 
 | Property | Type | Description |
 |----------|------|-------------|
+| `id` | text | Unique identifier (UUID) |
 | `name` | text | Display name |
 | `url` | text | Base URL of the status page |
 | `status` | text | Current indicator (`none`, `minor`, `major`, `critical`, `unknown`) |
@@ -176,10 +177,11 @@ osascript -e 'tell application "StatusBar" to refresh'
 ## 🛠 Development
 
 ```bash
-brew install swiftlint swift-format   # One-time setup
+make setup                            # One-time: brew bundle + git hooks
 make build                            # Dev build
 make test                             # Run tests
 make check                            # Full CI check (lint + format + test)
+make release                          # Release build (universal binary + ZIP)
 ```
 
 See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the full development guide.

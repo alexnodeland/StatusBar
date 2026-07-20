@@ -2,7 +2,7 @@
 // A macOS menu bar app that monitors multiple Atlassian Statuspage-powered status pages.
 // Features native glass UI, status change notifications, and optimized polling.
 //
-// Requirements: macOS 14+ (Sonoma), Swift 5.9+
+// Requirements: macOS 26+ (Liquid Glass APIs)
 //
 // Build & Run:
 //   ./build.sh
@@ -102,6 +102,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             name: NSWindow.didBecomeKeyNotification,
             object: nil
         )
+    }
+
+    @MainActor func applicationWillTerminate(_ notification: Notification) {
+        // History writes are debounced by 5s — flush so the last checkpoints
+        // aren't lost on quit.
+        service?.historyStore.flushToDisk()
     }
 
     @objc private func windowDidBecomeKey(_ notification: Notification) {

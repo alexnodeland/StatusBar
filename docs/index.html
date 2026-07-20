@@ -57,8 +57,8 @@
         </a>
       </div>
       <div class="hero-badges">
-        <img src="https://img.shields.io/badge/macOS-14%2B-blue" alt="macOS 14+" width="76" height="20">
-        <img src="https://img.shields.io/badge/Swift-5.9%2B-orange" alt="Swift 5.9+" width="80" height="20">
+        <img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+" width="76" height="20">
+        <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6" width="80" height="20">
         <img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release" width="100" height="20">
       </div>
     </div>
@@ -143,10 +143,10 @@
                   <tr><th>Platform</th><th>Payload shape</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td><code>Slack</code></td><td><code>{ "text": "..." }</code></td></tr>
-                  <tr><td><code>Discord</code></td><td><code>{ "content": "..." }</code></td></tr>
-                  <tr><td><code>Teams</code></td><td><code>{ "@type": "MessageCard", ... }</code></td></tr>
-                  <tr><td><code>Generic</code></td><td><code>{ "source", "title", "body" }</code></td></tr>
+                  <tr><td><code>Slack</code></td><td>Block Kit &mdash; <code>{ "attachments": [{ "color", "blocks" }] }</code></td></tr>
+                  <tr><td><code>Discord</code></td><td>Embeds &mdash; <code>{ "embeds": [{ "title", "description", "color", "fields" }] }</code></td></tr>
+                  <tr><td><code>Teams</code></td><td>Adaptive Card &mdash; <code>{ "type": "message", "attachments": [{ "content": { "type": "AdaptiveCard" } }] }</code></td></tr>
+                  <tr><td><code>Generic</code></td><td>Flat JSON &mdash; <code>{ "source", "title", "body", "severity", "event", "url", "timestamp", "components" }</code></td></tr>
                 </tbody>
               </table>
               <p class="hook-table-note">Webhooks fire on every status change. Each webhook has an enable/disable toggle and a 10-second request timeout.</p>
@@ -385,7 +385,7 @@ end tell</code></pre>
       <div class="steps">
         <div class="glass-card step">
           <span class="step-number">1</span>
-          <span class="step-text">Download <strong>StatusBar-vX.Y.Z-universal.zip</strong> from the <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases page</a></span>
+          <span class="step-text">Install with <code>brew install --cask alexnodeland/tap/statusbar</code>, or download <strong>StatusBar-vX.Y.Z.zip</strong> from the <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases page</a></span>
         </div>
         <div class="glass-card step">
           <span class="step-number">2</span>
@@ -420,7 +420,7 @@ open ./build/StatusBar.app</code></pre>
           <div class="code-block-wrapper">
             <pre><code>swiftc StatusBarApp.swift -parse-as-library \
   -o StatusBar -framework SwiftUI -framework AppKit \
-  -target arm64-apple-macosx14.0
+  -target arm64-apple-macosx26.0
 ./StatusBar</code></pre>
             <button class="copy-btn" aria-label="Copy code">Copy</button>
           </div>

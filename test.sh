@@ -24,7 +24,9 @@ rm -rf "${BUILD_DIR}"
 mkdir -p "${BUNDLE_DIR}/Contents/MacOS"
 
 # Collect source files (exclude StatusBarApp.swift which has @main,
-# and HotkeyManager.swift which requires Carbon event loop at runtime)
+# HotkeyManager.swift which requires the Carbon event loop at runtime,
+# and AppleScriptBridge.swift whose scripting-command classes are only
+# referenced from the excluded StatusBarApp.swift)
 SOURCE_FILES=()
 for f in "${PROJECT_DIR}"/Sources/*.swift; do
     case "$(basename "$f")" in

@@ -1,9 +1,23 @@
 // StatusService+Providers.swift
-// Provider detection and per-provider fetch + mapping (Atlassian, incident.io, Instatus, Gatus).
+// Provider detection and per-provider network fetches. Pure response→SPSummary
+// mapping lives in ProviderMappings.swift.
 
 import Foundation
 
 extension StatusService {
+
+    // MARK: - Shared Fetch
+
+    /// Fetches a URL and returns its body, throwing typed errors for bad URLs
+    /// and non-2xx responses so `withRetry` can skip retries on terminal failures.
+    private func fetchData(_ urlString: String) async throws -> Data {
+        guard let url = URL(string: urlString) else { throw FetchError.invalidURL }
+        let (data, response) = try await session.data(from: url)
+        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+            throw FetchError.httpStatus(http.statusCode)
+        }
+        return data
+    }
 
     // MARK: - Provider Detection
 
@@ -34,198 +48,64 @@ extension StatusService {
     }
 
     private func isGatus(baseURL: String) async -> Bool {
-        guard let url = URL(string: "\(baseURL)/api/v1/endpoints/statuses?page=1&pageSize=1") else {
+        guard let data = try? await fetchData("\(baseURL)/api/v1/endpoints/statuses?page=1&pageSize=1") else {
             return false
         }
-        guard let (data, response) = try? await session.data(from: url),
-            let http = response as? HTTPURLResponse, http.statusCode == 200
-        else { return false }
         return (try? JSONDecoder().decode([GatusEndpointStatus].self, from: data)) != nil
     }
 
     // MARK: - Atlassian Fetch
 
     func fetchSummary(baseURL: String) async throws -> SPSummary {
-        try await withRetry {
-            let url = URL(string: "\(baseURL)/api/v2/summary.json")!
-            let (data, _) = try await self.session.data(from: url)
-            return try JSONDecoder().decode(SPSummary.self, from: data)
+        let data = try await withRetry {
+            try await self.fetchData("\(baseURL)/api/v2/summary.json")
         }
+        return try JSONDecoder().decode(SPSummary.self, from: data)
     }
 
     func fetchIncidents(baseURL: String) async throws -> [SPIncident] {
-        try await withRetry {
-            let url = URL(string: "\(baseURL)/api/v2/incidents.json")!
-            let (data, _) = try await self.session.data(from: url)
-            return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
+        let data = try await withRetry {
+            try await self.fetchData("\(baseURL)/api/v2/incidents.json")
         }
+        return try JSONDecoder().decode(SPIncidentsResponse.self, from: data).incidents
     }
 
-    // MARK: - incident.io Fetch + Mapping
+    // MARK: - incident.io Fetch
 
     func fetchIncidentIO(baseURL: String) async throws -> (SPSummary, [SPIncident]) {
-        let (data, _) = try await withRetry {
-            let url = URL(string: "\(baseURL)/proxy/widget")!
-            return try await self.session.data(from: url)
+        let data = try await withRetry {
+            try await self.fetchData("\(baseURL)/proxy/widget")
         }
         let widget = try JSONDecoder().decode(IIOWidgetResponse.self, from: data)
-
-        let allIncidents =
-            (widget.ongoingIncidents ?? [])
-            + (widget.inProgressMaintenances ?? [])
-
-        let mappedIncidents = allIncidents.map { inc -> SPIncident in
-            let id = inc.id ?? UUID().uuidString
-            let name = inc.name ?? "Unknown incident"
-            let status = inc.status ?? "investigating"
-            let impact = deriveImpact(from: status)
-            let created = inc.createdAt ?? ""
-            let updated = inc.updatedAt ?? ""
-
-            var updates: [SPIncidentUpdate] = []
-            if let msg = inc.lastUpdateMessage, !msg.isEmpty {
-                updates.append(
-                    SPIncidentUpdate(
-                        id: "\(id)-update",
-                        status: status,
-                        body: msg,
-                        createdAt: updated,
-                        updatedAt: updated
-                    ))
-            }
-
-            return SPIncident(
-                id: id,
-                name: name,
-                status: status,
-                impact: impact,
-                createdAt: created,
-                updatedAt: updated,
-                shortlink: nil,
-                incidentUpdates: updates
-            )
-        }
-
-        let indicator = deriveIndicator(from: allIncidents)
-        let description = deriveDescription(from: indicator, incidentCount: allIncidents.count)
-
-        let summary = SPSummary(
-            page: SPPage(id: baseURL, name: baseURL, url: baseURL, updatedAt: "", timeZone: nil),
-            status: SPStatus(indicator: indicator, description: description),
-            components: [],
-            incidents: mappedIncidents
-        )
-
-        return (summary, mappedIncidents)
+        return SPSummary.fromIncidentIOWidget(widget, baseURL: baseURL)
     }
 
-    private func deriveImpact(from status: String) -> String {
-        let map = ["investigating": "major", "identified": "major", "monitoring": "minor", "resolved": "none", "postmortem": "none"]
-        return map[status.lowercased(), default: "minor"]
-    }
-
-    private func deriveIndicator(from incidents: [IIOIncident]) -> String {
-        if incidents.isEmpty { return "none" }
-        for inc in incidents {
-            let s = (inc.status ?? "").lowercased()
-            if s == "investigating" || s == "identified" { return "major" }
-        }
-        return "minor"
-    }
-
-    private func deriveDescription(from indicator: String, incidentCount: Int) -> String {
-        if indicator == "none" { return "All systems operational" }
-        let suffix = incidentCount == 1 ? "" : "s"
-        if indicator == "minor" || indicator == "major" {
-            return "\(incidentCount) active incident\(suffix)"
-        }
-        return "Status unknown"
-    }
-
-    // MARK: - Instatus Fetch + Mapping
+    // MARK: - Instatus Fetch
 
     func fetchInstatus(baseURL: String) async throws -> SPSummary {
-        let (summaryData, _) = try await withRetry {
-            let summaryURL = URL(string: "\(baseURL)/api/v2/summary.json")!
-            return try await self.session.data(from: summaryURL)
+        let summaryData = try await withRetry {
+            try await self.fetchData("\(baseURL)/api/v2/summary.json")
         }
         let instatus = try JSONDecoder().decode(InstatusSummary.self, from: summaryData)
 
-        var components: [SPComponent] = []
-        if let compURL = URL(string: "\(baseURL)/api/v2/components.json") {
-            if let (compData, compResp) = try? await session.data(from: compURL),
-                let compHTTP = compResp as? HTTPURLResponse, compHTTP.statusCode == 200,
-                let parsed = try? JSONDecoder().decode(InstatusComponentsResponse.self, from: compData)
-            {
-                components = flattenInstatusComponents(parsed.components)
-            }
+        var components: [InstatusComponent] = []
+        if let compData = try? await fetchData("\(baseURL)/api/v2/components.json"),
+            let parsed = try? JSONDecoder().decode(InstatusComponentsResponse.self, from: compData)
+        {
+            components = parsed.components
         }
 
-        let indicator = mapInstatusPageStatus(instatus.page.status)
-        let description = mapInstatusDescription(instatus.page.status)
-
-        return SPSummary(
-            page: SPPage(id: baseURL, name: instatus.page.name, url: instatus.page.url, updatedAt: "", timeZone: nil),
-            status: SPStatus(indicator: indicator, description: description),
-            components: components,
-            incidents: []
-        )
+        return SPSummary.fromInstatus(instatus, components: components, baseURL: baseURL)
     }
 
-    private func flattenInstatusComponents(_ components: [InstatusComponent], position: inout Int) -> [SPComponent] {
-        var result: [SPComponent] = []
-        for comp in components {
-            let mapped = SPComponent(
-                id: comp.id,
-                name: comp.name,
-                status: mapInstatusComponentStatus(comp.status),
-                description: comp.description,
-                position: position,
-                groupId: nil
-            )
-            position += 1
-            result.append(mapped)
-            if !comp.children.isEmpty {
-                result += flattenInstatusComponents(comp.children, position: &position)
-            }
-        }
-        return result
-    }
-
-    private func flattenInstatusComponents(_ components: [InstatusComponent]) -> [SPComponent] {
-        var pos = 0
-        return flattenInstatusComponents(components, position: &pos)
-    }
-
-    private func mapInstatusPageStatus(_ status: String) -> String {
-        ["UP": "none", "HASISSUES": "minor", "UNDERMAINTENANCE": "minor"][status, default: "major"]
-    }
-
-    private func mapInstatusDescription(_ status: String) -> String {
-        let map = ["UP": "All systems operational", "HASISSUES": "Experiencing issues", "UNDERMAINTENANCE": "Under maintenance"]
-        return map[status, default: "Experiencing issues"]
-    }
-
-    private func mapInstatusComponentStatus(_ status: String) -> String {
-        let map = [
-            "OPERATIONAL": "operational",
-            "DEGRADEDPERFORMANCE": "degraded_performance",
-            "PARTIALOUTAGE": "partial_outage",
-            "MAJOROUTAGE": "major_outage",
-            "UNDERMAINTENANCE": "degraded_performance",
-        ]
-        return map[status, default: status.lowercased()]
-    }
-
-    // MARK: - Gatus Fetch + Mapping
+    // MARK: - Gatus Fetch
 
     func fetchGatus(baseURL: String) async throws -> SPSummary {
         let pageSize = 100
         var endpoints: [GatusEndpointStatus] = []
         for page in 1...5 {
-            let (data, _) = try await withRetry {
-                let url = URL(string: "\(baseURL)/api/v1/endpoints/statuses?page=\(page)&pageSize=\(pageSize)")!
-                return try await self.session.data(from: url)
+            let data = try await withRetry {
+                try await self.fetchData("\(baseURL)/api/v1/endpoints/statuses?page=\(page)&pageSize=\(pageSize)")
             }
             let batch = try JSONDecoder().decode([GatusEndpointStatus].self, from: data)
             endpoints += batch

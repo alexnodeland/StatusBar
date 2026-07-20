@@ -10,6 +10,8 @@ make lint           # SwiftLint --strict on Sources/ and Tests/
 make format         # Auto-format with swift-format
 make format-check   # Check formatting (fails if changes needed)
 make check          # Lint + format check + tests (CI target)
+make release        # Release build (universal binary + ZIP)
+make install        # Build and copy to /Applications
 make dev            # Build and open the app
 make clean          # Remove build artifacts
 ```
@@ -17,7 +19,7 @@ make clean          # Remove build artifacts
 ## Architecture
 
 - **Pure `swiftc` build** — no SPM or Xcode project. All `.swift` files in `Sources/` compile as a single compilation unit via `build.sh`.
-- **Test harness** — `test.sh` compiles `Tests/` + most of `Sources/` into an XCTest bundle. It **excludes** `StatusBarApp.swift` (has `@main`) and `HotkeyManager.swift` (requires Carbon framework).
+- **Test harness** — `test.sh` compiles `Tests/` + most of `Sources/` into an XCTest bundle. It **excludes** `StatusBarApp.swift` (has `@main`), `HotkeyManager.swift` (requires Carbon framework), and `AppleScriptBridge.swift` (scripting classes only referenced from `StatusBarApp.swift`).
 - **Settings** — `@AppStorage` for user preferences. `HistoryStore` uses file-based JSON in `~/Library/Application Support/StatusBar/`.
 - **macOS 26** — targets macOS 26 with Liquid Glass (`.glassEffect`, `.buttonStyle(.glass)`, `.chromeBackground()`).
 

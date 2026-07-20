@@ -42,6 +42,14 @@ final class StatusService: ObservableObject {
         historyStore.pruneOlderThan(Date().addingTimeInterval(-30 * 24 * 60 * 60))
         history = historyStore.data
         loadSources()
+        // Seed last-known indicators from persisted history so relaunching
+        // doesn't re-notify for incidents that were already seen (and does
+        // notify for changes that happened while the app was closed).
+        for source in sources {
+            if let last = history[source.id]?.last {
+                previousIndicators[source.id] = last.indicator
+            }
+        }
         // Ensure notification delegate is wired before any refresh sends notifications
         _ = NotificationManager.shared
         Task { await refreshAll() }
@@ -149,6 +157,10 @@ final class StatusService: ObservableObject {
                 incidents = []
             }
 
+            // The source may have been removed while the fetch was in flight;
+            // recording then would resurrect its state and history.
+            guard states[source.id] != nil else { return }
+
             let newIndicator = summary.status.indicator
             let oldIndicator = previousIndicators[source.id]
 
@@ -183,7 +195,11 @@ final class StatusService: ObservableObject {
         newIndicator: String, oldIndicator: String?
     ) {
         let newSev = severityFor(newIndicator)
-        guard newSev >= source.alertLevel.minimumSeverity else { return }
+        // Gate on the transition's peak severity: a recovery has newSev == 0,
+        // but should still alert when the incident it clears was above the
+        // threshold — otherwise "Recovered" notifications can never fire.
+        let peakSev = max(newSev, oldIndicator.map(severityFor) ?? -1)
+        guard peakSev >= source.alertLevel.minimumSeverity else { return }
 
         let name = source.name
         let desc = summary.status.description
@@ -253,6 +269,12 @@ final class StatusService: ObservableObject {
             providerCache.removeValue(forKey: oldID)
             historyStore.removeSource(oldID)
         }
+        // A re-imported source can keep its id but change URL — the cached
+        // provider is then stale.
+        let oldURLs = Dictionary(uniqueKeysWithValues: sources.map { ($0.id, $0.baseURL) })
+        for newSource in newSources where oldURLs[newSource.id] != newSource.baseURL {
+            providerCache.removeValue(forKey: newSource.id)
+        }
         history = historyStore.data
 
         sources = newSources
@@ -261,7 +283,9 @@ final class StatusService: ObservableObject {
     }
 
     func addSource(name: String, baseURL: String, group: String? = nil) {
-        let source = StatusSource(name: name, baseURL: baseURL, group: group, sortOrder: sources.count)
+        let storedLevel = UserDefaults.standard.string(forKey: "defaultAlertLevel")
+        let alertLevel = storedLevel.flatMap(AlertLevel.init(rawValue:)) ?? .all
+        let source = StatusSource(name: name, baseURL: baseURL, alertLevel: alertLevel, group: group, sortOrder: sources.count)
         sources.append(source)
         persistSources()
         Task { await refresh(source: source) }

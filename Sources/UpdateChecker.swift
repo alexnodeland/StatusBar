@@ -37,8 +37,8 @@ final class UpdateChecker: ObservableObject {
     }()
 
     init() {
-        Task { await checkForUpdates() }
         if autoCheckEnabled {
+            Task { await checkForUpdates() }
             startNightlyTimer()
         }
     }
@@ -162,12 +162,11 @@ final class UpdateChecker: ObservableObject {
                 return
             }
 
-            // Replace current app
+            // Replace current app atomically — if the swap fails, the current
+            // bundle is left untouched instead of already sitting in the Trash.
             let currentAppPath = Bundle.main.bundlePath
             let currentAppURL = URL(fileURLWithPath: currentAppPath)
-            var trashedURL: NSURL?
-            try FileManager.default.trashItem(at: currentAppURL, resultingItemURL: &trashedURL)
-            try FileManager.default.moveItem(at: newApp, to: currentAppURL)
+            _ = try FileManager.default.replaceItemAt(currentAppURL, withItemAt: newApp)
 
             // Clean up temp directory
             try? FileManager.default.removeItem(at: tempDir)
