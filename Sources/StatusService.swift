@@ -62,11 +62,13 @@ final class StatusService: ObservableObject {
             let decoded = StatusSource.decode(from: json)
             if !decoded.isEmpty {
                 sources = decoded
+                // Existing installs predate the welcome screen — skip it.
+                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
                 return
             }
         }
-        sources = kDefaultSources
-        persistSources()
+        // First run: stay empty — the onboarding screen offers starting points.
+        sources = []
     }
 
     private func persistSources() {
