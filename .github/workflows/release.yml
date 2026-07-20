@@ -16,6 +16,11 @@ permissions:
 jobs:
   build-and-release:
     runs-on: macos-26
+    # The secrets context is unavailable in step-level `if:`; job-level env
+    # can read it, and step conditions can read job env.
+    env:
+      HAS_SIGNING_CERT: ${{ secrets.APPLE_CERTIFICATE != '' }}
+      HAS_NOTARIZE_CREDS: ${{ secrets.NOTARIZE_APPLE_ID != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -30,7 +35,7 @@ jobs:
           fi
 
       - name: Import signing certificate
-        if: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        if: env.HAS_SIGNING_CERT == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -47,7 +52,7 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
       - name: Setup notarization profile
-        if: ${{ secrets.NOTARIZE_APPLE_ID != '' }}
+        if: env.HAS_NOTARIZE_CREDS == 'true'
         env:
           NOTARIZE_APPLE_ID: ${{ secrets.NOTARIZE_APPLE_ID }}
           NOTARIZE_PASSWORD: ${{ secrets.NOTARIZE_PASSWORD }}
