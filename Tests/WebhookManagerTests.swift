@@ -5,6 +5,28 @@ import XCTest
 
 final class WebhookManagerTests: XCTestCase {
 
+    // Config tests mutate the WebhookManager.shared singleton, which persists
+    // to real UserDefaults — snapshot and restore so failures don't leak
+    // webhook configs into later runs (or the developer's installed app).
+    private var savedConfigsJSON: String?
+
+    override func setUp() {
+        super.setUp()
+        savedConfigsJSON = UserDefaults.standard.string(forKey: "webhookConfigs")
+    }
+
+    override func tearDown() {
+        if let savedConfigsJSON {
+            UserDefaults.standard.set(savedConfigsJSON, forKey: "webhookConfigs")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "webhookConfigs")
+        }
+        MainActor.assumeIsolated {
+            WebhookManager.shared.loadConfigs()
+        }
+        super.tearDown()
+    }
+
     // MARK: - Test Helpers
 
     private func makeEvent(

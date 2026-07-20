@@ -203,9 +203,11 @@ struct SourceDetailView: View {
         switch state.provider {
         case .instatus, .gatus:
             return "Incident history is not available for this status page provider"
-        case .incidentIO, .incidentIOCompat:
+        case .incidentIO:
             return "Incident details are not available for this status page provider"
         default:
+            // .incidentIOCompat serves the Atlassian incidents API, so real
+            // incident details are shown — no limitation to disclose.
             return nil
         }
     }
@@ -460,13 +462,7 @@ struct IncidentCard: View {
     }
 
     private var impactColor: Color {
-        switch incident.impact {
-        case "none": return .green
-        case "minor": return .yellow
-        case "major": return .orange
-        case "critical": return .red
-        default: return .secondary
-        }
+        colorForIndicator(incident.impact)
     }
 
     private var statusBadge: String {

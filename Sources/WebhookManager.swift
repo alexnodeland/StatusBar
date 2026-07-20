@@ -72,7 +72,7 @@ final class WebhookManager: ObservableObject {
             severity: "minor",
             event: "degraded",
             url: "https://github.com/alexnodeland/StatusBar",
-            timestamp: ISO8601DateFormatter().string(from: Date()),
+            timestamp: isoFormatterNoFrac.string(from: Date()),
             components: ["API", "Dashboard"]
         )
         await send(config: config, event: event)

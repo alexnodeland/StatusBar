@@ -17,6 +17,9 @@
 
 set -euo pipefail
 
+# Run from the repo root regardless of invocation directory
+cd "$(dirname "$0")"
+
 APP_NAME="StatusBar"
 BUILD_DIR="./build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
@@ -117,8 +120,8 @@ if [ -n "$VERSION" ]; then
     # Strip leading 'v' if present (v1.0.0 → 1.0.0)
     CLEAN_VERSION="${VERSION#v}"
     echo "  Setting version to ${CLEAN_VERSION}..."
-    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${CLEAN_VERSION}" "${CONTENTS}/Info.plist"
-    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${CLEAN_VERSION}" "${CONTENTS}/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString '${CLEAN_VERSION}'" "${CONTENTS}/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion '${CLEAN_VERSION}'" "${CONTENTS}/Info.plist"
 fi
 
 # Copy app icon if it exists
@@ -128,7 +131,8 @@ fi
 
 # Copy bundled images
 for img in *.png; do
-    [ -f "$img" ] && [ "$img" != "icon.png" ] && cp "$img" "${RESOURCES}/"
+    case "$img" in icon.png|github.png) continue ;; esac
+    [ -f "$img" ] && cp "$img" "${RESOURCES}/"
 done
 
 # Copy scripting definition for AppleScript support

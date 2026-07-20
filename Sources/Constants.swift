@@ -28,7 +28,6 @@ let kServiceCatalog: [CatalogEntry] = [
     CatalogEntry(name: "Cloudflare", url: "https://www.cloudflarestatus.com", category: "Infrastructure"),
     CatalogEntry(name: "Anthropic", url: "https://status.anthropic.com", category: "AI & ML"),
     CatalogEntry(name: "OpenAI", url: "https://status.openai.com", category: "AI & ML"),
-    CatalogEntry(name: "AWS", url: "https://health.aws.amazon.com", category: "Cloud"),
     CatalogEntry(name: "Datadog", url: "https://status.datadoghq.com", category: "Observability"),
     CatalogEntry(name: "PagerDuty", url: "https://status.pagerduty.com", category: "Incident Management"),
     CatalogEntry(name: "Vercel", url: "https://www.vercel-status.com", category: "Developer Tools"),
