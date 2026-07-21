@@ -1501,17 +1501,48 @@ section {
   border-color: var(--accent);
 }
 
-.toc-sep {
-  width: 1px;
-  height: 16px;
-  align-self: center;
-  background: var(--line-strong);
+/* Content tabs on doc pages */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 28px;
+  border-bottom: 1px solid var(--line-strong);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-@media (max-width: 480px) {
-  .toc-sep {
-    display: none;
-  }
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-bar a {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 10px 14px;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--timing-hover) ease-out, border-color var(--timing-hover) ease-out;
+}
+
+.tab-bar a:hover {
+  color: var(--text-primary);
+}
+
+.tab-bar a.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+/* With JS enabled only the active panel is shown; without JS the page
+   degrades to all sections stacked with the tab bar as anchor links */
+.tabs-js .tab-panel {
+  display: none;
+}
+
+.tabs-js .tab-panel.active {
+  display: block;
 }
 
 /* Docs page: tighter section rhythm */
