@@ -28,37 +28,35 @@ struct SourceRow: View {
                 }
             }
 
+            // Status text owns the full line under the name — the sparkline
+            // is a separate right-aligned column, so nothing ever truncates.
             VStack(alignment: .leading, spacing: Design.Spacing.listGap) {
                 Text(source.name)
                     .font(Design.Typography.bodyMedium)
                     .lineLimit(1)
 
-                HStack(spacing: Design.Spacing.cellInner) {
-                    if !checkpoints.isEmpty {
-                        SparklineView(checkpoints: checkpoints)
-                    }
-
-                    if state.isStale, state.lastError != nil {
-                        Text("\(state.statusDescription) (stale)")
-                            .font(Design.Typography.caption)
-                            .foregroundStyle(.orange)
-                            .lineLimit(1)
-                    } else if let error = state.lastError {
-                        Text(error)
-                            .font(Design.Typography.micro)
-                            .foregroundStyle(.red)
-                            .lineLimit(1)
-                    } else {
-                        Text(state.statusDescription)
-                            .font(Design.Typography.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
+                if state.isStale, state.lastError != nil {
+                    Text("\(state.statusDescription) (stale)")
+                        .font(Design.Typography.dataMicro)
+                        .foregroundStyle(.orange)
+                        .lineLimit(2)
+                } else if let error = state.lastError {
+                    Text(error)
+                        .font(Design.Typography.dataMicro)
+                        .foregroundStyle(.red)
+                        .lineLimit(2)
+                } else {
+                    Text(state.statusDescription)
+                        .font(Design.Typography.dataMicro)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
             }
 
-            Spacer()
+            Spacer(minLength: Design.Spacing.cardInner)
 
+            // Accessories sit inboard of the sparkline so the strip column
+            // stays perfectly aligned on every row.
             if source.isSnoozed {
                 Image(systemName: "bell.slash.fill")
                     .font(Design.Typography.micro)
@@ -81,6 +79,9 @@ struct SourceRow: View {
                     .frame(width: 12)
                     .accessibilityLabel("Loading")
             }
+
+            SparklineView(checkpoints: checkpoints)
+                .layoutPriority(1)
 
             Image(systemName: "chevron.right")
                 .font(Design.Typography.micro)

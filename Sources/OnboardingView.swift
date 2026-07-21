@@ -14,9 +14,9 @@ struct OnboardingView: View {
         VStack(spacing: Design.Spacing.sectionGap) {
             Spacer()
 
-            Image(nsImage: NSApp.applicationIconImage)
+            Image(nsImage: Self.appIcon)
                 .resizable()
-                .frame(width: 64, height: 64)
+                .frame(width: 72, height: 72)
                 .accessibilityHidden(true)
 
             VStack(spacing: Design.Spacing.cellInner) {
@@ -64,15 +64,26 @@ struct OnboardingView: View {
 
             HStack(spacing: Design.Spacing.innerInset) {
                 Image(systemName: "keyboard")
-                    .font(Design.Typography.micro)
-                Text("Tip: toggle this popover anytime with \u{2303}\u{2325}S")
-                    .font(Design.Typography.micro)
+                    .font(Design.Typography.dataMicro)
+                Text("tip: toggle this popover anytime with \u{2303}\u{2325}S")
+                    .font(Design.Typography.dataMicro)
             }
             .foregroundStyle(.tertiary)
             .padding(.bottom, Design.Spacing.sectionH)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    // Read the icns from the bundle directly — NSApp.applicationIconImage
+    // can serve a stale cached icon after the artwork changes.
+    static let appIcon: NSImage = {
+        if let url = Bundle.main.url(forResource: "StatusBar", withExtension: "icns"),
+            let image = NSImage(contentsOf: url)
+        {
+            return image
+        }
+        return NSApp.applicationIconImage
+    }()
 
     private func complete() {
         hasCompletedOnboarding = true
@@ -89,7 +100,7 @@ struct OnboardingView: View {
             HStack(spacing: Design.Spacing.standard) {
                 Image(systemName: systemImage)
                     .font(.title3)
-                    .foregroundStyle(prominent ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(prominent ? Color.green : Color.secondary)
                     .frame(width: 26)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
@@ -108,12 +119,12 @@ struct OnboardingView: View {
             .padding(.vertical, Design.Spacing.sectionV)
             .background(
                 RoundedRectangle(cornerRadius: Design.Radius.card, style: .continuous)
-                    .fill(prominent ? Color.accentColor.opacity(0.12) : Design.Depth.contentFill)
+                    .fill(prominent ? Color.green.opacity(0.12) : Design.Depth.contentFill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Design.Radius.card, style: .continuous)
                     .strokeBorder(
-                        prominent ? Color.accentColor.opacity(0.35) : Design.Depth.contentStroke,
+                        prominent ? Color.green.opacity(0.35) : Design.Depth.contentStroke,
                         lineWidth: 1
                     )
             )

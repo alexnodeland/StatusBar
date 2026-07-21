@@ -54,7 +54,7 @@ struct HooksSettingsTab: View {
 
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(hook.lastPathComponent)
-                                    .font(.body)
+                                    .font(.system(.body, design: .monospaced))
                                 Text("Runs on all events")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
