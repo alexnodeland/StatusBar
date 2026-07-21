@@ -170,13 +170,19 @@ struct SourceListView: View {
                     .font(Design.Typography.bodyMedium)
                 Group {
                     if service.issueCount == 0 {
-                        Text("All systems operational")
+                        Text("all systems operational")
                     } else {
                         Text("\(service.issueCount) source\(service.issueCount == 1 ? "" : "s") with issues")
                     }
                 }
-                .font(Design.Typography.caption)
+                .font(Design.Typography.dataMicro)
                 .foregroundStyle(.secondary)
+                if service.sources.count > 1 {
+                    AggregateTickStrip(
+                        indicators: filteredAndSortedSources.map { service.state(for: $0).indicator }
+                    )
+                    .padding(.top, 1)
+                }
             }
 
             Spacer()

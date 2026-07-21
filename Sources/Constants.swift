@@ -119,6 +119,9 @@ enum Design {
         static let captionSemibold: Font = .caption.weight(.semibold)
         static let micro: Font = .caption2
         static let mono: Font = .system(.caption, design: .monospaced)
+        // "Data voice": timestamps, uptime numbers, counts — always monospaced
+        static let dataMicro: Font = .system(.caption2, design: .monospaced)
+        static let dataMicroMedium: Font = .system(.caption2, design: .monospaced).weight(.medium)
     }
 
     enum Spacing {

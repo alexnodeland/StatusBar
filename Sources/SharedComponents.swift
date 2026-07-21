@@ -37,17 +37,17 @@ extension View {
 struct SparklineView: View {
     let checkpoints: [StatusCheckpoint]
 
-    private let barWidth: CGFloat = 2
-    private let barGap: CGFloat = 1
-    @ScaledMetric(relativeTo: .caption2) private var maxHeight: CGFloat = 12
+    private let barWidth: CGFloat = 3
+    private let barGap: CGFloat = 2
+    @ScaledMetric(relativeTo: .caption2) private var maxHeight: CGFloat = 13
 
     private func barHeight(for indicator: String) -> CGFloat {
         switch indicator {
-        case "none": return 4
-        case "minor": return 7
-        case "major": return 10
-        case "critical": return 12
-        default: return 4
+        case "none": return 7
+        case "minor": return 10
+        case "major": return 12
+        case "critical": return 13
+        default: return 7
         }
     }
 
@@ -58,8 +58,9 @@ struct SparklineView: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: barGap) {
             ForEach(Array(checkpoints.suffix(30).enumerated()), id: \.offset) { _, checkpoint in
-                RoundedRectangle(cornerRadius: 0.5)
+                RoundedRectangle(cornerRadius: 1.5)
                     .fill(colorForIndicator(checkpoint.indicator))
+                    .opacity(checkpoint.indicator == "none" ? 0.85 : 1)
                     .frame(width: barWidth, height: barHeight(for: checkpoint.indicator))
             }
         }
@@ -113,10 +114,40 @@ struct BadgeView: View {
     var body: some View {
         Text(text)
             .font(Design.Typography.micro.weight(.medium))
+            .monospacedDigit()
             .padding(.horizontal, Design.Spacing.badgeH)
             .padding(.vertical, Design.Spacing.badgeV)
             .foregroundStyle(style == .muted ? Color.secondary : color)
             .background(style == .muted ? Color.primary.opacity(0.05) : color.opacity(0.12), in: Capsule())
+    }
+}
+
+// MARK: - Aggregate Tick Strip
+
+/// One tick per source, colored by current status — the popover header's
+/// at-a-glance overview (mirrors the marketing site's signature strip).
+struct AggregateTickStrip: View {
+    let indicators: [String]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 3) {
+            ForEach(Array(indicators.enumerated()), id: \.offset) { _, indicator in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(colorForIndicator(indicator))
+                    .opacity(indicator == "none" ? 0.85 : 1)
+                    .frame(width: 4, height: indicator == "none" ? 10 : 13)
+            }
+        }
+        .frame(height: 13, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: String {
+        let issues = indicators.filter { $0 != "none" && $0 != "unknown" }.count
+        return issues == 0
+            ? "All \(indicators.count) sources operational"
+            : "\(issues) of \(indicators.count) sources with issues"
     }
 }
 

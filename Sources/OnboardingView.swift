@@ -89,7 +89,7 @@ struct OnboardingView: View {
             HStack(spacing: Design.Spacing.standard) {
                 Image(systemName: systemImage)
                     .font(.title3)
-                    .foregroundStyle(prominent ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(prominent ? Color.green : Color.secondary)
                     .frame(width: 26)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
@@ -108,12 +108,12 @@ struct OnboardingView: View {
             .padding(.vertical, Design.Spacing.sectionV)
             .background(
                 RoundedRectangle(cornerRadius: Design.Radius.card, style: .continuous)
-                    .fill(prominent ? Color.accentColor.opacity(0.12) : Design.Depth.contentFill)
+                    .fill(prominent ? Color.green.opacity(0.12) : Design.Depth.contentFill)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Design.Radius.card, style: .continuous)
                     .strokeBorder(
-                        prominent ? Color.accentColor.opacity(0.35) : Design.Depth.contentStroke,
+                        prominent ? Color.green.opacity(0.35) : Design.Depth.contentStroke,
                         lineWidth: 1
                     )
             )

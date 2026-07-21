@@ -86,10 +86,10 @@ struct SourceDetailView: View {
                     .foregroundStyle(color)
             }
             Text(label)
-                .font(Design.Typography.micro)
+                .font(Design.Typography.dataMicro)
                 .foregroundStyle(.tertiary)
             Text(String(format: "%.1f%%", pct))
-                .font(Design.Typography.micro.weight(.medium))
+                .font(Design.Typography.dataMicroMedium)
                 .foregroundStyle(color)
         }
         .padding(.horizontal, Design.Spacing.badgeH)
@@ -301,9 +301,9 @@ struct SourceDetailView: View {
     private var detailFooter: some View {
         HStack {
             if let last = state.lastRefresh {
-                Text("Updated \(relativeFormatter.localizedString(for: last, relativeTo: Date()))\(state.isStale ? " (stale)" : "")")
-                    .font(Design.Typography.micro)
-                    .foregroundStyle(state.isStale ? Color.orange : Color.secondary.opacity(0.3))
+                Text("updated \(relativeFormatter.localizedString(for: last, relativeTo: Date()))\(state.isStale ? " (stale)" : "")")
+                    .font(Design.Typography.dataMicro)
+                    .foregroundStyle(state.isStale ? Color.orange : Color.secondary.opacity(0.4))
             }
             Spacer()
             Button {
