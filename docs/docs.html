@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body class="docs-page">
 
@@ -59,6 +59,7 @@
         <a href="#automate">url scheme</a>
         <a href="#automate">applescript</a>
         <a href="#terminal">cli &amp; prompt</a>
+        <a href="#widget">widget</a>
         <a href="#docs">source catalog</a>
       </nav>
     </div>
@@ -389,6 +390,39 @@ sketchybar --set "$NAME" label="$(statusbar prompt)"</code></pre>
           <h3>Shortcuts &amp; Spotlight</h3>
         </div>
         <p class="automate-desc">StatusBar exposes App Intents: <strong>Get Worst Status</strong>, <strong>Get Source Status</strong>, and <strong>Refresh Sources</strong>. Wire them into Shortcuts automations, Focus modes, or just type &ldquo;status&rdquo; into Spotlight.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="widget">
+    <div class="container">
+      <p class="section-label">desktop</p>
+      <h2>The widget</h2>
+      <p class="section-sub">The status overview on your desktop or in Notification Center &mdash; powered by the same snapshot the CLI reads, refreshed on a timeline.</p>
+
+      <div class="automate-row">
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <h3>Add it once</h3>
+          </div>
+          <p class="automate-desc">Launch StatusBar, then right-click your desktop and choose <strong>Edit Widgets&hellip;</strong> (or scroll to the bottom of Notification Center and click <strong>Edit Widgets</strong>). Search for <strong>StatusBar</strong> and drop it where you want it.</p>
+          <p class="automate-desc"><strong>Small</strong> shows the tick strip with the issue count and the worst source. <strong>Medium</strong> lists up to six sources with their current state. Both update within a few minutes of every refresh.</p>
+        </div>
+
+        <div class="glass-card automate-card">
+          <div class="mock-widgets" role="img" aria-label="The small desktop widget flipping between all systems operational and one issue on Cloudflare">
+            <div class="widget widget-small">
+              <div class="w-ticks" aria-hidden="true">
+                <span></span><span class="w-tick-flip"></span><span></span><span></span><span></span>
+              </div>
+              <div class="w-small-state">
+                <span class="w-clear">all systems<br>operational</span>
+                <span class="w-issue"><b>1 issue</b><i>Cloudflare</i></span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>

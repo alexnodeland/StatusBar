@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -134,6 +134,35 @@
         <div class="showcase-text">
           <h3>Native macOS Integration</h3>
           <p>Lives in the menu bar as a checkmark when all clear, or a warning with a badge count when issues arise. Native notifications fire the moment a status changes &mdash; and recover alerts when it clears. Snooze noisy sources for an hour or a day.</p>
+        </div>
+      </div>
+
+      <!-- Showcase 3: Desktop widget, animated -->
+      <div class="showcase">
+        <div class="showcase-image">
+          <div class="mock-widgets" role="img" aria-label="Desktop widgets: a small widget flipping from all clear to one issue, and a medium widget listing six sources">
+            <div class="widget widget-small">
+              <div class="w-ticks" aria-hidden="true">
+                <span></span><span class="w-tick-flip"></span><span></span><span></span><span></span>
+              </div>
+              <div class="w-small-state">
+                <span class="w-clear">all systems<br>operational</span>
+                <span class="w-issue"><b>1 issue</b><i>Cloudflare</i></span>
+              </div>
+            </div>
+            <div class="widget widget-medium">
+              <div class="w-row"><i class="w-dot"></i><span class="w-name">GitHub</span><span class="w-state">ok</span></div>
+              <div class="w-row w-row-flip"><i class="w-dot w-dot-flip"></i><span class="w-name">Cloudflare</span><span class="w-state-pair"><span class="w-state">ok</span><span class="w-state warn">minor</span></span></div>
+              <div class="w-row"><i class="w-dot"></i><span class="w-name">Anthropic</span><span class="w-state">ok</span></div>
+              <div class="w-row"><i class="w-dot"></i><span class="w-name">OpenAI</span><span class="w-state">ok</span></div>
+              <div class="w-row"><i class="w-dot"></i><span class="w-name">Stripe</span><span class="w-state">ok</span></div>
+              <div class="w-row"><i class="w-dot"></i><span class="w-name">Vercel</span><span class="w-state">ok</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="showcase-text">
+          <h3>On the Desktop, Too</h3>
+          <p>Add the widget to your desktop or Notification Center for the overview without a single click &mdash; the tick strip and issue count at small, a per-source list at medium. Prefer a terminal? The bundled <a href="docs.html#terminal">CLI and Shortcuts intents</a> read the same live snapshot.</p>
         </div>
       </div>
     </div>
