@@ -38,6 +38,108 @@
     }
   }
 
+  // --- Live app mocks ---
+  var MOCK_SOURCES = [
+    { name: 'Datadog', group: null, warn: false },
+    { name: 'GitHub', group: null, warn: false },
+    { group: 'AI', count: 2 },
+    { name: 'Anthropic', group: 'AI', warn: false },
+    { name: 'OpenAI', group: 'AI', warn: false },
+    { group: 'Cloud', count: 2 },
+    { name: 'Cloudflare', group: 'Cloud', warn: true },
+    { name: 'Vercel', group: 'Cloud', warn: false }
+  ];
+
+  function mockSpark(warn, ticks, phLead) {
+    var out = '<span class="mock-spark" aria-hidden="true">';
+    for (var i = 0; i < ticks; i++) {
+      var cls = i < phLead ? 'ph' : (warn && i >= phLead ? 'w' : '');
+      out += '<span class="' + cls + '" style="--i:' + i + '"></span>';
+    }
+    return out + '</span>';
+  }
+
+  var popover = document.getElementById('mock-popover');
+  if (popover) {
+    var TICKS = 16;
+    var html = '';
+    html += '<div class="mock-head">';
+    html += '<span class="mock-head-icon" aria-hidden="true">\u26a0\ufe0f</span>';
+    html += '<div class="mock-head-text">';
+    html += '<div class="mock-head-title">StatusBar</div>';
+    html += '<div class="mock-head-sub">1 source with issues</div>';
+    html += '<div class="mock-agg" aria-hidden="true">';
+    var aggWarnIndex = 1;
+    for (var a = 0; a < 6; a++) {
+      html += '<span class="' + (a === aggWarnIndex ? 'warn' : '') + '" style="--i:' + a + '"></span>';
+    }
+    html += '</div></div>';
+    html += '<div class="mock-toolbar" aria-hidden="true">';
+    html += '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+    html += '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 3v18M7 21l-4-4m4 4 4-4M17 21V3m0 0-4 4m4-4 4 4"/></svg>';
+    html += '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>';
+    html += '</div></div>';
+    html += '<div class="mock-rows">';
+    MOCK_SOURCES.forEach(function (s2, idx) {
+      if (!s2.name) {
+        html += '<div class="mock-group"><span>' + s2.group + '</span><span class="mock-pill">' + s2.count + '</span></div>';
+        return;
+      }
+      var rowCls = 'mock-row' + (s2.group ? ' indent' : '') + (s2.warn ? ' warn-row' : '');
+      html += '<div class="' + rowCls + '">';
+      html += '<span class="mock-dot ' + (s2.warn ? 'warn' : 'ok') + '" aria-hidden="true">' + (s2.warn ? '!' : '\u2713') + '</span>';
+      html += '<span class="mock-row-text">';
+      html += '<div class="mock-row-name">' + s2.name + '</div>';
+      html += '<div class="mock-row-status">' + (s2.warn ? 'Minor Service Outage' : 'All Systems Operational') + '</div>';
+      html += '</span>';
+      if (s2.warn) { html += '<span class="mock-badge">1</span>'; }
+      html += mockSpark(s2.warn, TICKS, idx === 0 ? 2 : 0);
+      html += '<span class="mock-chev" aria-hidden="true">\u203a</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div class="mock-foot"><span>6 sources</span><span>\u2303\u2325S</span></div>';
+    popover.innerHTML = html;
+  }
+
+  var detail = document.getElementById('mock-detail');
+  if (detail) {
+    var comps = [
+      ['Cloudflare Sites and Services', 'Operational', 'g'],
+      ['Africa', 'Partial Outage', 'o'],
+      ['Asia', 'Partial Outage', 'o'],
+      ['Europe', 'Partial Outage', 'o'],
+      ['North America', 'Partial Outage', 'o'],
+      ['Oceania', 'Partial Outage', 'o']
+    ];
+    var d = '';
+    d += '<div class="mock-head">';
+    d += '<span class="mock-head-icon" aria-hidden="true">\u26a0\ufe0f</span>';
+    d += '<div class="mock-head-text">';
+    d += '<div class="mock-head-title">Cloudflare</div>';
+    d += '<div class="mock-head-sub">Minor Service Outage</div>';
+    d += '</div></div>';
+    d += '<div class="mock-eyebrow warn">active incidents</div>';
+    d += '<div class="mock-incident">';
+    d += '<div class="mock-incident-title">Workers AI experiencing degraded availability in some models</div>';
+    d += '<div class="mock-incident-meta"><span class="mock-tag red">Investigating</span><span class="mock-time">2w ago</span></div>';
+    d += '</div>';
+    d += '<div class="mock-eyebrow">components</div>';
+    d += '<div class="mock-components">';
+    comps.forEach(function (c, i) {
+      d += '<div class="mock-comp" style="--i:' + i + '"><i class="' + c[2] + '"></i>';
+      d += '<span class="mock-comp-name">' + c[0] + '</span>';
+      d += '<span class="mock-comp-status ' + c[2] + '">' + c[1] + '</span></div>';
+    });
+    d += '</div>';
+    d += '<div class="mock-uptime"><span class="mock-eyebrow">uptime</span>';
+    ['24h', '7d', '30d'].forEach(function (w) {
+      d += '<span class="mock-up-pill"><span>' + w + '</span> <b>100.0%</b></span>';
+    });
+    d += '</div>';
+    detail.innerHTML = d;
+  }
+
   // --- Smooth scroll for anchor links ---
   document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener('click', function (e) {
