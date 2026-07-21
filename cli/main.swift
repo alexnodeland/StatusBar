@@ -65,6 +65,55 @@ func openURLScheme(_ url: String) {
     process.waitUntilExit()
 }
 
+// MARK: - Repo config (.statusbar)
+
+/// Walks up from the working directory looking for a `.statusbar` file:
+/// one source name per line, `#` comments. Scopes status/prompt output to
+/// that project's upstream dependencies.
+func repoConfig() -> (names: [String], path: String)? {
+    var dir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    while true {
+        let file = dir.appendingPathComponent(".statusbar")
+        if let text = try? String(contentsOf: file, encoding: .utf8) {
+            let names = text.split(separator: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+            if !names.isEmpty { return (names, file.path) }
+        }
+        if dir.path == "/" { return nil }
+        dir.deleteLastPathComponent()
+    }
+}
+
+struct ScopedSnapshot {
+    let sources: [StatusCacheSource]
+    let missing: [String]
+    let configPath: String
+    var worst: String {
+        let ranked = sources.map { severityRank($0.indicator) }.max() ?? -1
+        return ranked <= 0 ? (ranked == 0 ? "none" : "unknown") : ["none", "minor", "major", "critical"][ranked]
+    }
+    var issueCount: Int {
+        sources.filter { $0.indicator != "none" && $0.indicator != "unknown" }.count
+    }
+}
+
+func applyRepoScope(_ snapshot: StatusCacheSnapshot) -> ScopedSnapshot? {
+    guard let config = repoConfig() else { return nil }
+    var matched: [StatusCacheSource] = []
+    var missing: [String] = []
+    for name in config.names {
+        if let source = findSource(name, in: snapshot),
+            !matched.contains(where: { $0.name == source.name })
+        {
+            matched.append(source)
+        } else {
+            missing.append(name)
+        }
+    }
+    return ScopedSnapshot(sources: matched, missing: missing, configPath: config.path)
+}
+
 func severityRank(_ indicator: String) -> Int {
     ["none": 0, "minor": 1, "major": 2, "critical": 3][indicator] ?? -1
 }
@@ -77,7 +126,7 @@ func printStatusLine(name: String, indicator: String, description: String, snooz
     print("\(glyph(for: indicator)) \(pad) \(paint(description, "90"))\(snooze)")
 }
 
-func cmdStatus(name: String?, json: Bool, fresh: Bool) async {
+func cmdStatus(name: String?, json: Bool, fresh: Bool, allFlag: Bool) async {
     guard let snapshot = loadCache() else { return }
 
     if let name {
@@ -102,6 +151,34 @@ func cmdStatus(name: String?, json: Bool, fresh: Bool) async {
                 description: description, snoozed: source.snoozed)
         }
         exit(indicator == "none" ? 0 : (severityRank(indicator) > 0 ? 1 : 2))
+    }
+
+    // Repo scope: a .statusbar file narrows output to that project's deps
+    if !allFlag, let scoped = applyRepoScope(snapshot) {
+        if json {
+            let payload: [String: Any] = [
+                "worst": scoped.worst,
+                "issueCount": scoped.issueCount,
+                "scope": scoped.configPath,
+                "sources": scoped.sources.map {
+                    ["name": $0.name, "indicator": $0.indicator, "description": $0.description]
+                },
+                "missing": scoped.missing,
+            ]
+            let data = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+            print(String(data: data ?? Data(), encoding: .utf8) ?? "{}")
+        } else {
+            for source in scoped.sources {
+                printStatusLine(
+                    name: source.name, indicator: source.indicator,
+                    description: source.description, snoozed: source.snoozed)
+            }
+            for name in scoped.missing {
+                print("\(glyph(for: "unknown")) \(name.padding(toLength: max(name.count, 18), withPad: " ", startingAt: 0)) \(paint("not monitored — statusbar add <url> \(name)", "90"))")
+            }
+            print(paint("— scoped by \(scoped.configPath)", "90"))
+        }
+        exit(scoped.worst == "none" ? 0 : (severityRank(scoped.worst) > 0 ? 1 : 2))
     }
 
     // All sources
@@ -140,15 +217,21 @@ func cmdStatus(name: String?, json: Bool, fresh: Bool) async {
     exit(worst == "none" ? 0 : (severityRank(worst) > 0 ? 1 : 2))
 }
 
-func cmdPrompt() {
+func cmdPrompt(allFlag: Bool) {
     guard let snapshot = loadCache(required: false) else {
         print("○")
         exit(0)
     }
-    if snapshot.issueCount > 0 {
-        print("\(plainGlyph(for: snapshot.worst))\(snapshot.issueCount)")
+    var worst = snapshot.worst
+    var issues = snapshot.issueCount
+    if !allFlag, let scoped = applyRepoScope(snapshot), !scoped.sources.isEmpty {
+        worst = scoped.worst
+        issues = scoped.issueCount
+    }
+    if issues > 0 {
+        print("\(plainGlyph(for: worst))\(issues)")
     } else {
-        print(plainGlyph(for: snapshot.worst))
+        print(plainGlyph(for: worst))
     }
     exit(0)
 }
@@ -193,12 +276,16 @@ let helpText = """
 
     OPTIONS
       --json            Machine-readable output (status)
+      --all             Ignore a .statusbar repo scope
       --fresh           Fetch live from providers instead of the cache (status)
       --timeout <sec>   wait: give up after N seconds (default 1800)
       --interval <sec>  wait: poll every N seconds (default 30)
 
     The cache at ~/.cache/statusbar/status.json is refreshed by the app on
     every poll; `status` reads it instantly with no network.
+
+    Drop a `.statusbar` file in a repo (one source name per line, # for
+    comments) and `status`/`prompt` scope to that project's dependencies.
     """
 
 // MARK: - Entry
@@ -215,6 +302,7 @@ struct StatusBarCLI {
 
         let json = args.contains("--json")
         let fresh = args.contains("--fresh")
+        let allFlag = args.contains("--all")
         func optionValue(_ flag: String) -> String? {
             guard let idx = args.firstIndex(of: flag), idx + 1 < args.count else { return nil }
             return args[idx + 1]
@@ -223,9 +311,9 @@ struct StatusBarCLI {
 
         switch command {
         case "status", "list":
-            await cmdStatus(name: positional.first, json: json, fresh: fresh)
+            await cmdStatus(name: positional.first, json: json, fresh: fresh, allFlag: allFlag)
         case "prompt":
-            cmdPrompt()
+            cmdPrompt(allFlag: allFlag)
         case "wait":
             guard let name = positional.first else { fail("usage: statusbar wait <name>") }
             let timeout = TimeInterval(optionValue("--timeout") ?? "") ?? 1800

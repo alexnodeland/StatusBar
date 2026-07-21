@@ -238,6 +238,15 @@ set -g status-interval 60
 
 </details>
 
+Drop a `.statusbar` file in a repo (one source name per line, `#` comments) and `statusbar status` / `statusbar prompt` scope to **that project's** upstream dependencies — your prompt shows the health of what *this* codebase depends on. `--all` bypasses.
+
+```
+# .statusbar — upstream deps for this repo
+GitHub
+npm
+Vercel
+```
+
 StatusBar also exposes **App Intents** — *Get Worst Status*, *Get Source Status*, and *Refresh Sources* — for Shortcuts automations, Focus modes, and Spotlight.
 
 ## Development
