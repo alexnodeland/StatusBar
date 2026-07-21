@@ -124,7 +124,8 @@ struct GeneralSettingsTab: View {
     @ObservedObject var service: StatusService
     @State private var launchAtLogin = false
     @AppStorage("menuBarShowCount") private var menuBarShowCount = true
-    @AppStorage("menuBarMonochrome") private var menuBarMonochrome = false
+    @AppStorage("menuBarMonochrome") private var menuBarMonochrome = true
+    @AppStorage("menuBarStyle") private var menuBarStyle = "symbol"
     @AppStorage(HotkeyConfig.enabledKey) private var hotkeyEnabled = true
 
     var body: some View {
@@ -154,6 +155,10 @@ struct GeneralSettingsTab: View {
             }
 
             Section("Menu Bar") {
+                Picker("Icon style", selection: $menuBarStyle) {
+                    Text("Status symbol").tag("symbol")
+                    Text("Tick strip").tag("ticks")
+                }
                 Toggle("Show issue count", isOn: $menuBarShowCount)
                 Toggle("Monochrome icon", isOn: $menuBarMonochrome)
             }

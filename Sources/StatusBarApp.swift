@@ -15,20 +15,84 @@ import SwiftUI
 struct MenuBarLabel: View {
     @ObservedObject var service: StatusService
     @AppStorage("menuBarShowCount") private var showCount = true
-    @AppStorage("menuBarMonochrome") private var monochrome = false
+    @AppStorage("menuBarMonochrome") private var monochrome = true
+    @AppStorage("menuBarStyle") private var style = "symbol"
 
     var body: some View {
-        HStack(spacing: 2) {
-            if monochrome {
+        HStack(spacing: 3) {
+            // Default: the semantic status symbol (check / warning / x),
+            // monochrome — readable at a glance and native to the menu bar.
+            // Options: tick-strip brand style, and full status color.
+            if style == "ticks" {
+                Image(nsImage: tickImage)
+            } else if monochrome {
                 Image(systemName: service.menuBarIcon)
             } else {
-                Image(systemName: service.menuBarIcon)
-                    .foregroundStyle(service.menuBarColor)
+                Image(nsImage: symbolImage)
             }
             if showCount && service.issueCount > 0 {
                 Text("\(service.issueCount)")
                     .font(.caption2.monospacedDigit())
             }
+        }
+        .accessibilityLabel(
+            service.issueCount == 0
+                ? "StatusBar: all systems operational"
+                : "StatusBar: \(service.issueCount) sources with issues"
+        )
+    }
+
+    // MenuBarExtra flattens label views to template images, stripping color.
+    // For the colored variants, pre-render to a non-template NSImage.
+    private var tickImage: NSImage {
+        let renderer = ImageRenderer(
+            content: MiniTickIcon(indicator: service.worstIndicator, monochrome: monochrome)
+        )
+        renderer.scale = 2
+        guard let image = renderer.nsImage else { return NSImage() }
+        image.size = NSSize(width: 14.5, height: 12)
+        image.isTemplate = monochrome
+        return image
+    }
+
+    private var symbolImage: NSImage {
+        let renderer = ImageRenderer(
+            content: Image(systemName: service.menuBarIcon)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(service.menuBarColor)
+        )
+        renderer.scale = 2
+        guard let image = renderer.nsImage else { return NSImage() }
+        image.isTemplate = false
+        return image
+    }
+}
+
+/// The brand tick strip at menu bar size: green when clear, the tall tick
+/// takes the worst severity's color during incidents (mirrors the app icon).
+struct MiniTickIcon: View {
+    let indicator: String
+    let monochrome: Bool
+
+    private let heights: [CGFloat] = [6, 9, 12, 8]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 1.5) {
+            ForEach(heights.indices, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color(for: index))
+                    .frame(width: 2.5, height: heights[index])
+            }
+        }
+        .frame(height: 12, alignment: .bottom)
+    }
+
+    private func color(for index: Int) -> Color {
+        if monochrome { return .primary }
+        switch indicator {
+        case "unknown": return .gray
+        case "none": return .green
+        default: return index == 2 ? colorForIndicator(indicator) : .green
         }
     }
 }

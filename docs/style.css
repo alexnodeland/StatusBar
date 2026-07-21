@@ -1501,3 +1501,529 @@ section {
   font-size: 0.95rem;
   margin-top: -6px;
 }
+
+/* ============ Live App Mocks (coded, not screenshots) ============ */
+/* The app is rendered in its own dark theme in both site color schemes,
+   exactly like a real dark-mode Mac screenshot would be. */
+
+.app-mock {
+  --m-bg: #1c1e22;
+  --m-chrome: #24262b;
+  --m-row: rgba(255, 255, 255, 0.04);
+  --m-text: #ececf0;
+  --m-text2: rgba(255, 255, 255, 0.55);
+  --m-text3: rgba(255, 255, 255, 0.35);
+  --m-line: rgba(255, 255, 255, 0.08);
+  background: var(--m-bg);
+  border-radius: 16px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-shot);
+  overflow: hidden;
+  font-family: var(--font-sans);
+  text-align: left;
+}
+
+.mock-popover {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* --- Mock header --- */
+.mock-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 0.5px solid var(--m-line);
+}
+
+.mock-head-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mock-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mock-head-title {
+  color: var(--m-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.mock-head-sub {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--m-text2);
+  margin-top: 1px;
+}
+
+.mock-agg {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  margin-top: 4px;
+  height: 12px;
+}
+
+.mock-agg span {
+  width: 4px;
+  border-radius: 1.5px;
+  height: 9px;
+  background: var(--status-green);
+  opacity: 0.85;
+}
+
+.mock-agg span.warn {
+  height: 12px;
+  background: var(--status-yellow);
+  opacity: 1;
+}
+
+.mock-toolbar {
+  display: flex;
+  gap: 8px;
+  color: var(--m-text3);
+}
+
+/* --- Mock rows --- */
+.mock-rows {
+  padding: 8px;
+}
+
+.mock-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 4px;
+  color: var(--m-text3);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.mock-group .mock-pill {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: var(--m-text2);
+}
+
+.mock-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+}
+
+.mock-row.indent { margin-left: 12px; }
+
+.mock-row.warn-row {
+  background: rgba(255, 214, 10, 0.07);
+}
+
+.mock-dot {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #fff;
+}
+
+.mock-dot.ok { background: rgba(52, 199, 89, 0.28); color: var(--status-green); }
+.mock-dot.warn { background: rgba(255, 214, 10, 0.22); color: var(--status-yellow); }
+
+.mock-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mock-row-name {
+  color: var(--m-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.mock-row-status {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--m-text2);
+  white-space: nowrap;
+}
+
+.mock-row.warn-row .mock-row-status { color: rgba(255, 214, 10, 0.85); }
+
+.mock-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--status-yellow);
+  background: rgba(255, 214, 10, 0.15);
+  border-radius: 999px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+.mock-spark {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.mock-spark span {
+  width: 3px;
+  border-radius: 1.5px;
+  height: 7px;
+  background: var(--status-green);
+  opacity: 0.85;
+}
+
+.mock-spark span.w { height: 10px; background: var(--status-yellow); opacity: 1; }
+.mock-spark span.ph { background: rgba(255, 255, 255, 0.12); }
+
+.mock-chev {
+  color: var(--m-text3);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.mock-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-top: 0.5px solid var(--m-line);
+  background: rgba(255, 255, 255, 0.03);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--m-text3);
+}
+
+/* Spark tick entrance */
+@media (prefers-reduced-motion: no-preference) {
+  .mock-spark span,
+  .mock-agg span {
+    animation: tick-in 0.45s ease-out backwards;
+    animation-delay: calc(var(--i, 0) * 22ms);
+  }
+
+  .mock-row.warn-row .mock-dot,
+  .mock-spark span.w {
+    animation: amber-pulse 3s ease-in-out infinite;
+  }
+}
+
+@keyframes amber-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
+}
+
+/* --- Detail mock --- */
+.mock-detail {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.mock-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--m-text3);
+  padding: 12px 14px 6px;
+}
+
+.mock-eyebrow.warn { color: var(--status-orange); }
+
+.mock-incident {
+  margin: 0 12px;
+  border: 0.5px solid rgba(255, 214, 10, 0.3);
+  background: rgba(255, 214, 10, 0.05);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.mock-incident-title {
+  color: var(--m-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.mock-incident-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.mock-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.mock-tag.red { color: #ff6b61; background: rgba(255, 59, 48, 0.15); }
+.mock-tag.green { color: var(--status-green); background: rgba(52, 199, 89, 0.15); }
+
+.mock-time {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--m-text3);
+}
+
+.mock-components {
+  margin: 8px 12px;
+  border: 0.5px solid var(--m-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mock-comp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 0.5px solid var(--m-line);
+}
+
+.mock-comp:last-child { border-bottom: none; }
+
+.mock-comp i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mock-comp i.g { background: var(--status-green); }
+.mock-comp i.o { background: var(--status-orange); }
+
+.mock-comp-name {
+  flex: 1;
+  color: var(--m-text);
+  font-size: 0.72rem;
+}
+
+.mock-comp-status {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.mock-comp-status.g { color: var(--status-green); }
+.mock-comp-status.o { color: var(--status-orange); }
+
+.mock-uptime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px 14px;
+}
+
+.mock-uptime .mock-eyebrow { padding: 0; flex: 1; }
+
+.mock-up-pill {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--status-green);
+  background: rgba(52, 199, 89, 0.13);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.mock-up-pill b { font-weight: 600; }
+.mock-up-pill span { color: var(--m-text3); font-weight: 400; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .mock-comp {
+    animation: comp-in 0.5s ease-out backwards;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+}
+
+@keyframes comp-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- Native integration mock --- */
+.mock-native {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 10px 0;
+}
+
+.mock-menubar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #1a1c20;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 16px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mb-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 34px;
+  justify-content: center;
+}
+
+/* Monochrome by default — like the app */
+.mb-check { color: rgba(255, 255, 255, 0.88); }
+
+.mb-alert {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: rgba(255, 255, 255, 0.88);
+  opacity: 0;
+}
+
+.mb-count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.mock-notification {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(340px, 100%);
+  background: #26282e;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.mock-notification img {
+  border-radius: 8px;
+}
+
+.mock-notif-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.mock-notif-text strong {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mock-notif-text span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.72rem;
+}
+
+.mock-notif-time {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.4);
+  align-self: flex-start;
+}
+
+/* The story loop: all clear → incident (symbol flips, count appears)
+   → notification → recovered */
+@media (prefers-reduced-motion: no-preference) {
+  .mb-check { animation: mb-check-loop 9s ease-in-out infinite; }
+  .mb-alert { animation: mb-alert-loop 9s ease-in-out infinite; }
+  .mock-notification { animation: notif-loop 9s ease-in-out infinite; }
+}
+
+@keyframes mb-check-loop {
+  0%, 30%, 92%, 100% { opacity: 1; }
+  34%, 88% { opacity: 0; }
+}
+
+@keyframes mb-alert-loop {
+  0%, 30%, 92%, 100% { opacity: 0; }
+  34%, 88% { opacity: 1; }
+}
+
+@keyframes notif-loop {
+  0%, 34% { opacity: 0; transform: translateY(-14px) scale(0.97); }
+  40%, 80% { opacity: 1; transform: none; }
+  88%, 100% { opacity: 0; transform: translateY(-8px) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-alert { opacity: 1; }
+  .mb-check { opacity: 0; }
+}
+
+/* --- Mock interactivity: behaves like the app under the cursor --- */
+.app-mock,
+.mock-native {
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mock-row,
+.mock-comp,
+.mock-incident,
+.mock-toolbar svg {
+  transition: background 0.12s ease-out, border-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+
+.mock-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mock-row.warn-row:hover {
+  background: rgba(255, 214, 10, 0.11);
+}
+
+.mock-comp:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mock-incident:hover {
+  border-color: rgba(255, 214, 10, 0.5);
+}
+
+.mock-toolbar svg:hover {
+  color: var(--m-text);
+}
+
+.mock-foot span:last-child {
+  transition: color 0.12s ease-out;
+}
+
+.mock-foot span:last-child:hover {
+  color: var(--m-text2);
+}
