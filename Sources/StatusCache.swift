@@ -55,7 +55,8 @@ struct StatusCache {
     /// Reads the cache from the real home — works from the sandboxed widget
     /// via its read-only temporary exception for ~/.cache/statusbar/.
     static func readShared() -> StatusCacheSnapshot? {
-        let realURL = realHomeURL
+        let realURL =
+            realHomeURL
             .appendingPathComponent(".cache")
             .appendingPathComponent("statusbar")
             .appendingPathComponent("status.json")
