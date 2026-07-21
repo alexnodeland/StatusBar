@@ -3,6 +3,13 @@
 
 import SwiftUI
 
+// MARK: - App Runtime Hook
+
+/// Static access to the live service for App Intents (mirrors ScriptBridge).
+enum AppRuntime {
+    nonisolated(unsafe) static var service: StatusService?
+}
+
 // MARK: - Status Service
 
 @MainActor
@@ -19,6 +26,7 @@ final class StatusService: ObservableObject {
     private var providerCache: [UUID: StatusProvider] = [:]
 
     let historyStore = HistoryStore()
+    private let statusCache = StatusCache()
     @AppStorage("statusHistory") private var storedHistory: String = "{}"
 
     let session: URLSession = {
@@ -73,6 +81,12 @@ final class StatusService: ObservableObject {
 
     private func persistSources() {
         storedSourcesJSON = StatusSource.encodeToJSON(sources)
+        writeCache()
+    }
+
+    /// Publish the machine-readable snapshot for the CLI and prompt tools.
+    private func writeCache() {
+        statusCache.write(StatusCache.snapshot(sources: sources, states: states))
     }
 
     // MARK: - Aggregate Status
@@ -190,6 +204,7 @@ final class StatusService: ObservableObject {
         }
 
         states[source.id]?.isLoading = false
+        writeCache()
     }
 
     private func notifyIfNeeded(

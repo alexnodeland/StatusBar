@@ -101,7 +101,10 @@ struct MiniTickIcon: View {
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var service: StatusService? {
-        didSet { ScriptBridge.service = service }
+        didSet {
+            ScriptBridge.service = service
+            AppRuntime.service = service
+        }
     }
     var updateChecker: UpdateChecker?
     private var statusItem: NSStatusItem?

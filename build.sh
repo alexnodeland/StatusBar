@@ -107,6 +107,31 @@ else
         -o "${MACOS}/${APP_NAME}"
 fi
 
+# Build the statusbar CLI (bundled as statusbar-cli; APFS is
+# case-insensitive, so it must not collide with the StatusBar app binary)
+CLI_SOURCES=(
+    cli/main.swift
+    cli/CLIFetcher.swift
+    Sources/Models.swift
+    Sources/ProviderMappings.swift
+    Sources/Helpers.swift
+    Sources/Constants.swift
+    Sources/StatusCache.swift
+)
+echo "🔧 Building statusbar CLI..."
+if [ "$RELEASE" = true ]; then
+    swiftc -O -parse-as-library "${CLI_SOURCES[@]}" \
+        -target arm64-apple-macosx26.0 -o "${BUILD_DIR}/cli-arm64"
+    swiftc -O -parse-as-library "${CLI_SOURCES[@]}" \
+        -target x86_64-apple-macosx26.0 -o "${BUILD_DIR}/cli-x86_64"
+    lipo -create "${BUILD_DIR}/cli-arm64" "${BUILD_DIR}/cli-x86_64" \
+        -output "${MACOS}/statusbar-cli"
+    rm "${BUILD_DIR}/cli-arm64" "${BUILD_DIR}/cli-x86_64"
+else
+    swiftc -O -parse-as-library "${CLI_SOURCES[@]}" \
+        -target arm64-apple-macosx26.0 -o "${MACOS}/statusbar-cli"
+fi
+
 # Copy Info.plist
 cp Info.plist "${CONTENTS}/Info.plist"
 
@@ -154,10 +179,13 @@ if [ -n "${CODESIGN_IDENTITY:-}" ]; then
             "${CONTENTS}/Frameworks/Sparkle.framework"
     fi
 
+    codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp \
+        "${MACOS}/statusbar-cli"
     codesign --force --sign "$CODESIGN_IDENTITY" --options runtime \
         --entitlements StatusBar.entitlements --timestamp "${APP_BUNDLE}"
 else
     # Ad-hoc signing (local development)
+    codesign --force --sign - --options runtime "${MACOS}/statusbar-cli"
     codesign --force --sign - --options runtime --entitlements StatusBar.entitlements "${APP_BUNDLE}"
 fi
 
