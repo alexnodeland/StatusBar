@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -38,6 +38,7 @@
 </head>
 <body>
 
+  <!-- shared nav — keep in sync across index.html / docs.html / cli.html -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="index.html" class="nav-brand">
@@ -52,11 +53,11 @@
         </svg>
       </button>
       <ul class="nav-links" id="nav-links">
-        <li><a href="index.html#features">Features</a></li>
-        <li><a href="index.html#severity">Severity</a></li>
-        <li><a href="index.html#install">Install</a></li>
-        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#faq">FAQ</a></li>
         <li><a href="docs.html">Docs</a></li>
+        <li><a href="cli.html">CLI</a></li>
         <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
         <li><a class="nav-cta" href="https://github.com/alexnodeland/StatusBar/releases/latest">Download</a></li>
       </ul>
@@ -296,6 +297,8 @@ brew install --cask statusbar</code></pre>
   <footer class="footer">
     <div class="container">
       <nav class="footer-links">
+        <a href="docs.html">Docs</a>
+        <a href="cli.html">CLI</a>
         <a href="https://github.com/alexnodeland/StatusBar">GitHub</a>
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases</a>
         <a href="https://github.com/alexnodeland/StatusBar/blob/main/CHANGELOG.md">Changelog</a>
@@ -307,6 +310,6 @@ brew install --cask statusbar</code></pre>
     </div>
   </footer>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>
