@@ -59,6 +59,12 @@ rm -rf "${BUILD_DIR}"
 mkdir -p "${MACOS}"
 mkdir -p "${RESOURCES}"
 
+# Protocol list for Swift const-value extraction (App Intents discovery)
+CONST_PROTOCOLS="${BUILD_DIR}/const_protocols.json"
+cat > "${CONST_PROTOCOLS}" <<'PROTOEOF'
+["AppIntent","EntityQuery","AppEntity","TransientAppEntity","AppEnum","AppShortcutsProvider","DynamicOptionsProvider","EntityPropertyQuery","EnumerableEntityQuery","EntityStringQuery","IntentParameterDependency","AnyResolverProviding","Resolvers","ControlValueProvider","AppIntentsPackage"]
+PROTOEOF
+
 SWIFT_FLAGS=(
     Sources/*.swift
     -parse-as-library
@@ -67,6 +73,10 @@ SWIFT_FLAGS=(
     -framework UserNotifications
     -framework Carbon
     -O
+    -whole-module-optimization
+    -module-name StatusBar
+    -Xfrontend -const-gather-protocols-file -Xfrontend "${CONST_PROTOCOLS}"
+    -emit-const-values
 )
 
 # Sparkle auto-update framework (optional)
@@ -107,6 +117,35 @@ else
         -o "${MACOS}/${APP_NAME}"
 fi
 
+# Const-values are emitted beside the binary; stash them for the
+# App Intents metadata step (a stray file in MacOS/ breaks codesign)
+[ -f "${MACOS}/StatusBar.swiftconstvalues" ] && mv "${MACOS}/StatusBar.swiftconstvalues" "${BUILD_DIR}/StatusBar.swiftconstvalues"
+
+# Build the statusbar CLI (bundled as statusbar-cli; APFS is
+# case-insensitive, so it must not collide with the StatusBar app binary)
+CLI_SOURCES=(
+    cli/main.swift
+    cli/CLIFetcher.swift
+    Sources/Models.swift
+    Sources/ProviderMappings.swift
+    Sources/Helpers.swift
+    Sources/Constants.swift
+    Sources/StatusCache.swift
+)
+echo "🔧 Building statusbar CLI..."
+if [ "$RELEASE" = true ]; then
+    swiftc -O -parse-as-library "${CLI_SOURCES[@]}" \
+        -target arm64-apple-macosx26.0 -o "${BUILD_DIR}/cli-arm64"
+    swiftc -O -parse-as-library "${CLI_SOURCES[@]}" \
+        -target x86_64-apple-macosx26.0 -o "${BUILD_DIR}/cli-x86_64"
+    lipo -create "${BUILD_DIR}/cli-arm64" "${BUILD_DIR}/cli-x86_64" \
+        -output "${MACOS}/statusbar-cli"
+    rm "${BUILD_DIR}/cli-arm64" "${BUILD_DIR}/cli-x86_64"
+else
+    swiftc -O -parse-as-library "${CLI_SOURCES[@]}" \
+        -target arm64-apple-macosx26.0 -o "${MACOS}/statusbar-cli"
+fi
+
 # Copy Info.plist
 cp Info.plist "${CONTENTS}/Info.plist"
 
@@ -138,6 +177,29 @@ done
 # Copy scripting definition for AppleScript support
 [ -f "StatusBar.sdef" ] && cp StatusBar.sdef "${RESOURCES}/"
 
+# Extract App Intents metadata so Shortcuts/Spotlight can discover intents
+if [ -f "${BUILD_DIR}/StatusBar.swiftconstvalues" ] && xcrun --find appintentsmetadataprocessor > /dev/null 2>&1; then
+    echo "🎛  Extracting App Intents metadata..."
+    ls Sources/*.swift > "${BUILD_DIR}/appintents-sources.list"
+    echo "${BUILD_DIR}/StatusBar.swiftconstvalues" > "${BUILD_DIR}/appintents-constvals.list"
+    XCODE_BUILD_VERSION=$(xcodebuild -version 2>/dev/null | awk '/Build version/{print $3}')
+    xcrun appintentsmetadataprocessor \
+        --output "${RESOURCES}" \
+        --toolchain-dir "$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain" \
+        --module-name StatusBar \
+        --sdk-root "$(xcrun --show-sdk-path)" \
+        --xcode-version "${XCODE_BUILD_VERSION:-17A400}" \
+        --platform-family macOS \
+        --deployment-target 26.0 \
+        --target-triple arm64-apple-macosx26.0 \
+        --source-file-list "${BUILD_DIR}/appintents-sources.list" \
+        --swift-const-vals-list "${BUILD_DIR}/appintents-constvals.list" \
+        --binary-file "${MACOS}/${APP_NAME}" \
+        --force --quiet-warnings > /dev/null 2>&1 \
+        && echo "  Metadata.appintents written" \
+        || echo "  ⚠️  App Intents metadata extraction failed (intents won't appear in Shortcuts)"
+fi
+
 # Copy Sparkle.framework into the app bundle if enabled
 if [ "$SPARKLE" = true ] && [ -d "Vendor/Sparkle.framework" ]; then
     mkdir -p "${CONTENTS}/Frameworks"
@@ -154,10 +216,13 @@ if [ -n "${CODESIGN_IDENTITY:-}" ]; then
             "${CONTENTS}/Frameworks/Sparkle.framework"
     fi
 
+    codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp \
+        "${MACOS}/statusbar-cli"
     codesign --force --sign "$CODESIGN_IDENTITY" --options runtime \
         --entitlements StatusBar.entitlements --timestamp "${APP_BUNDLE}"
 else
     # Ad-hoc signing (local development)
+    codesign --force --sign - --options runtime "${MACOS}/statusbar-cli"
     codesign --force --sign - --options runtime --entitlements StatusBar.entitlements "${APP_BUNDLE}"
 fi
 

@@ -74,7 +74,7 @@ Universal binary — Apple Silicon and Intel. Updates arrive via `brew upgrade`,
 
 📣 **Webhooks** — push status changes to Slack (Block Kit), Discord (embeds), Microsoft Teams (Adaptive Cards), or any JSON endpoint — with per-webhook labels and real delivery feedback on test sends.
 
-⌨️ **At your fingertips** — a rebindable global hotkey (default `⌃⌥S`), a `statusbar://` URL scheme, script hooks, and a full AppleScript dictionary. Runs as a pure menu bar agent.
+⌨️ **At your fingertips** — a rebindable global hotkey (default `⌃⌥S`), a bundled CLI (`statusbar wait npm && npm publish`), Shortcuts/Spotlight intents, a `statusbar://` URL scheme, script hooks, and a full AppleScript dictionary. Runs as a pure menu bar agent.
 
 <div align="center"><br><img src="docs/tick-divider.svg" width="260" alt=""><br><br></div>
 
@@ -204,6 +204,50 @@ osascript -e 'tell application "StatusBar" to refresh'
 | `group` | text | Group name (empty string if ungrouped) |
 
 </details>
+
+## Terminal & Shortcuts
+
+The app writes a status snapshot to `~/.cache/statusbar/status.json` on every refresh. The bundled CLI reads it instantly:
+
+```bash
+sudo ln -sf /Applications/StatusBar.app/Contents/MacOS/statusbar-cli /usr/local/bin/statusbar
+
+statusbar status                   # all sources, colored, exit code 0/1
+statusbar status github --json     # one source, machine-readable
+statusbar wait npm && npm publish  # block until a source recovers
+statusbar prompt                   # "●" or "▲1" — for starship/tmux/SketchyBar
+```
+
+<details>
+<summary>Prompt integrations</summary>
+
+```toml
+# ~/.config/starship.toml
+[custom.statusbar]
+command = "statusbar prompt"
+when = true
+format = "[$output]($style) "
+style = "bold green"
+```
+
+```bash
+# ~/.tmux.conf
+set -g status-right '#(statusbar prompt) %H:%M'
+set -g status-interval 60
+```
+
+</details>
+
+Drop a `.statusbar` file in a repo (one source name per line, `#` comments) and `statusbar status` / `statusbar prompt` scope to **that project's** upstream dependencies — your prompt shows the health of what *this* codebase depends on. `--all` bypasses.
+
+```
+# .statusbar — upstream deps for this repo
+GitHub
+npm
+Vercel
+```
+
+StatusBar also exposes **App Intents** — *Get Worst Status*, *Get Source Status*, and *Refresh Sources* — for Shortcuts automations, Focus modes, and Spotlight.
 
 ## Development
 
