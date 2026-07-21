@@ -1883,40 +1883,32 @@ section {
 }
 
 .mb-item {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   min-width: 34px;
   justify-content: center;
 }
 
-.mb-ticks {
+/* Monochrome by default — like the app */
+.mb-check { color: rgba(255, 255, 255, 0.88); }
+
+.mb-alert {
+  position: absolute;
+  inset: 0;
   display: inline-flex;
-  align-items: flex-end;
-  gap: 1.5px;
-  height: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: rgba(255, 255, 255, 0.88);
+  opacity: 0;
 }
-
-.mb-ticks i {
-  width: 2.5px;
-  border-radius: 1px;
-  background: var(--status-green);
-}
-
-.mb-ticks i:nth-child(1) { height: 6px; }
-.mb-ticks i:nth-child(2) { height: 9px; }
-.mb-ticks i:nth-child(3) { height: 12px; }
-.mb-ticks i:nth-child(4) { height: 8px; }
 
 .mb-count {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 600;
   color: #fff;
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-  transition: none;
 }
 
 .mock-notification {
@@ -1963,22 +1955,22 @@ section {
   align-self: flex-start;
 }
 
-/* The story loop: all clear → incident (peak flips amber, count appears)
+/* The story loop: all clear → incident (symbol flips, count appears)
    → notification → recovered */
 @media (prefers-reduced-motion: no-preference) {
-  .mb-ticks i.peak { animation: mb-peak-loop 9s ease-in-out infinite; }
-  .mb-count { animation: mb-count-loop 9s ease-in-out infinite; }
+  .mb-check { animation: mb-check-loop 9s ease-in-out infinite; }
+  .mb-alert { animation: mb-alert-loop 9s ease-in-out infinite; }
   .mock-notification { animation: notif-loop 9s ease-in-out infinite; }
 }
 
-@keyframes mb-peak-loop {
-  0%, 30%, 92%, 100% { background: var(--status-green); }
-  34%, 88% { background: var(--status-yellow); }
+@keyframes mb-check-loop {
+  0%, 30%, 92%, 100% { opacity: 1; }
+  34%, 88% { opacity: 0; }
 }
 
-@keyframes mb-count-loop {
-  0%, 30%, 92%, 100% { opacity: 0; width: 0; }
-  34%, 88% { opacity: 1; width: 8px; }
+@keyframes mb-alert-loop {
+  0%, 30%, 92%, 100% { opacity: 0; }
+  34%, 88% { opacity: 1; }
 }
 
 @keyframes notif-loop {
@@ -1988,8 +1980,8 @@ section {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mb-ticks i.peak { background: var(--status-yellow); }
-  .mb-count { opacity: 1; width: 8px; }
+  .mb-alert { opacity: 1; }
+  .mb-check { opacity: 0; }
 }
 
 /* --- Mock interactivity: behaves like the app under the cursor --- */

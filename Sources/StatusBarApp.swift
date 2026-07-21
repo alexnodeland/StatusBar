@@ -15,14 +15,21 @@ import SwiftUI
 struct MenuBarLabel: View {
     @ObservedObject var service: StatusService
     @AppStorage("menuBarShowCount") private var showCount = true
-    @AppStorage("menuBarMonochrome") private var monochrome = false
+    @AppStorage("menuBarMonochrome") private var monochrome = true
+    @AppStorage("menuBarStyle") private var style = "symbol"
 
     var body: some View {
         HStack(spacing: 3) {
-            // MenuBarExtra renders label views as template images, stripping
-            // color — pre-render the ticks to a non-template NSImage so the
-            // status colors survive in the menu bar.
-            Image(nsImage: tickImage)
+            // Default: the semantic status symbol (check / warning / x),
+            // monochrome — readable at a glance and native to the menu bar.
+            // Options: tick-strip brand style, and full status color.
+            if style == "ticks" {
+                Image(nsImage: tickImage)
+            } else if monochrome {
+                Image(systemName: service.menuBarIcon)
+            } else {
+                Image(nsImage: symbolImage)
+            }
             if showCount && service.issueCount > 0 {
                 Text("\(service.issueCount)")
                     .font(.caption2.monospacedDigit())
@@ -35,6 +42,8 @@ struct MenuBarLabel: View {
         )
     }
 
+    // MenuBarExtra flattens label views to template images, stripping color.
+    // For the colored variants, pre-render to a non-template NSImage.
     private var tickImage: NSImage {
         let renderer = ImageRenderer(
             content: MiniTickIcon(indicator: service.worstIndicator, monochrome: monochrome)
@@ -43,6 +52,18 @@ struct MenuBarLabel: View {
         guard let image = renderer.nsImage else { return NSImage() }
         image.size = NSSize(width: 14.5, height: 12)
         image.isTemplate = monochrome
+        return image
+    }
+
+    private var symbolImage: NSImage {
+        let renderer = ImageRenderer(
+            content: Image(systemName: service.menuBarIcon)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(service.menuBarColor)
+        )
+        renderer.scale = 2
+        guard let image = renderer.nsImage else { return NSImage() }
+        image.isTemplate = false
         return image
     }
 }
