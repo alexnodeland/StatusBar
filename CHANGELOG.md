@@ -3,6 +3,16 @@
 All notable changes to StatusBar. Full release notes with downloads live on the
 [GitHub Releases page](https://github.com/alexnodeland/StatusBar/releases).
 
+## Unreleased
+
+- Status cache file at `~/.cache/statusbar/status.json`, refreshed on
+  every poll — the interface for terminal tooling
+- Bundled `statusbar` CLI: status/list, `wait` (block until recovery),
+  `prompt` glyph for status lines, and URL-scheme passthrough
+- App Intents for Shortcuts and Spotlight: Get Worst Status, Get Source
+  Status, Refresh Sources
+- Docs: terminal/prompt integration guides (starship, tmux, SketchyBar)
+
 ## v0.3.2 — 2026-07-20
 
 - Menu bar icon defaults to the monochrome status symbol (check /
