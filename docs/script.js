@@ -143,6 +143,7 @@
   // --- Smooth scroll for anchor links ---
   document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener('click', function (e) {
+      if (this.closest('.tab-bar')) return; // tab clicks swap panels, they don't scroll
       const target = document.querySelector(this.getAttribute('href'));
       if (target) {
         e.preventDefault();
@@ -464,6 +465,76 @@
 
   // Initial render
   renderSources('');
+
+  // --- Content tabs on doc pages ---
+  var tabBar = document.querySelector('.tab-bar');
+  if (tabBar) {
+    var tabLinks = Array.prototype.slice.call(tabBar.querySelectorAll('a[href^="#"]'));
+    var tabPanels = tabLinks.map(function (link) {
+      return document.getElementById(link.getAttribute('href').slice(1));
+    });
+
+    if (tabPanels.length && tabPanels.every(Boolean)) {
+      document.body.classList.add('tabs-js');
+      tabBar.setAttribute('role', 'tablist');
+      tabLinks.forEach(function (link, i) {
+        link.setAttribute('role', 'tab');
+        if (!link.id) link.id = 'tab-' + tabPanels[i].id;
+        tabPanels[i].setAttribute('role', 'tabpanel');
+        tabPanels[i].setAttribute('aria-labelledby', link.id);
+      });
+
+      var activateTab = function (index, setFocus) {
+        tabLinks.forEach(function (link, i) {
+          var selected = i === index;
+          link.classList.toggle('active', selected);
+          link.setAttribute('aria-selected', selected ? 'true' : 'false');
+          link.setAttribute('tabindex', selected ? '0' : '-1');
+          tabPanels[i].classList.toggle('active', selected);
+        });
+        if (setFocus) tabLinks[index].focus();
+      };
+
+      var tabIndexForHash = function (hash) {
+        var target = hash && document.getElementById(hash.slice(1));
+        if (target) {
+          for (var i = 0; i < tabPanels.length; i++) {
+            if (tabPanels[i] === target || tabPanels[i].contains(target)) return i;
+          }
+        }
+        return 0;
+      };
+
+      var routeTabs = function () {
+        var hash = window.location.hash;
+        var index = tabIndexForHash(hash);
+        activateTab(index, false);
+        var target = hash && document.getElementById(hash.slice(1));
+        if (target && target !== tabPanels[index]) {
+          target.scrollIntoView(); // deep link to an element inside the panel
+        }
+      };
+
+      tabLinks.forEach(function (link, i) {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          activateTab(i, false);
+          history.replaceState(null, '', link.getAttribute('href'));
+        });
+        link.addEventListener('keydown', function (e) {
+          var dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+          if (!dir) return;
+          e.preventDefault();
+          var next = (i + dir + tabLinks.length) % tabLinks.length;
+          activateTab(next, true);
+          history.replaceState(null, '', tabLinks[next].getAttribute('href'));
+        });
+      });
+
+      window.addEventListener('hashchange', routeTabs);
+      routeTabs();
+    }
+  }
 
   // --- IntersectionObserver for active nav link ---
   const sections = document.querySelectorAll('section[id]');
