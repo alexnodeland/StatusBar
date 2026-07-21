@@ -1,63 +1,84 @@
-<p align="center">
-  <img src="icon.png" width="128" alt="StatusBar icon">
-</p>
+<div align="center">
 
-<h1 align="center">StatusBar</h1>
+<img src="docs/icon.png" width="120" alt="StatusBar icon">
 
-<p align="center">
-  <strong>Every status page you care about — the services you depend on and the infrastructure you run — in one menu bar icon.</strong><br>
-  A native SwiftUI menu bar app supporting <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, <a href="https://instatus.com">Instatus</a>, and self-hosted <a href="https://gatus.io">Gatus</a> with automatic provider detection. Free, open source, zero telemetry.
-</p>
+# StatusBar
 
-<p align="center">
-  <img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+">
-  <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
-  <a href="https://github.com/alexnodeland/StatusBar/actions/workflows/ci.yml"><img src="https://github.com/alexnodeland/StatusBar/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/alexnodeland/StatusBar/releases/latest"><img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release"></a>
-  <a href="https://alexnodeland.github.io/StatusBar/"><img src="https://img.shields.io/badge/docs-website-blue" alt="Docs"></a>
-</p>
+### Is it down, or is it you?
 
-<p align="center">
-  <img src="docs/screenshots/source_list.png" width="380" alt="StatusBar popover showing grouped sources with sparklines and a Cloudflare incident">
-  <img src="docs/screenshots/event_details.png" width="380" alt="Source detail view with active incidents, components, and uptime">
-</p>
+**Every status page you care about — the services you depend on and the infrastructure you run — in one macOS menu bar icon.**
 
-## ✨ Features
+Auto-detects [Atlassian Statuspage](https://www.atlassian.com/software/statuspage) · [incident.io](https://incident.io) · [Instatus](https://instatus.com) · self-hosted [Gatus](https://gatus.io)
 
-🟢 **Monitoring** — Menu bar icon reflects the worst status across all sources (green → yellow → orange → red) with a badge showing how many have issues. Drill into any source to see components, active incidents, update timelines, and 24h/7d/30d uptime with per-check sparklines.
+<br>
 
-📋 **Sources** — Add, edit, group, search, sort, and filter sources; snooze noisy ones for an hour or a day. Bulk import/export as JSON — full configuration export bundles settings, sources, and webhooks into a single versioned file. Sources refresh concurrently on a configurable interval (1–15 min).
+[![Download for macOS](https://img.shields.io/badge/⬇%C2%A0_Download_for_macOS-0A7C3F?style=for-the-badge)](https://github.com/alexnodeland/StatusBar/releases/latest)
+[![Website](https://img.shields.io/badge/🌐%C2%A0_Website-1B1D22?style=for-the-badge)](https://alexnodeland.github.io/StatusBar/)
+[![Support](https://img.shields.io/badge/♥%C2%A0_Support-%242.99-FF5A76?style=for-the-badge)](https://ournature.gumroad.com/l/statusbar)
 
-📣 **Webhooks** — Push status changes to Slack (Block Kit), Discord (embeds), Microsoft Teams (Adaptive Cards), or any JSON endpoint — with per-webhook labels and real delivery feedback on test sends.
+<img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+">
+<img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6">
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
+<a href="https://github.com/alexnodeland/StatusBar/actions/workflows/ci.yml"><img src="https://github.com/alexnodeland/StatusBar/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/alexnodeland/StatusBar/releases/latest"><img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release"></a>
 
-🔗 **URL Scheme** — Control the app from Terminal, browsers, Raycast, or Shortcuts with `statusbar://` deep links. Open the popover, navigate to a source, trigger a refresh, add/remove sources, or jump to a settings tab.
+<br>
 
-🪝 **Script Hooks** — Drop executable scripts into the hooks directory and they run automatically on status events (status changes, refreshes, source add/remove). Event details arrive as environment variables and JSON on stdin.
+<img src="docs/tick-divider.svg" width="260" alt="">
 
-🍎 **AppleScript** — Full Cocoa Scripting support. Query sources and status from Script Editor, JXA, `osascript` one-liners, or any OSA-compatible tool. Refresh, add, and remove sources programmatically.
+<br>
 
-⚙️ **Settings** — Status change notifications with per-source alert levels, a rebindable global hotkey (default ⌃⌥S), menu bar display options, automatic update checks with in-app release notes, and launch at login. Runs as a pure menu bar agent with no Dock icon.
+<img src="docs/screenshots/source_list.png" width="380" alt="StatusBar popover: grouped sources with live statuses and aligned tick sparklines, one Cloudflare incident highlighted">&nbsp;&nbsp;<img src="docs/screenshots/event_details.png" width="380" alt="Source detail: active incident card, per-component statuses, and mono uptime badges">
 
-## 📦 Install
+<sub>Free & open source · zero telemetry · no Dock icon · no Electron</sub>
 
-### Homebrew (recommended)
+</div>
+
+<br>
+
+## The whole story in four colors
+
+Every provider's status vocabulary maps onto the same four levels — the menu bar icon always shows the worst one, so one glance answers the question.
+
+| | | |
+|:---:|:---|:---|
+| 🟢 | `operational` | All systems normal. The icon stays a quiet checkmark. |
+| 🟡 | `degraded` | Performance issues. Worth a glance, not a page. |
+| 🟠 | `partial outage` | Some services affected. Notifications fire. |
+| 🔴 | `major outage` | Significant disruption. You already know why the graphs fell over. |
+
+## Install
+
+### Homebrew
 
 ```bash
 brew tap alexnodeland/tap
 brew install --cask statusbar
 ```
 
-### Manual download
+### Direct download
 
-1. Download `StatusBar-vX.Y.Z.dmg` (or the `.zip`) from the [Releases page](https://github.com/alexnodeland/StatusBar/releases/latest)
+1. Grab `StatusBar-vX.Y.Z.dmg` (or the `.zip`) from the [latest release](https://github.com/alexnodeland/StatusBar/releases/latest)
 2. Drag `StatusBar.app` to `/Applications`
 3. Remove quarantine: `xattr -cr /Applications/StatusBar.app`
-4. Launch normally
 
-Runs natively on both Apple Silicon and Intel Macs.
+Universal binary — Apple Silicon and Intel. Updates arrive via `brew upgrade`, or let the app update itself.
 
-## 🔗 Sources
+## Features
+
+🟢 **Monitoring** — the menu bar icon reflects the worst status across all sources, with an optional issue-count badge and a choice of icon styles (status symbol or the brand tick strip, monochrome or color). Drill into any source for components, incident timelines, and 24h/7d/30d uptime with per-check sparklines.
+
+📋 **Sources** — add, edit, group, search, sort, and filter; snooze noisy sources for an hour or a day. Bulk import/export as JSON — the full configuration export bundles settings, sources, and webhooks into one versioned file. Sources refresh concurrently on a configurable interval (1–15 min).
+
+🔔 **Notifications** — native macOS alerts on status changes and recoveries, with per-source alert levels and a first-run welcome that starts you with popular picks or your own list.
+
+📣 **Webhooks** — push status changes to Slack (Block Kit), Discord (embeds), Microsoft Teams (Adaptive Cards), or any JSON endpoint — with per-webhook labels and real delivery feedback on test sends.
+
+⌨️ **At your fingertips** — a rebindable global hotkey (default `⌃⌥S`), a `statusbar://` URL scheme, script hooks, and a full AppleScript dictionary. Runs as a pure menu bar agent.
+
+<div align="center"><br><img src="docs/tick-divider.svg" width="260" alt=""><br><br></div>
+
+## Sources
 
 The app ships with three default sources:
 
@@ -67,7 +88,7 @@ The app ships with three default sources:
 | GitHub | `https://www.githubstatus.com` |
 | Cloudflare | `https://www.cloudflarestatus.com` |
 
-Open **Settings** and click **+** to add more. The app auto-detects the provider — no configuration needed.
+Open **Settings** and click **+** to add more, or browse the built-in catalog. The app auto-detects the provider — no configuration needed.
 
 <details>
 <summary>Example sources</summary>
@@ -88,7 +109,7 @@ Open **Settings** and click **+** to add more. The app auto-detects the provider
 
 Sources are persisted as JSON via `@AppStorage` and survive restarts. Use **Settings → Data** to export/import a full configuration (settings, sources, webhooks) or sources only.
 
-## 🔗 URL Scheme
+## URL Scheme
 
 Control the app from anywhere using `statusbar://` URLs:
 
@@ -104,7 +125,7 @@ open "statusbar://settings?tab=webhooks"                         # Open settings
 
 Works with Terminal, browsers, Raycast, Alfred, macOS Shortcuts, and anything that can open URLs.
 
-## 🪝 Script Hooks
+## Script Hooks
 
 Place executable scripts in `~/Library/Application Support/StatusBar/hooks/` and they run automatically on status events. Use **Settings → Hooks → Add Example Hook** to create a starter script.
 
@@ -144,7 +165,7 @@ echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" >> "$LOG"
 
 </details>
 
-## 🍎 AppleScript
+## AppleScript
 
 StatusBar exposes a full scripting dictionary for AppleScript and JXA (JavaScript for Automation). Open Script Editor → File → Open Dictionary → StatusBar to browse it.
 
@@ -184,24 +205,31 @@ osascript -e 'tell application "StatusBar" to refresh'
 
 </details>
 
-## ❤️ Support
-
-StatusBar is free and open source. If it saves you a tab or a headache, you can [support development on Gumroad](https://ournature.gumroad.com/l/statusbar) for $2.99 — or star the repo and tell a friend.
-
-Questions or problems? [Open an issue](https://github.com/alexnodeland/StatusBar/issues) or email [alex@ournature.studio](mailto:alex@ournature.studio). See the [changelog](CHANGELOG.md) and [privacy policy](PRIVACY.md) (short version: zero telemetry).
-
-## 🛠 Development
+## Development
 
 ```bash
 make setup                            # One-time: brew bundle + git hooks
 make build                            # Dev build
 make test                             # Run tests
 make check                            # Full CI check (lint + format + test)
-make release                          # Release build (universal binary + ZIP)
+make release                          # Release build (universal binary + DMG + ZIP)
 ```
 
-See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the full development guide.
-
-## 🤝 Contributing
-
 See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for build instructions, architecture overview, and roadmap.
+
+<br>
+
+<div align="center">
+
+<img src="docs/tick-divider.svg" width="260" alt="">
+
+<br>
+
+**StatusBar is free and open source.**
+If it saves you a tab — or an incident call — you can [support development on Gumroad](https://ournature.gumroad.com/l/statusbar) for $2.99.
+
+[Changelog](CHANGELOG.md) · [Privacy](PRIVACY.md) <sub>(zero telemetry)</sub> · [Issues](https://github.com/alexnodeland/StatusBar/issues) · [alex@ournature.studio](mailto:alex@ournature.studio)
+
+<sub>Built with SwiftUI · MIT licensed</sub>
+
+</div>
