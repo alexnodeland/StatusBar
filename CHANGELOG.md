@@ -3,6 +3,17 @@
 All notable changes to StatusBar. Full release notes with downloads live on the
 [GitHub Releases page](https://github.com/alexnodeland/StatusBar/releases).
 
+## v0.3.2 — 2026-07-20
+
+- Menu bar icon defaults to the monochrome status symbol (check /
+  warning / x by worst status) — native and readable at a glance
+- New Settings → Menu Bar "Icon style" option: choose the brand tick
+  strip instead; monochrome toggle now defaults on
+- Fixed: menu bar colors never actually rendered (MenuBarExtra
+  template flattening) — colored styles now display correctly
+- Website: screenshots replaced with live, animated, subtly interactive
+  code mocks; icon references versioned against stale caches
+
 ## v0.3.1 — 2026-07-20
 
 - New app icon: the uptime tick strip on a graphite squircle
