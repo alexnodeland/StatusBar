@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StatusBar Docs — Automate &amp; Integrate</title>
+  <meta name="description" content="Wire StatusBar into your workflow: webhooks for Slack, Discord, and Teams, shell script hooks, the statusbar:// URL scheme, AppleScript, and a catalog of 70+ status pages.">
+  <meta property="og:title" content="StatusBar Docs — Automate &amp; Integrate">
+  <meta property="og:description" content="Webhooks, script hooks, URL scheme, AppleScript, and a catalog of 70+ status pages.">
+  <meta property="og:image" content="https://alexnodeland.github.io/StatusBar/og.png">
+  <meta property="og:url" content="https://alexnodeland.github.io/StatusBar/docs.html">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://alexnodeland.github.io/StatusBar/docs.html">
+  <meta name="theme-color" content="#F5F6F8">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body class="docs-page">
+
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <img src="icon.png" alt="" width="26" height="26">
+        StatusBar
+      </a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="3" y1="5" x2="17" y2="5"/>
+          <line x1="3" y1="10" x2="17" y2="10"/>
+          <line x1="3" y1="15" x2="17" y2="15"/>
+        </svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#severity">Severity</a></li>
+        <li><a href="index.html#install">Install</a></li>
+        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="docs.html" class="active">Docs</a></li>
+        <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
+        <li><a class="nav-cta" href="https://github.com/alexnodeland/StatusBar/releases/latest">Download</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page head -->
+  <header class="page-head">
+    <div class="container">
+      <p class="section-label">docs</p>
+      <h1>Automate &amp; integrate</h1>
+      <p>Everything in StatusBar is scriptable. Push alerts where your team lives, run scripts on status events, and drive the app from anything that can open a URL.</p>
+      <nav class="toc-chips" aria-label="On this page">
+        <a href="#automate">webhooks</a>
+        <a href="#automate">script hooks</a>
+        <a href="#automate">url scheme</a>
+        <a href="#automate">applescript</a>
+        <a href="#docs">source catalog</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="automate">
+    <div class="container">
+      <p class="section-label">automate</p>
+      <h2>Connect StatusBar to your workflow</h2>
+
+      <!-- Top row: Webhooks + Script Hooks -->
+      <div class="automate-row">
+        <!-- Webhooks -->
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <h3>Webhooks</h3>
+          </div>
+          <p class="automate-desc">Push status change alerts to Slack, Discord, Microsoft Teams, or any HTTP endpoint. Configure multiple webhooks in <strong>Settings&nbsp;&rarr;&nbsp;Webhooks</strong>.</p>
+
+          <div class="webhook-platforms">
+            <span class="webhook-badge">Slack</span>
+            <span class="webhook-badge">Discord</span>
+            <span class="webhook-badge">Teams</span>
+            <span class="webhook-badge">Generic JSON</span>
+          </div>
+
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="webhook-payload-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Example payloads
+            </button>
+            <div class="collapsible-content" id="webhook-payload-content">
+              <table class="hook-table">
+                <thead>
+                  <tr><th>Platform</th><th>Payload shape</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>Slack</code></td><td>Block Kit &mdash; <code>{ "attachments": [{ "color", "blocks" }] }</code></td></tr>
+                  <tr><td><code>Discord</code></td><td>Embeds &mdash; <code>{ "embeds": [{ "title", "description", "color", "fields" }] }</code></td></tr>
+                  <tr><td><code>Teams</code></td><td>Adaptive Card &mdash; <code>{ "type": "message", "attachments": [{ "content": { "type": "AdaptiveCard" } }] }</code></td></tr>
+                  <tr><td><code>Generic</code></td><td>Flat JSON &mdash; <code>{ "source", "title", "body", "severity", "event", "url", "timestamp", "components" }</code></td></tr>
+                </tbody>
+              </table>
+              <p class="hook-table-note">Webhooks fire on every status change. Each webhook has an enable/disable toggle and a 10-second request timeout.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Script Hooks -->
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            <h3>Script Hooks</h3>
+          </div>
+          <p class="automate-desc">Drop executable scripts into the hooks folder and they run automatically on status events. Trigger CI pipelines, write to logs, post to APIs&mdash;anything you can script.</p>
+
+          <div class="hook-steps">
+            <div class="hook-step">
+              <span class="hook-step-num">1</span>
+              <span>Open <strong>Settings &rarr; Hooks &rarr; Add Example Hook</strong>, or create your own script</span>
+            </div>
+            <div class="hook-step">
+              <span class="hook-step-num">2</span>
+              <span>Make it executable: <code>chmod +x my-hook</code></span>
+            </div>
+            <div class="hook-step">
+              <span class="hook-step-num">3</span>
+              <span>It runs on every event&mdash;check <code>$STATUSBAR_EVENT</code> to filter</span>
+            </div>
+          </div>
+
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="hook-example-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Example hook
+            </button>
+            <div class="collapsible-content" id="hook-example-content">
+              <div class="code-block-wrapper">
+                <pre><code>#!/bin/bash
+# Log status changes to a file
+[ "$STATUSBAR_EVENT" = "on-status-change" ] || exit 0
+
+LOG="$HOME/Library/Logs/StatusBar/hooks.log"
+mkdir -p "$(dirname "$LOG")"
+echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" &gt;&gt; "$LOG"</code></pre>
+                <button class="copy-btn" aria-label="Copy code">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="hook-events-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Events &amp; environment variables
+            </button>
+            <div class="collapsible-content" id="hook-events-content">
+              <table class="hook-table">
+                <thead>
+                  <tr><th>Event</th><th>When</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>on-status-change</code></td><td>Source status severity changes</td></tr>
+                  <tr><td><code>on-refresh</code></td><td>All sources finish refreshing</td></tr>
+                  <tr><td><code>on-source-add</code></td><td>A new source is added</td></tr>
+                  <tr><td><code>on-source-remove</code></td><td>A source is removed</td></tr>
+                </tbody>
+              </table>
+              <table class="hook-table">
+                <thead>
+                  <tr><th>Variable</th><th>Events</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code>STATUSBAR_EVENT</code></td><td>All</td></tr>
+                  <tr><td><code>STATUSBAR_SOURCE_NAME</code></td><td>status-change, add, remove</td></tr>
+                  <tr><td><code>STATUSBAR_SOURCE_URL</code></td><td>status-change, add, remove</td></tr>
+                  <tr><td><code>STATUSBAR_TITLE</code></td><td>status-change</td></tr>
+                  <tr><td><code>STATUSBAR_BODY</code></td><td>status-change</td></tr>
+                  <tr><td><code>STATUSBAR_SOURCE_COUNT</code></td><td>refresh</td></tr>
+                  <tr><td><code>STATUSBAR_WORST_LEVEL</code></td><td>refresh</td></tr>
+                </tbody>
+              </table>
+              <p class="hook-table-note">A full JSON payload is also piped to stdin. Scripts can be any language&mdash;just add a shebang and make them executable. 30-second timeout per execution.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- URL Scheme (full-width) -->
+      <div class="glass-card automate-card automate-card-wide">
+        <div class="automate-card-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <h3>URL Scheme</h3>
+        </div>
+        <p class="automate-desc">Control the app from Terminal, browsers, Raycast, Alfred, or macOS Shortcuts using <code>statusbar://</code> deep links.</p>
+        <div class="url-examples-grid">
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://open"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Show the popover</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://open?source=GitHub"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Navigate to a source</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://refresh"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Refresh all sources</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://add?url=https://status.openai.com&amp;name=OpenAI"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Add a new source</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://remove?name=GitHub"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Remove by name</span>
+          </div>
+          <div class="url-example">
+            <div class="code-block-wrapper">
+              <pre><code>open "statusbar://settings?tab=webhooks"</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+            <span class="url-label">Jump to a settings tab</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AppleScript (full-width, two-column layout) -->
+      <div class="glass-card automate-card automate-card-wide">
+        <div class="applescript-layout">
+          <div class="applescript-info">
+            <div class="automate-card-header">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+              <h3>AppleScript</h3>
+            </div>
+            <p class="automate-desc">Full Cocoa Scripting dictionary. Query status, refresh, add and remove sources from Script Editor, JXA, <code>osascript</code>, or any OSA-compatible tool.</p>
+            <div class="applescript-capabilities">
+              <span class="webhook-badge">Script Editor</span>
+              <span class="webhook-badge">JXA</span>
+              <span class="webhook-badge">osascript</span>
+              <span class="webhook-badge">Shortcuts</span>
+            </div>
+            <div class="collapsible">
+              <button class="collapsible-trigger" id="applescript-terminal-trigger">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+                Terminal one-liners
+              </button>
+              <div class="collapsible-content" id="applescript-terminal-content">
+                <div class="code-block-wrapper">
+                  <pre><code>osascript -e 'tell application "StatusBar" to get name of every source'
+osascript -e 'tell application "StatusBar" to get worst status'
+osascript -e 'tell application "StatusBar" to refresh'</code></pre>
+                  <button class="copy-btn" aria-label="Copy code">Copy</button>
+                </div>
+                <p class="hook-table-note">Open Script Editor &rarr; File &rarr; Open Dictionary &rarr; StatusBar to browse the full scripting dictionary.</p>
+              </div>
+            </div>
+          </div>
+          <div class="applescript-examples">
+            <div class="code-block-wrapper">
+              <pre><code>tell application "StatusBar"
+    -- Read properties
+    get name of every source
+    get status of source "GitHub"
+    get worst status
+    get issue count
+
+    -- Actions
+    refresh
+    add source "https://status.openai.com" named "OpenAI"
+    remove source "OpenAI"
+end tell</code></pre>
+              <button class="copy-btn" aria-label="Copy code">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="docs">
+    <div class="container">
+      <p class="section-label">catalog</p>
+      <h2>Adding Sources</h2>
+
+      <div class="doc-section">
+        <div class="doc-layout">
+          <div class="doc-screenshot">
+            <img src="screenshots/settings.png" alt="Settings view showing source management and preferences" class="screenshot">
+          </div>
+          <div class="doc-content">
+            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any status page by name and URL. The app auto-detects the provider &mdash; <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, <a href="https://instatus.com">Instatus</a>, or <a href="https://gatus.io">Gatus</a>. You can also import a JSON file to add many at once.</p>
+            <p class="doc-desc doc-desc-hint">Select services below, export as JSON, then import the file in StatusBar via Settings&nbsp;&rarr;&nbsp;Data&nbsp;&rarr;&nbsp;Import Sources.</p>
+          </div>
+        </div>
+        <div class="source-directory">
+          <div class="source-toolbar">
+            <input type="search" id="source-search" class="source-search"
+              placeholder="Search services or URLs..." aria-label="Filter status page sources" autocomplete="off">
+            <span class="source-count" id="source-count"></span>
+          </div>
+          <div class="source-list" id="source-list" role="list"></div>
+          <div class="source-actions">
+            <label class="source-select-all" id="source-select-all-label">
+              <input type="checkbox" id="source-select-all">
+              <span class="source-select-check">
+                <svg class="check-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5l2.5 2.5L8 3"/></svg>
+                <svg class="minus-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"><line x1="2.5" y1="5" x2="7.5" y2="5"/></svg>
+              </span>
+              Select all
+            </label>
+            <button class="btn btn-primary source-export-btn" id="source-export" disabled>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
+              Export JSON
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <nav class="footer-links">
+        <a href="https://github.com/alexnodeland/StatusBar">GitHub</a>
+        <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases</a>
+        <a href="https://github.com/alexnodeland/StatusBar/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/alexnodeland/StatusBar/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://ournature.gumroad.com/l/statusbar">Support</a>
+        <a href="mailto:alex@ournature.studio">Contact</a>
+      </nav>
+      <p class="footer-attr">Built with SwiftUI. Free &amp; open source under <a href="https://github.com/alexnodeland/StatusBar/blob/main/LICENSE">MIT</a>. Zero telemetry.</p>
+    </div>
+  </footer>
+
+  <script src="script.js?v=2"></script>
+</body>
+</html>

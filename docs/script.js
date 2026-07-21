@@ -25,6 +25,19 @@
     });
   }
 
+  // --- Hero uptime tick strip ---
+  var strip = document.getElementById('tick-strip');
+  if (strip) {
+    var TOTAL_TICKS = 64;
+    var SPECIAL = { 52: 'amber' };
+    for (var ti = 0; ti < TOTAL_TICKS; ti++) {
+      var tick = document.createElement('span');
+      tick.className = 'tick' + (SPECIAL[ti] ? ' ' + SPECIAL[ti] : '');
+      tick.style.setProperty('--i', ti);
+      strip.appendChild(tick);
+    }
+  }
+
   // --- Smooth scroll for anchor links ---
   document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
     anchor.addEventListener('click', function (e) {

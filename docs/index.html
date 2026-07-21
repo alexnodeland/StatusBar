@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StatusBar — Monitor Status Pages from Your Menu Bar</title>
-  <meta name="description" content="A native macOS menu bar app that monitors multiple status pages simultaneously. Supports Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus with automatic provider detection.">
-  <meta property="og:title" content="StatusBar — Every status page in one menu bar icon">
-  <meta property="og:description" content="Monitor the services you depend on and the infrastructure you run — Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus — from the macOS menu bar. Free, open source, zero telemetry.">
+  <title>StatusBar — Is it down, or is it you?</title>
+  <meta name="description" content="StatusBar watches every status page you depend on — Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus — from the macOS menu bar. Free, open source, zero telemetry.">
+  <meta property="og:title" content="StatusBar — Is it down, or is it you?">
+  <meta property="og:description" content="Every status page you depend on — plus your own Gatus infrastructure — in one macOS menu bar icon. Free, open source, zero telemetry.">
   <meta property="og:image" content="https://alexnodeland.github.io/StatusBar/og.png">
   <meta property="og:url" content="https://alexnodeland.github.io/StatusBar/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://alexnodeland.github.io/StatusBar/og.png">
   <link rel="canonical" href="https://alexnodeland.github.io/StatusBar/">
-  <meta name="theme-color" content="#101218">
+  <meta name="theme-color" content="#F5F6F8">
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="apple-touch-icon" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -31,15 +35,13 @@
     "license": "https://github.com/alexnodeland/StatusBar/blob/main/LICENSE"
   }
   </script>
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Navigation -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
-      <a href="#" class="nav-brand">
-        <img src="icon.png" alt="StatusBar icon" width="28" height="28">
+      <a href="index.html" class="nav-brand">
+        <img src="icon.png" alt="" width="26" height="26">
         StatusBar
       </a>
       <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
@@ -50,13 +52,13 @@
         </svg>
       </button>
       <ul class="nav-links" id="nav-links">
-        <li><a href="#features">Features</a></li>
-        <li><a href="#automate">Automate</a></li>
-        <li><a href="#status-colors">Status</a></li>
-        <li><a href="#get-started">Get Started</a></li>
-        <li><a href="#docs">Docs</a></li>
-        <li><a href="#faq">FAQ</a></li>
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#severity">Severity</a></li>
+        <li><a href="index.html#install">Install</a></li>
+        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="docs.html">Docs</a></li>
         <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
+        <li><a class="nav-cta" href="https://github.com/alexnodeland/StatusBar/releases/latest">Download</a></li>
       </ul>
     </div>
   </nav>
@@ -64,37 +66,34 @@
   <!-- Hero -->
   <section class="hero" id="hero">
     <div class="container">
-      <img src="icon.png" alt="StatusBar app icon" class="hero-icon" width="128" height="128">
-      <h1>StatusBar</h1>
-      <p class="hero-tagline">Every status page you care about &mdash; the services you depend on and the infrastructure you run &mdash; in one native menu bar icon. Auto-detects Atlassian Statuspage, incident.io, Instatus, and self-hosted Gatus. No Dock icon. No Electron. Zero telemetry.</p>
+      <p class="hero-status"><span class="dot" aria-hidden="true"></span> all systems operational</p>
+      <h1>Is it down, or is it&nbsp;you?</h1>
+      <p class="hero-tagline">StatusBar watches every status page you depend on &mdash; GitHub, Stripe, Cloudflare, even your self-hosted Gatus &mdash; from the macOS menu bar. One glance answers the question.</p>
       <div class="hero-ctas">
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest" class="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
-          Download
-        </a>
-        <a href="https://github.com/alexnodeland/StatusBar" class="btn btn-secondary">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-          View on GitHub
+          Download for macOS
         </a>
         <a href="https://ournature.gumroad.com/l/statusbar" class="btn btn-secondary">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14.25l-.345-.666C4.451 10.048 1.75 7.717 1.75 5.5 1.75 3.71 3.16 2.25 4.9 2.25c1.093 0 2.145.543 3.1 1.582.955-1.039 2.007-1.582 3.1-1.582 1.74 0 3.15 1.46 3.15 3.25 0 2.217-2.701 4.548-5.905 8.084L8 14.25z"/></svg>
           Support &mdash; $2.99
         </a>
       </div>
-      <p class="hero-note">Free &amp; open source. The Gumroad purchase is a way to support development.</p>
-      <div class="hero-badges">
-        <img src="https://img.shields.io/badge/macOS-26%2B-blue" alt="macOS 26+" width="76" height="20">
-        <img src="https://img.shields.io/badge/Swift-6-orange" alt="Swift 6" width="80" height="20">
-        <img src="https://img.shields.io/github/v/release/alexnodeland/StatusBar" alt="GitHub Release" width="100" height="20">
+      <p class="hero-note">free &amp; open source &middot; zero telemetry &middot; macOS 26+</p>
+
+      <div class="tick-strip" id="tick-strip" aria-hidden="true"></div>
+      <p class="tick-caption"><span class="cap-dot" aria-hidden="true"></span> 14:32 &mdash; Cloudflare: minor service outage. You knew before the retries did.</p>
+
+      <div class="hero-shot">
+        <img src="screenshots/source_list.png" alt="StatusBar popover listing monitored services with live statuses, grouped, with sparklines" width="760" height="1000">
       </div>
     </div>
   </section>
 
-  <!-- Features -->
   <section id="features">
     <div class="container">
-      <p class="section-label">Features</p>
-      <h2>See it in action</h2>
+      <p class="section-label">watch</p>
+      <h2>Every service, one glance</h2>
 
       <!-- Showcase 1: The app overview -->
       <div class="showcase">
@@ -135,373 +134,64 @@
     </div>
   </section>
 
-  <!-- Automate & Integrate -->
-  <section id="automate">
+  <!-- Severity -->
+  <section id="severity">
     <div class="container">
-      <p class="section-label">Automate &amp; Integrate</p>
-      <h2>Connect StatusBar to your workflow</h2>
-
-      <!-- Top row: Webhooks + Script Hooks -->
-      <div class="automate-row">
-        <!-- Webhooks -->
-        <div class="glass-card automate-card">
-          <div class="automate-card-header">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            <h3>Webhooks</h3>
-          </div>
-          <p class="automate-desc">Push status change alerts to Slack, Discord, Microsoft Teams, or any HTTP endpoint. Configure multiple webhooks in <strong>Settings&nbsp;&rarr;&nbsp;Webhooks</strong>.</p>
-
-          <div class="webhook-platforms">
-            <span class="webhook-badge">Slack</span>
-            <span class="webhook-badge">Discord</span>
-            <span class="webhook-badge">Teams</span>
-            <span class="webhook-badge">Generic JSON</span>
-          </div>
-
-          <div class="collapsible">
-            <button class="collapsible-trigger" id="webhook-payload-trigger">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
-              Example payloads
-            </button>
-            <div class="collapsible-content" id="webhook-payload-content">
-              <table class="hook-table">
-                <thead>
-                  <tr><th>Platform</th><th>Payload shape</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>Slack</code></td><td>Block Kit &mdash; <code>{ "attachments": [{ "color", "blocks" }] }</code></td></tr>
-                  <tr><td><code>Discord</code></td><td>Embeds &mdash; <code>{ "embeds": [{ "title", "description", "color", "fields" }] }</code></td></tr>
-                  <tr><td><code>Teams</code></td><td>Adaptive Card &mdash; <code>{ "type": "message", "attachments": [{ "content": { "type": "AdaptiveCard" } }] }</code></td></tr>
-                  <tr><td><code>Generic</code></td><td>Flat JSON &mdash; <code>{ "source", "title", "body", "severity", "event", "url", "timestamp", "components" }</code></td></tr>
-                </tbody>
-              </table>
-              <p class="hook-table-note">Webhooks fire on every status change. Each webhook has an enable/disable toggle and a 10-second request timeout.</p>
-            </div>
-          </div>
+      <p class="section-label">severity</p>
+      <h2>The whole story in four colors</h2>
+      <p class="section-sub">Every provider&rsquo;s status vocabulary maps onto the same four levels &mdash; the menu bar icon always shows the worst one.</p>
+      <div class="severity-grid">
+        <div class="severity-zone green">
+          <div class="zone-ticks" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <p class="zone-label">operational</p>
+          <p class="zone-desc">All systems normal. The icon stays a quiet checkmark.</p>
         </div>
-
-        <!-- Script Hooks -->
-        <div class="glass-card automate-card">
-          <div class="automate-card-header">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            <h3>Script Hooks</h3>
-          </div>
-          <p class="automate-desc">Drop executable scripts into the hooks folder and they run automatically on status events. Trigger CI pipelines, write to logs, post to APIs&mdash;anything you can script.</p>
-
-          <div class="hook-steps">
-            <div class="hook-step">
-              <span class="hook-step-num">1</span>
-              <span>Open <strong>Settings &rarr; Hooks &rarr; Add Example Hook</strong>, or create your own script</span>
-            </div>
-            <div class="hook-step">
-              <span class="hook-step-num">2</span>
-              <span>Make it executable: <code>chmod +x my-hook</code></span>
-            </div>
-            <div class="hook-step">
-              <span class="hook-step-num">3</span>
-              <span>It runs on every event&mdash;check <code>$STATUSBAR_EVENT</code> to filter</span>
-            </div>
-          </div>
-
-          <div class="collapsible">
-            <button class="collapsible-trigger" id="hook-example-trigger">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
-              Example hook
-            </button>
-            <div class="collapsible-content" id="hook-example-content">
-              <div class="code-block-wrapper">
-                <pre><code>#!/bin/bash
-# Log status changes to a file
-[ "$STATUSBAR_EVENT" = "on-status-change" ] || exit 0
-
-LOG="$HOME/Library/Logs/StatusBar/hooks.log"
-mkdir -p "$(dirname "$LOG")"
-echo "[$(date)] $STATUSBAR_SOURCE_NAME: $STATUSBAR_TITLE" &gt;&gt; "$LOG"</code></pre>
-                <button class="copy-btn" aria-label="Copy code">Copy</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="collapsible">
-            <button class="collapsible-trigger" id="hook-events-trigger">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
-              Events &amp; environment variables
-            </button>
-            <div class="collapsible-content" id="hook-events-content">
-              <table class="hook-table">
-                <thead>
-                  <tr><th>Event</th><th>When</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>on-status-change</code></td><td>Source status severity changes</td></tr>
-                  <tr><td><code>on-refresh</code></td><td>All sources finish refreshing</td></tr>
-                  <tr><td><code>on-source-add</code></td><td>A new source is added</td></tr>
-                  <tr><td><code>on-source-remove</code></td><td>A source is removed</td></tr>
-                </tbody>
-              </table>
-              <table class="hook-table">
-                <thead>
-                  <tr><th>Variable</th><th>Events</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td><code>STATUSBAR_EVENT</code></td><td>All</td></tr>
-                  <tr><td><code>STATUSBAR_SOURCE_NAME</code></td><td>status-change, add, remove</td></tr>
-                  <tr><td><code>STATUSBAR_SOURCE_URL</code></td><td>status-change, add, remove</td></tr>
-                  <tr><td><code>STATUSBAR_TITLE</code></td><td>status-change</td></tr>
-                  <tr><td><code>STATUSBAR_BODY</code></td><td>status-change</td></tr>
-                  <tr><td><code>STATUSBAR_SOURCE_COUNT</code></td><td>refresh</td></tr>
-                  <tr><td><code>STATUSBAR_WORST_LEVEL</code></td><td>refresh</td></tr>
-                </tbody>
-              </table>
-              <p class="hook-table-note">A full JSON payload is also piped to stdin. Scripts can be any language&mdash;just add a shebang and make them executable. 30-second timeout per execution.</p>
-            </div>
-          </div>
+        <div class="severity-zone yellow">
+          <div class="zone-ticks" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <p class="zone-label">degraded</p>
+          <p class="zone-desc">Performance issues. Worth a glance, not a page.</p>
         </div>
-      </div>
-
-      <!-- URL Scheme (full-width) -->
-      <div class="glass-card automate-card automate-card-wide">
-        <div class="automate-card-header">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <h3>URL Scheme</h3>
+        <div class="severity-zone orange">
+          <div class="zone-ticks" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <p class="zone-label">partial outage</p>
+          <p class="zone-desc">Some services affected. Notifications fire.</p>
         </div>
-        <p class="automate-desc">Control the app from Terminal, browsers, Raycast, Alfred, or macOS Shortcuts using <code>statusbar://</code> deep links.</p>
-        <div class="url-examples-grid">
-          <div class="url-example">
-            <div class="code-block-wrapper">
-              <pre><code>open "statusbar://open"</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-            <span class="url-label">Show the popover</span>
-          </div>
-          <div class="url-example">
-            <div class="code-block-wrapper">
-              <pre><code>open "statusbar://open?source=GitHub"</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-            <span class="url-label">Navigate to a source</span>
-          </div>
-          <div class="url-example">
-            <div class="code-block-wrapper">
-              <pre><code>open "statusbar://refresh"</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-            <span class="url-label">Refresh all sources</span>
-          </div>
-          <div class="url-example">
-            <div class="code-block-wrapper">
-              <pre><code>open "statusbar://add?url=https://status.openai.com&amp;name=OpenAI"</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-            <span class="url-label">Add a new source</span>
-          </div>
-          <div class="url-example">
-            <div class="code-block-wrapper">
-              <pre><code>open "statusbar://remove?name=GitHub"</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-            <span class="url-label">Remove by name</span>
-          </div>
-          <div class="url-example">
-            <div class="code-block-wrapper">
-              <pre><code>open "statusbar://settings?tab=webhooks"</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-            <span class="url-label">Jump to a settings tab</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- AppleScript (full-width, two-column layout) -->
-      <div class="glass-card automate-card automate-card-wide">
-        <div class="applescript-layout">
-          <div class="applescript-info">
-            <div class="automate-card-header">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
-              <h3>AppleScript</h3>
-            </div>
-            <p class="automate-desc">Full Cocoa Scripting dictionary. Query status, refresh, add and remove sources from Script Editor, JXA, <code>osascript</code>, or any OSA-compatible tool.</p>
-            <div class="applescript-capabilities">
-              <span class="webhook-badge">Script Editor</span>
-              <span class="webhook-badge">JXA</span>
-              <span class="webhook-badge">osascript</span>
-              <span class="webhook-badge">Shortcuts</span>
-            </div>
-            <div class="collapsible">
-              <button class="collapsible-trigger" id="applescript-terminal-trigger">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
-                Terminal one-liners
-              </button>
-              <div class="collapsible-content" id="applescript-terminal-content">
-                <div class="code-block-wrapper">
-                  <pre><code>osascript -e 'tell application "StatusBar" to get name of every source'
-osascript -e 'tell application "StatusBar" to get worst status'
-osascript -e 'tell application "StatusBar" to refresh'</code></pre>
-                  <button class="copy-btn" aria-label="Copy code">Copy</button>
-                </div>
-                <p class="hook-table-note">Open Script Editor &rarr; File &rarr; Open Dictionary &rarr; StatusBar to browse the full scripting dictionary.</p>
-              </div>
-            </div>
-          </div>
-          <div class="applescript-examples">
-            <div class="code-block-wrapper">
-              <pre><code>tell application "StatusBar"
-    -- Read properties
-    get name of every source
-    get status of source "GitHub"
-    get worst status
-    get issue count
-
-    -- Actions
-    refresh
-    add source "https://status.openai.com" named "OpenAI"
-    remove source "OpenAI"
-end tell</code></pre>
-              <button class="copy-btn" aria-label="Copy code">Copy</button>
-            </div>
-          </div>
+        <div class="severity-zone red">
+          <div class="zone-ticks" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <p class="zone-label">major outage</p>
+          <p class="zone-desc">Significant disruption. You already know why the graphs fell over.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Status Colors -->
-  <section id="status-colors">
+  <!-- Install -->
+  <section id="install">
     <div class="container">
-      <p class="section-label">Status Indicators</p>
-      <h2>Four severity levels at a glance</h2>
-      <div class="status-strip">
-        <div class="glass-card status-item">
-          <span class="status-dot green"></span>
-          <div>
-            <div class="status-label">Operational</div>
-            <div class="status-desc">All systems normal</div>
-          </div>
-        </div>
-        <div class="glass-card status-item">
-          <span class="status-dot yellow"></span>
-          <div>
-            <div class="status-label">Degraded</div>
-            <div class="status-desc">Performance issues</div>
-          </div>
-        </div>
-        <div class="glass-card status-item">
-          <span class="status-dot orange"></span>
-          <div>
-            <div class="status-label">Partial Outage</div>
-            <div class="status-desc">Some services affected</div>
-          </div>
-        </div>
-        <div class="glass-card status-item">
-          <span class="status-dot red"></span>
-          <div>
-            <div class="status-label">Major Outage</div>
-            <div class="status-desc">Significant disruption</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Get Started -->
-  <section id="get-started">
-    <div class="container">
-      <p class="section-label">Get Started</p>
+      <p class="section-label">install</p>
       <h2>Up and running in seconds</h2>
-      <div class="steps">
-        <div class="glass-card step">
-          <span class="step-number">1</span>
-          <span class="step-text">Install with <code>brew install --cask alexnodeland/tap/statusbar</code>, or download <strong>StatusBar-vX.Y.Z.zip</strong> from the <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases page</a></span>
-        </div>
-        <div class="glass-card step">
-          <span class="step-number">2</span>
-          <span class="step-text">Extract the ZIP</span>
-        </div>
-        <div class="glass-card step">
-          <span class="step-number">3</span>
-          <span class="step-text">Drag <strong>StatusBar.app</strong> to <code>/Applications</code></span>
-        </div>
-        <div class="glass-card step">
-          <span class="step-number">4</span>
-          <span class="step-text">On first launch, right-click &rarr; <strong>Open</strong> to bypass Gatekeeper</span>
-        </div>
-      </div>
-      <div class="glass-card gatekeeper-note">
-        <strong>Note:</strong> The app is ad-hoc signed, not notarized. The universal binary runs natively on both Apple Silicon and Intel Macs.
-      </div>
-
-      <div class="collapsible">
-        <button class="collapsible-trigger" id="build-trigger">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
-          Build from Source
-        </button>
-        <div class="collapsible-content" id="build-content">
+      <div class="install-grid">
+        <div class="glass-card install-card">
+          <h3>Homebrew</h3>
           <div class="code-block-wrapper">
-            <pre><code>chmod +x build.sh
-./build.sh
-open ./build/StatusBar.app</code></pre>
+            <pre><code>brew tap alexnodeland/tap
+brew install --cask statusbar</code></pre>
             <button class="copy-btn" aria-label="Copy code">Copy</button>
           </div>
-          <p class="doc-desc collapsible-note">Or compile directly:</p>
-          <div class="code-block-wrapper">
-            <pre><code>swiftc StatusBarApp.swift -parse-as-library \
-  -o StatusBar -framework SwiftUI -framework AppKit \
-  -target arm64-apple-macosx26.0
-./StatusBar</code></pre>
-            <button class="copy-btn" aria-label="Copy code">Copy</button>
-          </div>
+          <p class="install-note">Updates arrive with <code>brew upgrade</code> &mdash; or let the app update itself.</p>
+        </div>
+        <div class="glass-card install-card">
+          <h3>Direct download</h3>
+          <p class="zone-desc">Grab <strong>StatusBar-vX.Y.Z.dmg</strong> from the <a href="https://github.com/alexnodeland/StatusBar/releases/latest">latest release</a>, drag it to Applications, and approve it under System&nbsp;Settings&nbsp;&rarr;&nbsp;Privacy&nbsp;&amp;&nbsp;Security on first launch.</p>
+          <p class="install-note">Universal binary &mdash; Apple Silicon and Intel. Ad-hoc signed; see the FAQ.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Documentation -->
-  <section id="docs">
-    <div class="container">
-      <p class="section-label">Documentation</p>
-      <h2>Adding Sources</h2>
-
-      <div class="doc-section">
-        <div class="doc-layout">
-          <div class="doc-screenshot">
-            <img src="screenshots/settings.png" alt="Settings view showing source management and preferences" class="screenshot">
-          </div>
-          <div class="doc-content">
-            <p class="doc-desc">Open Settings and click <strong>+</strong> to add any status page by name and URL. The app auto-detects the provider &mdash; <a href="https://www.atlassian.com/software/statuspage">Atlassian Statuspage</a>, <a href="https://incident.io">incident.io</a>, <a href="https://instatus.com">Instatus</a>, or <a href="https://gatus.io">Gatus</a>. You can also import a JSON file to add many at once.</p>
-            <p class="doc-desc doc-desc-hint">Select services below, export as JSON, then import the file in StatusBar via Settings&nbsp;&rarr;&nbsp;Data&nbsp;&rarr;&nbsp;Import Sources.</p>
-          </div>
-        </div>
-        <div class="source-directory">
-          <div class="source-toolbar">
-            <input type="search" id="source-search" class="source-search"
-              placeholder="Search services or URLs..." aria-label="Filter status page sources" autocomplete="off">
-            <span class="source-count" id="source-count"></span>
-          </div>
-          <div class="source-list" id="source-list" role="list"></div>
-          <div class="source-actions">
-            <label class="source-select-all" id="source-select-all-label">
-              <input type="checkbox" id="source-select-all">
-              <span class="source-select-check">
-                <svg class="check-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5l2.5 2.5L8 3"/></svg>
-                <svg class="minus-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"><line x1="2.5" y1="5" x2="7.5" y2="5"/></svg>
-              </span>
-              Select all
-            </label>
-            <button class="btn btn-primary source-export-btn" id="source-export" disabled>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 12h10"/></svg>
-              Export JSON
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- FAQ -->
   <section id="faq">
     <div class="container">
-      <p class="section-label">FAQ</p>
+      <p class="section-label">faq</p>
       <h2>Questions, answered</h2>
       <div class="status-grid">
         <div class="glass-card status-card">
@@ -532,6 +222,17 @@ open ./build/StatusBar.app</code></pre>
     </div>
   </section>
 
+  <!-- Support band -->
+  <section class="support-container" id="support">
+    <div class="container">
+      <div class="glass-card support-band">
+        <h2>Free for everyone.</h2>
+        <p>StatusBar is MIT-licensed and sends zero telemetry. If it has saved you a tab &mdash; or an incident call &mdash; you can chip in.</p>
+        <a href="https://ournature.gumroad.com/l/statusbar" class="btn btn-primary">Support StatusBar &mdash; $2.99</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
@@ -547,6 +248,6 @@ open ./build/StatusBar.app</code></pre>
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=2"></script>
 </body>
 </html>
