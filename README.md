@@ -74,6 +74,8 @@ Universal binary — Apple Silicon and Intel. Updates arrive via `brew upgrade`,
 
 📣 **Webhooks** — push status changes to Slack (Block Kit), Discord (embeds), Microsoft Teams (Adaptive Cards), or any JSON endpoint — with per-webhook labels and real delivery feedback on test sends.
 
+🧩 **Desktop widget** — the status overview at a glance in Notification Center or on your desktop: the tick strip and issue count, or a per-source list.
+
 ⌨️ **At your fingertips** — a rebindable global hotkey (default `⌃⌥S`), a bundled CLI (`statusbar wait npm && npm publish`), Shortcuts/Spotlight intents, a `statusbar://` URL scheme, script hooks, and a full AppleScript dictionary. Runs as a pure menu bar agent.
 
 <div align="center"><br><img src="docs/tick-divider.svg" width="260" alt=""><br><br></div>

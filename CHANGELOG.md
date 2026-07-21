@@ -14,6 +14,8 @@ All notable changes to StatusBar. Full release notes with downloads live on the
 - App Intents for Shortcuts and Spotlight: Get Worst Status, Get Source
   Status, Refresh Sources
 - Docs: terminal/prompt integration guides (starship, tmux, SketchyBar)
+- Desktop widget: the status overview in Notification Center or on the
+  desktop (small: tick strip + issue count; medium: source list)
 
 ## v0.3.2 — 2026-07-20
 
