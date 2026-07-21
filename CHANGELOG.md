@@ -3,7 +3,7 @@
 All notable changes to StatusBar. Full release notes with downloads live on the
 [GitHub Releases page](https://github.com/alexnodeland/StatusBar/releases).
 
-## Unreleased
+## v0.4.0 — 2026-07-21
 
 - Status cache file at `~/.cache/statusbar/status.json`, refreshed on
   every poll — the interface for terminal tooling
