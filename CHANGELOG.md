@@ -9,6 +9,8 @@ All notable changes to StatusBar. Full release notes with downloads live on the
   every poll — the interface for terminal tooling
 - Bundled `statusbar` CLI: status/list, `wait` (block until recovery),
   `prompt` glyph for status lines, and URL-scheme passthrough
+- Per-repo scoping: a `.statusbar` file lists a project's upstream
+  dependencies; `status` and `prompt` honor the nearest one
 - App Intents for Shortcuts and Spotlight: Get Worst Status, Get Source
   Status, Refresh Sources
 - Docs: terminal/prompt integration guides (starship, tmux, SketchyBar)
