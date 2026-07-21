@@ -18,10 +18,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body class="docs-page">
 
+  <!-- shared nav — keep in sync across index.html / docs.html / cli.html -->
   <nav class="nav" id="nav">
     <div class="nav-inner">
       <a href="index.html" class="nav-brand">
@@ -37,10 +38,10 @@
       </button>
       <ul class="nav-links" id="nav-links">
         <li><a href="index.html#features">Features</a></li>
-        <li><a href="index.html#severity">Severity</a></li>
         <li><a href="index.html#install">Install</a></li>
         <li><a href="index.html#faq">FAQ</a></li>
-        <li><a href="docs.html" class="active">Docs</a></li>
+        <li><a href="docs.html">Docs</a></li>
+        <li><a href="cli.html" class="active" aria-current="page">CLI</a></li>
         <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
         <li><a class="nav-cta" href="https://github.com/alexnodeland/StatusBar/releases/latest">Download</a></li>
       </ul>
@@ -53,7 +54,10 @@
       <p class="section-label">reference</p>
       <h1><code>statusbar</code> CLI</h1>
       <p>Every status page you care about, from the terminal. The CLI ships inside StatusBar.app and reads the same live snapshot the app maintains &mdash; no network, no waiting.</p>
-      <nav class="toc-chips" aria-label="On this page">
+      <nav class="toc-chips" aria-label="Documentation">
+        <a href="docs.html" class="toc-chip-page">automate &amp; integrate</a>
+        <a href="cli.html" class="toc-chip-page" aria-current="page">cli reference</a>
+        <span class="toc-sep" aria-hidden="true"></span>
         <a href="#cli-install">install</a>
         <a href="#cli-commands">commands</a>
         <a href="#cli-options">options</a>
@@ -261,6 +265,8 @@ Vercel</code></pre>
   <footer class="footer">
     <div class="container">
       <nav class="footer-links">
+        <a href="docs.html">Docs</a>
+        <a href="cli.html">CLI</a>
         <a href="https://github.com/alexnodeland/StatusBar">GitHub</a>
         <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases</a>
         <a href="https://github.com/alexnodeland/StatusBar/blob/main/CHANGELOG.md">Changelog</a>
@@ -272,6 +278,6 @@ Vercel</code></pre>
     </div>
   </footer>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>

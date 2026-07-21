@@ -263,7 +263,8 @@ section {
 }
 
 .nav-links a:hover,
-.nav-links a.active {
+.nav-links a.active,
+.nav-links a[aria-current="page"] {
   color: var(--text-primary);
 }
 
@@ -1487,6 +1488,30 @@ section {
 .toc-chips a:hover {
   color: var(--text-primary);
   border-color: var(--text-tertiary);
+}
+
+/* Cross-page doc chips (Docs ↔ CLI) */
+.toc-chips .toc-chip-page {
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
+
+.toc-chips .toc-chip-page[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: var(--accent);
+}
+
+.toc-sep {
+  width: 1px;
+  height: 16px;
+  align-self: center;
+  background: var(--line-strong);
+}
+
+@media (max-width: 480px) {
+  .toc-sep {
+    display: none;
+  }
 }
 
 /* Docs page: tighter section rhythm */
