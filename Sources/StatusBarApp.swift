@@ -19,7 +19,10 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 3) {
-            MiniTickIcon(indicator: service.worstIndicator, monochrome: monochrome)
+            // MenuBarExtra renders label views as template images, stripping
+            // color — pre-render the ticks to a non-template NSImage so the
+            // status colors survive in the menu bar.
+            Image(nsImage: tickImage)
             if showCount && service.issueCount > 0 {
                 Text("\(service.issueCount)")
                     .font(.caption2.monospacedDigit())
@@ -30,6 +33,17 @@ struct MenuBarLabel: View {
                 ? "StatusBar: all systems operational"
                 : "StatusBar: \(service.issueCount) sources with issues"
         )
+    }
+
+    private var tickImage: NSImage {
+        let renderer = ImageRenderer(
+            content: MiniTickIcon(indicator: service.worstIndicator, monochrome: monochrome)
+        )
+        renderer.scale = 2
+        guard let image = renderer.nsImage else { return NSImage() }
+        image.size = NSSize(width: 14.5, height: 12)
+        image.isTemplate = monochrome
+        return image
     }
 }
 
