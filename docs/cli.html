@@ -66,22 +66,39 @@
   <section id="cli-install">
     <div class="container">
       <p class="section-label">setup</p>
-      <h2>Link it once</h2>
-      <p class="section-sub">The binary is bundled at <code>StatusBar.app/Contents/MacOS/statusbar-cli</code>. Symlink it onto your <code>PATH</code>:</p>
+      <h2>Get <code>statusbar</code> on your PATH</h2>
+      <p class="section-sub">If you installed with Homebrew, you&rsquo;re already done &mdash; the cask links the command for you. Otherwise it&rsquo;s one click in the app.</p>
 
       <div class="automate-row">
         <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13"/><path d="m7 10 5 5 5-5"/><rect x="4" y="17" width="16" height="5" rx="1.5"/></svg>
+            <h3>Homebrew &mdash; automatic</h3>
+          </div>
           <div class="code-block-wrapper">
-            <pre><code>sudo ln -sf /Applications/StatusBar.app/Contents/MacOS/statusbar-cli \
-  /usr/local/bin/statusbar</code></pre>
+            <pre><code>brew install --cask alexnodeland/tap/statusbar</code></pre>
             <button class="copy-btn" aria-label="Copy code">Copy</button>
           </div>
-          <p class="automate-desc">The app refreshes <code>~/.cache/statusbar/status.json</code> on every poll; <code>status</code> and <code>prompt</code> read it instantly. If the app isn&rsquo;t running, <code>--fresh</code> fetches live from providers and <code>wait</code> always polls live.</p>
+          <p class="automate-desc"><strong>Direct download?</strong> Open <strong>Settings &rarr; General &rarr; statusbar CLI &rarr; Install</strong>. One click, one admin prompt, done.</p>
           <div class="code-block-wrapper">
             <pre><code>statusbar --version   # "statusbar 0.4.0"
 statusbar help        # full usage</code></pre>
             <button class="copy-btn" aria-label="Copy code">Copy</button>
           </div>
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="manual-link-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Manual symlink
+            </button>
+            <div class="collapsible-content" id="manual-link-content">
+              <div class="code-block-wrapper">
+                <pre><code>sudo ln -sf /Applications/StatusBar.app/Contents/MacOS/statusbar-cli \
+  /usr/local/bin/statusbar</code></pre>
+                <button class="copy-btn" aria-label="Copy code">Copy</button>
+              </div>
+            </div>
+          </div>
+          <p class="automate-desc">The app refreshes its snapshot on every poll; <code>status</code> and <code>prompt</code> read it instantly. If the app isn&rsquo;t running, <code>--fresh</code> fetches live from providers and <code>wait</code> always polls live.</p>
         </div>
 
         <div class="glass-card automate-card">

@@ -17,6 +17,8 @@ All notable changes to StatusBar. Full release notes with downloads live on the
 - Desktop widget: the status overview in Notification Center or on the
   desktop (small: tick strip + issue count; medium: source list)
 - `statusbar version` / `--version` prints the app version
+- One-click CLI install: Settings → General → statusbar CLI links the
+  command onto your PATH; the Homebrew cask now links it automatically
 - Website: live coded renders for the widget, CLI, and status line on
   the landing and docs pages, plus a full CLI reference page
 

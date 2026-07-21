@@ -209,11 +209,9 @@ osascript -e 'tell application "StatusBar" to refresh'
 
 ## Terminal & Shortcuts
 
-The app writes a status snapshot to `~/.cache/statusbar/status.json` on every refresh. The bundled CLI reads it instantly:
+The app writes a status snapshot to `~/.cache/statusbar/status.json` on every refresh. The bundled CLI reads it instantly. Homebrew installs put `statusbar` on your PATH automatically; direct downloads install it with one click via **Settings → General → statusbar CLI**.
 
 ```bash
-sudo ln -sf /Applications/StatusBar.app/Contents/MacOS/statusbar-cli /usr/local/bin/statusbar
-
 statusbar status                   # all sources, colored, exit code 0/1
 statusbar status github --json     # one source, machine-readable
 statusbar wait npm && npm publish  # block until a source recovers
