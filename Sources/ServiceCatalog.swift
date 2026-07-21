@@ -89,8 +89,8 @@ struct ServiceCatalogView: View {
                 } else {
                     LazyVStack(alignment: .leading, spacing: Design.Spacing.cardInner) {
                         ForEach(groupedEntries, id: \.category) { group in
-                            Text(group.category)
-                                .font(Design.Typography.captionSemibold)
+                            Text(group.category.lowercased())
+                                .font(Design.Typography.eyebrow)
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, Design.Spacing.sectionH)
                                 .padding(.top, Design.Spacing.compactV)
@@ -141,7 +141,7 @@ struct ServiceCatalogView: View {
                     .font(Design.Typography.captionMedium)
                     .lineLimit(1)
                 Text(entry.url)
-                    .font(Design.Typography.micro)
+                    .font(Design.Typography.dataMicro)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }

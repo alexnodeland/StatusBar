@@ -32,7 +32,7 @@ struct AddSourceForm: View {
                 .focused($focusedField, equals: .name)
 
             TextField("URL (e.g. https://status.example.com)", text: $url)
-                .font(Design.Typography.caption)
+                .font(Design.Typography.mono)
                 .textFieldStyle(.roundedBorder)
                 .focused($focusedField, equals: .url)
 
@@ -115,7 +115,7 @@ struct EditSourceSheet: View {
                 .focused($nameFocused)
 
             TextField("URL", text: $url)
-                .font(Design.Typography.caption)
+                .font(Design.Typography.mono)
                 .textFieldStyle(.roundedBorder)
 
             URLValidationMessage(url: url, validation: urlValidation)

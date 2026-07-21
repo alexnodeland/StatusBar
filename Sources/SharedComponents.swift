@@ -57,7 +57,7 @@ struct SparklineView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: barGap) {
-            ForEach(Array(checkpoints.suffix(30).enumerated()), id: \.offset) { _, checkpoint in
+            ForEach(Array(checkpoints.suffix(24).enumerated()), id: \.offset) { _, checkpoint in
                 RoundedRectangle(cornerRadius: 1.5)
                     .fill(colorForIndicator(checkpoint.indicator))
                     .opacity(checkpoint.indicator == "none" ? 0.85 : 1)
@@ -65,9 +65,9 @@ struct SparklineView: View {
             }
         }
         .frame(height: maxHeight, alignment: .center)
-        .help("Last \(checkpoints.suffix(30).count) checks: \(issueCount) with issues")
+        .help("Last \(checkpoints.suffix(24).count) checks: \(issueCount) with issues")
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Status history: \(issueCount) of \(checkpoints.suffix(30).count) checks had issues")
+        .accessibilityLabel("Status history: \(issueCount) of \(checkpoints.suffix(24).count) checks had issues")
         .accessibilityValue(issueCount == 0 ? "No issues" : "\(issueCount) issues detected")
     }
 }
@@ -113,8 +113,7 @@ struct BadgeView: View {
 
     var body: some View {
         Text(text)
-            .font(Design.Typography.micro.weight(.medium))
-            .monospacedDigit()
+            .font(Design.Typography.dataMicroMedium)
             .padding(.horizontal, Design.Spacing.badgeH)
             .padding(.vertical, Design.Spacing.badgeV)
             .foregroundStyle(style == .muted ? Color.secondary : color)

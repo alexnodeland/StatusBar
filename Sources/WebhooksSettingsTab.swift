@@ -121,7 +121,7 @@ struct WebhooksSettingsTab: View {
                     }
                 }
                 Text(config.url)
-                    .font(.caption)
+                    .font(.system(.caption, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)

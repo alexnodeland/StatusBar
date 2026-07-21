@@ -423,6 +423,7 @@ struct UpdatesSettingsTab: View {
                 if let lastCheck = updateChecker.lastCheckDate {
                     LabeledContent("Last checked") {
                         Text("\(lastCheck, style: .relative) ago")
+                            .font(.system(.body, design: .monospaced))
                             .foregroundStyle(.secondary)
                     }
                 }

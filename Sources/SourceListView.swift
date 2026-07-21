@@ -535,7 +535,7 @@ struct SourceListView: View {
                     Text("\(f) of \(c) source\(c == 1 ? "" : "s")")
                 }
             }
-            .font(Design.Typography.micro)
+            .font(Design.Typography.dataMicro)
             .foregroundStyle(.quaternary)
 
             Spacer()

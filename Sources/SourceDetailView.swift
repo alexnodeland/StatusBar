@@ -62,8 +62,8 @@ struct SourceDetailView: View {
 
     private var uptimeTrendRow: some View {
         HStack(spacing: Design.Spacing.cardInner) {
-            Text("Uptime")
-                .font(Design.Typography.captionSemibold)
+            Text("uptime")
+                .font(Design.Typography.eyebrow)
                 .foregroundStyle(.secondary)
             Spacer()
             uptimeBadge(label: "24h", since: Date().addingTimeInterval(-24 * 60 * 60))
@@ -133,7 +133,7 @@ struct SourceDetailView: View {
                 Text(source.name)
                     .font(Design.Typography.bodyMedium)
                 Text(state.statusDescription)
-                    .font(Design.Typography.caption)
+                    .font(Design.Typography.dataMicro)
                     .foregroundStyle(.secondary)
             }
 
@@ -162,8 +162,8 @@ struct SourceDetailView: View {
 
     private var activeIncidentsSection: some View {
         VStack(alignment: .leading, spacing: Design.Spacing.cardInner) {
-            Label("Active Incidents", systemImage: "exclamationmark.triangle.fill")
-                .font(Design.Typography.captionSemibold)
+            Label("active incidents", systemImage: "exclamationmark.triangle.fill")
+                .font(Design.Typography.eyebrow)
                 .foregroundStyle(.orange)
                 .symbolRenderingMode(.hierarchical)
 
@@ -175,8 +175,8 @@ struct SourceDetailView: View {
 
     private var componentsSection: some View {
         VStack(alignment: .leading, spacing: Design.Spacing.cellInner) {
-            Text("Components")
-                .font(Design.Typography.captionSemibold)
+            Text("components")
+                .font(Design.Typography.eyebrow)
                 .foregroundStyle(.secondary)
 
             if state.topLevelComponents.isEmpty {
@@ -214,8 +214,8 @@ struct SourceDetailView: View {
 
     private var recentIncidentsSection: some View {
         VStack(alignment: .leading, spacing: Design.Spacing.cardInner) {
-            Text("Recent Incidents")
-                .font(Design.Typography.captionSemibold)
+            Text("recent incidents")
+                .font(Design.Typography.eyebrow)
                 .foregroundStyle(.secondary)
 
             let incidents = Array(state.recentIncidents.prefix(10))
@@ -347,7 +347,7 @@ struct ComponentRow: View {
                 .foregroundStyle(.primary)
             Spacer()
             Text(labelForComponentStatus(component.status))
-                .font(Design.Typography.micro)
+                .font(Design.Typography.dataMicroMedium)
                 .foregroundStyle(colorForComponentStatus(component.status))
         }
         .padding(.vertical, Design.Spacing.compactV)
@@ -395,7 +395,7 @@ struct IncidentCard: View {
                             BadgeView(text: statusBadge, color: statusBadgeColor)
 
                             Text(relativeDate(incident.updatedAt))
-                                .font(Design.Typography.micro)
+                                .font(Design.Typography.dataMicro)
                                 .foregroundStyle(.quaternary)
                         }
                     }
@@ -419,10 +419,10 @@ struct IncidentCard: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
                                     Text(update.status.capitalized)
-                                        .font(Design.Typography.micro.weight(.semibold))
+                                        .font(Design.Typography.dataMicroMedium)
                                     Spacer()
                                     Text(formatDate(update.createdAt))
-                                        .font(Design.Typography.micro)
+                                        .font(Design.Typography.dataMicro)
                                         .foregroundStyle(.quaternary)
                                 }
                                 Text(update.body)

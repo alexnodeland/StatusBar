@@ -122,6 +122,8 @@ enum Design {
         // "Data voice": timestamps, uptime numbers, counts — always monospaced
         static let dataMicro: Font = .system(.caption2, design: .monospaced)
         static let dataMicroMedium: Font = .system(.caption2, design: .monospaced).weight(.medium)
+        // Section eyebrows: mono, lowercase by convention (mirrors the site)
+        static let eyebrow: Font = .system(.caption2, design: .monospaced).weight(.semibold)
     }
 
     enum Spacing {
