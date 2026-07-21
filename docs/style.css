@@ -1883,31 +1883,40 @@ section {
 }
 
 .mb-item {
-  position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   min-width: 34px;
   justify-content: center;
 }
 
-.mb-check { color: var(--status-green); }
-
-.mb-alert {
-  position: absolute;
-  inset: 0;
+.mb-ticks {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--status-yellow);
-  opacity: 0;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 12px;
 }
+
+.mb-ticks i {
+  width: 2.5px;
+  border-radius: 1px;
+  background: var(--status-green);
+}
+
+.mb-ticks i:nth-child(1) { height: 6px; }
+.mb-ticks i:nth-child(2) { height: 9px; }
+.mb-ticks i:nth-child(3) { height: 12px; }
+.mb-ticks i:nth-child(4) { height: 8px; }
 
 .mb-count {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 600;
   color: #fff;
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  transition: none;
 }
 
 .mock-notification {
@@ -1954,21 +1963,22 @@ section {
   align-self: flex-start;
 }
 
-/* The story loop: all clear → incident → notification → recovered */
+/* The story loop: all clear → incident (peak flips amber, count appears)
+   → notification → recovered */
 @media (prefers-reduced-motion: no-preference) {
-  .mb-check { animation: mb-check-loop 9s ease-in-out infinite; }
-  .mb-alert { animation: mb-alert-loop 9s ease-in-out infinite; }
+  .mb-ticks i.peak { animation: mb-peak-loop 9s ease-in-out infinite; }
+  .mb-count { animation: mb-count-loop 9s ease-in-out infinite; }
   .mock-notification { animation: notif-loop 9s ease-in-out infinite; }
 }
 
-@keyframes mb-check-loop {
-  0%, 30%, 92%, 100% { opacity: 1; }
-  34%, 88% { opacity: 0; }
+@keyframes mb-peak-loop {
+  0%, 30%, 92%, 100% { background: var(--status-green); }
+  34%, 88% { background: var(--status-yellow); }
 }
 
-@keyframes mb-alert-loop {
-  0%, 30%, 92%, 100% { opacity: 0; }
-  34%, 88% { opacity: 1; }
+@keyframes mb-count-loop {
+  0%, 30%, 92%, 100% { opacity: 0; width: 0; }
+  34%, 88% { opacity: 1; width: 8px; }
 }
 
 @keyframes notif-loop {
@@ -1978,6 +1988,50 @@ section {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mb-alert { opacity: 1; }
-  .mb-check { opacity: 0; }
+  .mb-ticks i.peak { background: var(--status-yellow); }
+  .mb-count { opacity: 1; width: 8px; }
+}
+
+/* --- Mock interactivity: behaves like the app under the cursor --- */
+.app-mock,
+.mock-native {
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mock-row,
+.mock-comp,
+.mock-incident,
+.mock-toolbar svg {
+  transition: background 0.12s ease-out, border-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+
+.mock-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mock-row.warn-row:hover {
+  background: rgba(255, 214, 10, 0.11);
+}
+
+.mock-comp:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mock-incident:hover {
+  border-color: rgba(255, 214, 10, 0.5);
+}
+
+.mock-toolbar svg:hover {
+  color: var(--m-text);
+}
+
+.mock-foot span:last-child {
+  transition: color 0.12s ease-out;
+}
+
+.mock-foot span:last-child:hover {
+  color: var(--m-text2);
 }

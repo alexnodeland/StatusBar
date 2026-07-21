@@ -18,17 +18,46 @@ struct MenuBarLabel: View {
     @AppStorage("menuBarMonochrome") private var monochrome = false
 
     var body: some View {
-        HStack(spacing: 2) {
-            if monochrome {
-                Image(systemName: service.menuBarIcon)
-            } else {
-                Image(systemName: service.menuBarIcon)
-                    .foregroundStyle(service.menuBarColor)
-            }
+        HStack(spacing: 3) {
+            MiniTickIcon(indicator: service.worstIndicator, monochrome: monochrome)
             if showCount && service.issueCount > 0 {
                 Text("\(service.issueCount)")
                     .font(.caption2.monospacedDigit())
             }
+        }
+        .accessibilityLabel(
+            service.issueCount == 0
+                ? "StatusBar: all systems operational"
+                : "StatusBar: \(service.issueCount) sources with issues"
+        )
+    }
+}
+
+/// The brand tick strip at menu bar size: green when clear, the tall tick
+/// takes the worst severity's color during incidents (mirrors the app icon).
+struct MiniTickIcon: View {
+    let indicator: String
+    let monochrome: Bool
+
+    private let heights: [CGFloat] = [6, 9, 12, 8]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 1.5) {
+            ForEach(heights.indices, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color(for: index))
+                    .frame(width: 2.5, height: heights[index])
+            }
+        }
+        .frame(height: 12, alignment: .bottom)
+    }
+
+    private func color(for index: Int) -> Color {
+        if monochrome { return .primary }
+        switch indicator {
+        case "unknown": return .gray
+        case "none": return .green
+        default: return index == 2 ? colorForIndicator(indicator) : .green
         }
     }
 }
