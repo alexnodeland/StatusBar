@@ -251,6 +251,8 @@ Vercel
 
 StatusBar also exposes **App Intents** — *Get Worst Status*, *Get Source Status*, and *Refresh Sources* — for Shortcuts automations, Focus modes, and Spotlight.
 
+Every command, flag, exit code, and glyph is documented in the **[CLI reference](https://alexnodeland.github.io/StatusBar/cli.html)** (or run `statusbar help`).
+
 ## Development
 
 ```bash

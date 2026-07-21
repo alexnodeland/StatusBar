@@ -16,6 +16,9 @@ All notable changes to StatusBar. Full release notes with downloads live on the
 - Docs: terminal/prompt integration guides (starship, tmux, SketchyBar)
 - Desktop widget: the status overview in Notification Center or on the
   desktop (small: tick strip + issue count; medium: source list)
+- `statusbar version` / `--version` prints the app version
+- Website: live coded renders for the widget, CLI, and status line on
+  the landing and docs pages, plus a full CLI reference page
 
 ## v0.3.2 — 2026-07-20
 

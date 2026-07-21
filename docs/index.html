@@ -162,7 +162,32 @@
         </div>
         <div class="showcase-text">
           <h3>On the Desktop, Too</h3>
-          <p>Add the widget to your desktop or Notification Center for the overview without a single click &mdash; the tick strip and issue count at small, a per-source list at medium. Prefer a terminal? The bundled <a href="docs.html#terminal">CLI and Shortcuts intents</a> read the same live snapshot.</p>
+          <p>Add the widget to your desktop or Notification Center for the overview without a single click &mdash; the tick strip and issue count at small, a per-source list at medium.</p>
+        </div>
+      </div>
+
+      <!-- Showcase 4: CLI & status line -->
+      <div class="showcase showcase-reverse">
+        <div class="showcase-image">
+          <div class="mock-terminal" role="img" aria-label="A terminal running statusbar status with colored per-source output, statusbar prompt printing a compact glyph, and a tmux status line showing the same glyph">
+            <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span><em>zsh</em></div>
+            <div class="term-body">
+              <div class="term-line" style="--i:0"><span class="t-prompt">$</span> statusbar status</div>
+              <div class="term-line" style="--i:1"><span class="t-ok">&#9679;</span> <span class="t-name">GitHub</span><span class="t-dim">All Systems Operational</span></div>
+              <div class="term-line" style="--i:2"><span class="t-warn">&#9650;</span> <span class="t-name">Cloudflare</span><span class="t-dim">Minor Service Outage</span></div>
+              <div class="term-line" style="--i:3"><span class="t-ok">&#9679;</span> <span class="t-name">Anthropic</span><span class="t-dim">All Systems Operational</span></div>
+              <div class="term-line" style="--i:4"><span class="t-ok">&#9679;</span> <span class="t-name">npm</span><span class="t-dim">All Systems Operational</span></div>
+              <div class="term-line t-dim" style="--i:5">&mdash; 1 source with issues &middot; updated 09:14:02Z</div>
+              <div class="term-line" style="--i:6"><span class="t-prompt">$</span> statusbar prompt</div>
+              <div class="term-line" style="--i:7"><span class="t-warn">&#9650;1</span></div>
+              <div class="term-line" style="--i:8"><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
+            </div>
+            <div class="term-tmux" aria-hidden="true"><span>[main] 0:zsh*</span><span class="t-tmux-right"><span class="t-warn">&#9650;1</span> &middot; 14:32</span></div>
+          </div>
+        </div>
+        <div class="showcase-text">
+          <h3>And in Your Terminal</h3>
+          <p>The bundled CLI reads the same live snapshot &mdash; query it, gate a deploy with <code>statusbar wait</code>, or put a glyph in your Starship, tmux, or SketchyBar status line. Drop a <code>.statusbar</code> file in a repo and it scopes to that project&rsquo;s upstream deps. <a href="cli.html">CLI reference</a> &middot; <a href="docs.html#terminal">setup guides</a></p>
         </div>
       </div>
     </div>
