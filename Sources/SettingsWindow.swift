@@ -175,6 +175,8 @@ struct GeneralSettingsTab: View {
                 }
             }
 
+            CLIInstallSection()
+
             Section {
                 Button("Reset to Defaults", role: .destructive) {
                     service.resetToDefaults()

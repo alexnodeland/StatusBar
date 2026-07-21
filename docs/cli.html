@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StatusBar CLI Reference</title>
+  <meta name="description" content="Complete reference for the statusbar CLI: commands, options, exit codes, glyphs, and .statusbar repo scoping.">
+  <meta property="og:title" content="StatusBar CLI Reference">
+  <meta property="og:description" content="Commands, options, exit codes, glyphs, and .statusbar repo scoping for the bundled statusbar CLI.">
+  <meta property="og:image" content="https://alexnodeland.github.io/StatusBar/og.png">
+  <meta property="og:url" content="https://alexnodeland.github.io/StatusBar/cli.html">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://alexnodeland.github.io/StatusBar/cli.html">
+  <meta name="theme-color" content="#F5F6F8">
+  <link rel="icon" href="icon-128.png?v=2" type="image/png">
+  <link rel="apple-touch-icon" href="icon.png?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body class="docs-page">
+
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        <img src="icon-128.png?v=2" alt="" width="26" height="26">
+        StatusBar
+      </a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="3" y1="5" x2="17" y2="5"/>
+          <line x1="3" y1="10" x2="17" y2="10"/>
+          <line x1="3" y1="15" x2="17" y2="15"/>
+        </svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#severity">Severity</a></li>
+        <li><a href="index.html#install">Install</a></li>
+        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="docs.html" class="active">Docs</a></li>
+        <li><a href="https://github.com/alexnodeland/StatusBar">GitHub</a></li>
+        <li><a class="nav-cta" href="https://github.com/alexnodeland/StatusBar/releases/latest">Download</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Page head -->
+  <header class="page-head">
+    <div class="container">
+      <p class="section-label">reference</p>
+      <h1><code>statusbar</code> CLI</h1>
+      <p>Every status page you care about, from the terminal. The CLI ships inside StatusBar.app and reads the same live snapshot the app maintains &mdash; no network, no waiting.</p>
+      <nav class="toc-chips" aria-label="On this page">
+        <a href="#cli-install">install</a>
+        <a href="#cli-commands">commands</a>
+        <a href="#cli-options">options</a>
+        <a href="#cli-exit">exit codes &amp; glyphs</a>
+        <a href="#cli-scoping">repo scoping</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="cli-install">
+    <div class="container">
+      <p class="section-label">setup</p>
+      <h2>Get <code>statusbar</code> on your PATH</h2>
+      <p class="section-sub">If you installed with Homebrew, you&rsquo;re already done &mdash; the cask links the command for you. Otherwise it&rsquo;s one click in the app.</p>
+
+      <div class="automate-row">
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13"/><path d="m7 10 5 5 5-5"/><rect x="4" y="17" width="16" height="5" rx="1.5"/></svg>
+            <h3>Homebrew &mdash; automatic</h3>
+          </div>
+          <div class="code-block-wrapper">
+            <pre><code>brew install --cask alexnodeland/tap/statusbar</code></pre>
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+          </div>
+          <p class="automate-desc"><strong>Direct download?</strong> Open <strong>Settings &rarr; General &rarr; statusbar CLI &rarr; Install</strong>. One click, one admin prompt, done.</p>
+          <div class="code-block-wrapper">
+            <pre><code>statusbar --version   # "statusbar 0.4.0"
+statusbar help        # full usage</code></pre>
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+          </div>
+          <div class="collapsible">
+            <button class="collapsible-trigger" id="manual-link-trigger">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M4 2l6 4-6 4z"/></svg>
+              Manual symlink
+            </button>
+            <div class="collapsible-content" id="manual-link-content">
+              <div class="code-block-wrapper">
+                <pre><code>sudo ln -sf /Applications/StatusBar.app/Contents/MacOS/statusbar-cli \
+  /usr/local/bin/statusbar</code></pre>
+                <button class="copy-btn" aria-label="Copy code">Copy</button>
+              </div>
+            </div>
+          </div>
+          <p class="automate-desc">The app refreshes its snapshot on every poll; <code>status</code> and <code>prompt</code> read it instantly. If the app isn&rsquo;t running, <code>--fresh</code> fetches live from providers and <code>wait</code> always polls live.</p>
+        </div>
+
+        <div class="glass-card automate-card">
+          <div class="mock-terminal" role="img" aria-label="A terminal showing statusbar status output with colored glyphs per source and a summary line">
+            <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span><em>zsh</em></div>
+            <div class="term-body">
+              <div class="term-line" style="--i:0"><span class="t-prompt">$</span> statusbar status</div>
+              <div class="term-line" style="--i:1"><span class="t-ok">&#9679;</span> <span class="t-name">GitHub</span><span class="t-dim">All Systems Operational</span></div>
+              <div class="term-line" style="--i:2"><span class="t-warn">&#9650;</span> <span class="t-name">Cloudflare</span><span class="t-dim">Minor Service Outage</span></div>
+              <div class="term-line" style="--i:3"><span class="t-ok">&#9679;</span> <span class="t-name">Anthropic</span><span class="t-dim">All Systems Operational</span></div>
+              <div class="term-line t-dim" style="--i:4">&mdash; 1 source with issues &middot; updated 09:14:02Z</div>
+              <div class="term-line" style="--i:5"><span class="t-prompt">$</span> <span class="t-cursor"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cli-commands">
+    <div class="container">
+      <p class="section-label">commands</p>
+      <h2>Commands</h2>
+
+      <div class="glass-card automate-card automate-card-wide">
+        <table class="hook-table">
+          <thead>
+            <tr><th>Command</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>status [name]</code></td><td>Current status for all sources, or one by name (case-insensitive, substring match). Reads the cache; exits <code>0</code> when all clear, <code>1</code> on issues.</td></tr>
+            <tr><td><code>list</code></td><td>Alias for <code>status</code>.</td></tr>
+            <tr><td><code>wait &lt;name&gt;</code></td><td>Block until the source is operational again, polling the provider live. Gate a deploy: <code>statusbar wait npm &amp;&amp; npm publish</code>.</td></tr>
+            <tr><td><code>prompt</code></td><td>One compact glyph for shell prompts: <code>&#9679;</code> when clear, <code>&#9650;1</code> when one source has issues, <code>&#10006;2</code> at critical. Honors <code>.statusbar</code> repo scoping.</td></tr>
+            <tr><td><code>refresh</code></td><td>Ask the running app to refresh all sources now (via the <code>statusbar://</code> URL scheme).</td></tr>
+            <tr><td><code>open [name]</code></td><td>Open the popover, optionally focused on a source.</td></tr>
+            <tr><td><code>add &lt;url&gt; [name]</code></td><td>Add a status page through the app.</td></tr>
+            <tr><td><code>remove &lt;name&gt;</code></td><td>Remove a source through the app.</td></tr>
+            <tr><td><code>cache-path</code></td><td>Print the status cache location.</td></tr>
+            <tr><td><code>version</code></td><td>Print the StatusBar version. Also <code>--version</code> / <code>-v</code>.</td></tr>
+            <tr><td><code>help</code></td><td>Show usage. Also <code>--help</code> / <code>-h</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="glass-card automate-card automate-card-wide">
+        <div class="automate-card-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <h3>Examples</h3>
+        </div>
+        <div class="code-block-wrapper">
+          <pre><code>statusbar status                  # every source, colored, one line each
+statusbar status github           # just GitHub
+statusbar status --json | jq .    # machine-readable snapshot
+statusbar status --fresh          # bypass the cache, fetch live
+statusbar wait npm &amp;&amp; npm publish # block until npm recovers
+statusbar wait api --timeout 600 --interval 15
+statusbar prompt                  # "&#9679;" or "&#9650;1" for your prompt
+statusbar add https://status.openai.com OpenAI</code></pre>
+          <button class="copy-btn" aria-label="Copy code">Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cli-options">
+    <div class="container">
+      <p class="section-label">options</p>
+      <h2>Options</h2>
+
+      <div class="glass-card automate-card automate-card-wide">
+        <table class="hook-table">
+          <thead>
+            <tr><th>Flag</th><th>Applies to</th><th>Effect</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>--json</code></td><td><code>status</code></td><td>Machine-readable output: the full snapshot, or one source as a flat object.</td></tr>
+            <tr><td><code>--fresh</code></td><td><code>status</code></td><td>Fetch live from each provider instead of reading the cache. Works without the app running.</td></tr>
+            <tr><td><code>--all</code></td><td><code>status</code>, <code>prompt</code></td><td>Ignore a <code>.statusbar</code> repo scope and show every source.</td></tr>
+            <tr><td><code>--timeout &lt;sec&gt;</code></td><td><code>wait</code></td><td>Give up after N seconds. Default 1800.</td></tr>
+            <tr><td><code>--interval &lt;sec&gt;</code></td><td><code>wait</code></td><td>Poll every N seconds. Default 30, minimum 5.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="cli-exit">
+    <div class="container">
+      <p class="section-label">signals</p>
+      <h2>Exit codes &amp; glyphs</h2>
+      <p class="section-sub">Both are stable interfaces &mdash; script against them.</p>
+
+      <div class="automate-row">
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            <h3>Exit codes</h3>
+          </div>
+          <table class="hook-table">
+            <tbody>
+              <tr><td><code>0</code></td><td>All monitored sources operational</td></tr>
+              <tr><td><code>1</code></td><td>At least one source has issues</td></tr>
+              <tr><td><code>2</code></td><td>Unknown status, no cache yet, or no source matched</td></tr>
+              <tr><td><code>64</code></td><td>Usage error or unknown command</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg>
+            <h3>Glyphs</h3>
+          </div>
+          <table class="hook-table">
+            <tbody>
+              <tr><td><code class="t-ok">&#9679;</code></td><td>Operational (green)</td></tr>
+              <tr><td><code class="t-warn">&#9650;</code></td><td>Minor outage (yellow) / major outage (orange)</td></tr>
+              <tr><td><code style="color: var(--status-red)">&#10006;</code></td><td>Critical outage (red)</td></tr>
+              <tr><td><code>&#9675;</code></td><td>Unknown (gray)</td></tr>
+            </tbody>
+          </table>
+          <p class="automate-desc">Colors turn off automatically when output is piped, or when <code>NO_COLOR</code> is set.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cli-scoping">
+    <div class="container">
+      <p class="section-label">scoping</p>
+      <h2>Repo scoping with <code>.statusbar</code></h2>
+      <p class="section-sub">Drop a <code>.statusbar</code> file in a repo and <code>status</code>/<code>prompt</code> report only that project&rsquo;s upstream dependencies. The CLI walks up from the working directory to find it &mdash; like <code>.gitignore</code>.</p>
+
+      <div class="automate-row">
+        <div class="glass-card automate-card">
+          <div class="code-block-wrapper">
+            <pre><code># .statusbar — upstream deps for this repo
+# one source name per line
+GitHub
+npm
+Vercel</code></pre>
+            <button class="copy-btn" aria-label="Copy code">Copy</button>
+          </div>
+          <p class="automate-desc">Names match case-insensitively against your monitored sources. A name you don&rsquo;t monitor yet prints a hint: <code>not monitored &mdash; statusbar add &lt;url&gt; npm</code>. Pass <code>--all</code> to see everything regardless.</p>
+        </div>
+
+        <div class="glass-card automate-card">
+          <div class="automate-card-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/></svg>
+            <h3>In your status line</h3>
+          </div>
+          <p class="automate-desc">With scoping, <code>statusbar prompt</code> in a Starship or tmux status line shows the health of <em>the repo you&rsquo;re standing in</em> &mdash; not your whole watchlist. Copy-paste configs for Starship, tmux, and SketchyBar are in the <a href="docs.html#terminal">integration guides</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <nav class="footer-links">
+        <a href="https://github.com/alexnodeland/StatusBar">GitHub</a>
+        <a href="https://github.com/alexnodeland/StatusBar/releases/latest">Releases</a>
+        <a href="https://github.com/alexnodeland/StatusBar/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/alexnodeland/StatusBar/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://ournature.gumroad.com/l/statusbar">Support</a>
+        <a href="mailto:alex@ournature.studio">Contact</a>
+      </nav>
+      <p class="footer-attr">Built with SwiftUI. Free &amp; open source under <a href="https://github.com/alexnodeland/StatusBar/blob/main/LICENSE">MIT</a>. Zero telemetry.</p>
+    </div>
+  </footer>
+
+  <script src="script.js?v=2"></script>
+</body>
+</html>

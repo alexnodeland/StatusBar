@@ -1984,6 +1984,290 @@ section {
   .mb-check { opacity: 0; }
 }
 
+/* --- Desktop widget mock --- */
+.mock-widgets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 10px 0;
+}
+
+.widget {
+  text-align: left;
+  background: #1a1c21;
+  border: 0.5px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.5);
+  transition: transform var(--timing-hover) ease, box-shadow var(--timing-hover) ease;
+}
+
+.widget:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px -18px rgba(0, 0, 0, 0.55);
+}
+
+.widget-small {
+  width: 172px;
+  height: 172px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.w-ticks {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 14px;
+}
+
+.w-ticks span {
+  width: 4px;
+  height: 10px;
+  border-radius: 1.5px;
+  background: var(--status-green);
+  opacity: 0.85;
+}
+
+.w-small-state { position: relative; min-height: 44px; }
+
+.w-clear,
+.w-issue {
+  position: absolute;
+  inset: auto 0 0 0;
+  font-family: var(--font-mono);
+}
+
+.w-clear {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.w-issue { opacity: 0; }
+
+.w-issue b {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--status-yellow);
+}
+
+.w-issue i {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.w-tick-flip { animation: none; }
+
+.widget-medium {
+  width: min(384px, 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 172px;
+}
+
+.w-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  margin: 0 -8px;
+  border-radius: 6px;
+  transition: background var(--timing-hover) ease;
+}
+
+.w-row:hover { background: rgba(255, 255, 255, 0.05); }
+
+.w-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-green);
+  flex: none;
+}
+
+.w-name {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.w-state {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.w-state.warn { color: var(--status-yellow); }
+
+.w-state-pair {
+  margin-left: auto;
+  position: relative;
+  display: inline-flex;
+  justify-content: flex-end;
+  min-width: 42px;
+}
+
+.w-state-pair .w-state { margin-left: 0; }
+
+.w-state-pair .w-state.warn {
+  position: absolute;
+  right: 0;
+  opacity: 0;
+}
+
+/* Same 9s story loop as the menu bar mock: all clear → one issue → recovered.
+   Text swaps use non-overlapping windows so the two labels never blend. */
+@media (prefers-reduced-motion: no-preference) {
+  .w-clear,
+  .w-state-pair .w-state:not(.warn) { animation: w-out-loop 9s ease-in-out infinite; }
+  .w-issue,
+  .w-state-pair .w-state.warn { animation: w-in-loop 9s ease-in-out infinite; }
+  .w-tick-flip { animation: w-tick-loop 9s ease-in-out infinite; }
+  .w-dot-flip { animation: w-dot-loop 9s ease-in-out infinite; }
+}
+
+@keyframes w-out-loop {
+  0%, 28% { opacity: 1; }
+  32%, 90% { opacity: 0; }
+  94%, 100% { opacity: 1; }
+}
+
+@keyframes w-in-loop {
+  0%, 32% { opacity: 0; }
+  36%, 86% { opacity: 1; }
+  90%, 100% { opacity: 0; }
+}
+
+@keyframes w-tick-loop {
+  0%, 30%, 92%, 100% { background: var(--status-green); height: 10px; opacity: 0.85; }
+  34%, 88% { background: var(--status-yellow); height: 14px; opacity: 1; }
+}
+
+@keyframes w-dot-loop {
+  0%, 30%, 92%, 100% { background: var(--status-green); }
+  34%, 88% { background: var(--status-yellow); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w-clear { opacity: 0; }
+  .w-issue { opacity: 1; }
+  .w-tick-flip { background: var(--status-yellow); height: 14px; opacity: 1; }
+  .w-dot-flip { background: var(--status-yellow); }
+  .w-state-pair .w-state:not(.warn) { opacity: 0; }
+  .w-state-pair .w-state.warn { opacity: 1; }
+}
+
+/* --- Terminal mock: the CLI and status line --- */
+.mock-terminal {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  background: #16181d;
+  border: 0.5px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.5);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.term-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
+}
+
+.term-bar span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.term-bar em {
+  margin-left: auto;
+  margin-right: auto;
+  transform: translateX(-22px);
+  font-style: normal;
+  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.term-body {
+  padding: 12px 14px 10px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.term-line {
+  padding: 1.5px 6px;
+  margin: 0 -6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background var(--timing-hover) ease;
+}
+
+.term-line:hover { background: rgba(255, 255, 255, 0.04); }
+
+.t-prompt { color: rgba(255, 255, 255, 0.4); }
+.t-dim { color: rgba(255, 255, 255, 0.42); }
+.t-ok { color: var(--status-green); }
+.t-warn { color: var(--status-yellow); }
+
+.t-name {
+  display: inline-block;
+  min-width: 12ch;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.t-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 0.95em;
+  background: rgba(255, 255, 255, 0.7);
+  vertical-align: text-bottom;
+}
+
+.term-tmux {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.055);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.t-tmux-right { color: rgba(255, 255, 255, 0.55); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .term-line {
+    opacity: 0;
+    animation: comp-in 0.3s ease forwards;
+    animation-delay: calc(var(--i) * 0.28s);
+  }
+  .t-cursor { animation: term-blink 1.1s steps(1) infinite; }
+}
+
+@keyframes term-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
 /* --- Mock interactivity: behaves like the app under the cursor --- */
 .app-mock,
 .mock-native {

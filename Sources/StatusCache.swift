@@ -37,10 +37,30 @@ struct StatusCache {
             .appendingPathComponent("status.json")
     }
 
+    /// The real user home, even inside a sandbox container (where
+    /// homeDirectoryForCurrentUser points at the container instead).
+    static var realHomeURL: URL {
+        if let home = getpwuid(getuid())?.pointee.pw_dir {
+            return URL(fileURLWithPath: String(cString: home))
+        }
+        return FileManager.default.homeDirectoryForCurrentUser
+    }
+
     let fileURL: URL
 
     init(fileURL: URL = StatusCache.defaultURL) {
         self.fileURL = fileURL
+    }
+
+    /// Reads the cache from the real home — works from the sandboxed widget
+    /// via its read-only temporary exception for ~/.cache/statusbar/.
+    static func readShared() -> StatusCacheSnapshot? {
+        let realURL =
+            realHomeURL
+            .appendingPathComponent(".cache")
+            .appendingPathComponent("statusbar")
+            .appendingPathComponent("status.json")
+        return StatusCache(fileURL: realURL).read() ?? StatusCache().read()
     }
 
     func write(_ snapshot: StatusCacheSnapshot) {

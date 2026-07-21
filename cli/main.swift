@@ -38,6 +38,19 @@ func fail(_ message: String, code: Int32 = 64) -> Never {
     exit(code)
 }
 
+/// The app's version, read from the bundle's Info.plist (the CLI ships
+/// inside StatusBar.app/Contents/MacOS, symlinks resolved).
+func cliVersion() -> String {
+    guard let exe = Bundle.main.executableURL?.resolvingSymlinksInPath() else { return "dev" }
+    let plist = exe.deletingLastPathComponent().deletingLastPathComponent()
+        .appendingPathComponent("Info.plist")
+    guard let data = try? Data(contentsOf: plist),
+        let dict = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+        let version = dict["CFBundleShortVersionString"] as? String
+    else { return "dev" }
+    return version
+}
+
 // MARK: - Cache access
 
 func loadCache(required: Bool = true) -> StatusCacheSnapshot? {
@@ -273,6 +286,8 @@ let helpText = """
       add <url> [name]  Add a source through the app
       remove <name>     Remove a source through the app
       cache-path        Print the status cache location
+      version           Print the StatusBar version
+      help              Show this help
 
     OPTIONS
       --json            Machine-readable output (status)
@@ -350,6 +365,8 @@ struct StatusBarCLI {
             print("remove requested")
         case "cache-path":
             print(StatusCache.defaultURL.path)
+        case "version", "--version", "-v":
+            print("statusbar \(cliVersion())")
         case "help", "--help", "-h":
             print(helpText)
         default:

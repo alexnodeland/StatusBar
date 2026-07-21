@@ -74,6 +74,8 @@ Universal binary — Apple Silicon and Intel. Updates arrive via `brew upgrade`,
 
 📣 **Webhooks** — push status changes to Slack (Block Kit), Discord (embeds), Microsoft Teams (Adaptive Cards), or any JSON endpoint — with per-webhook labels and real delivery feedback on test sends.
 
+🧩 **Desktop widget** — the status overview at a glance in Notification Center or on your desktop: the tick strip and issue count, or a per-source list.
+
 ⌨️ **At your fingertips** — a rebindable global hotkey (default `⌃⌥S`), a bundled CLI (`statusbar wait npm && npm publish`), Shortcuts/Spotlight intents, a `statusbar://` URL scheme, script hooks, and a full AppleScript dictionary. Runs as a pure menu bar agent.
 
 <div align="center"><br><img src="docs/tick-divider.svg" width="260" alt=""><br><br></div>
@@ -207,11 +209,9 @@ osascript -e 'tell application "StatusBar" to refresh'
 
 ## Terminal & Shortcuts
 
-The app writes a status snapshot to `~/.cache/statusbar/status.json` on every refresh. The bundled CLI reads it instantly:
+The app writes a status snapshot to `~/.cache/statusbar/status.json` on every refresh. The bundled CLI reads it instantly. Homebrew installs put `statusbar` on your PATH automatically; direct downloads install it with one click via **Settings → General → statusbar CLI**.
 
 ```bash
-sudo ln -sf /Applications/StatusBar.app/Contents/MacOS/statusbar-cli /usr/local/bin/statusbar
-
 statusbar status                   # all sources, colored, exit code 0/1
 statusbar status github --json     # one source, machine-readable
 statusbar wait npm && npm publish  # block until a source recovers
@@ -248,6 +248,8 @@ Vercel
 ```
 
 StatusBar also exposes **App Intents** — *Get Worst Status*, *Get Source Status*, and *Refresh Sources* — for Shortcuts automations, Focus modes, and Spotlight.
+
+Every command, flag, exit code, and glyph is documented in the **[CLI reference](https://alexnodeland.github.io/StatusBar/cli.html)** (or run `statusbar help`).
 
 ## Development
 

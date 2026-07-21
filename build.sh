@@ -177,6 +177,60 @@ done
 # Copy scripting definition for AppleScript support
 [ -f "StatusBar.sdef" ] && cp StatusBar.sdef "${RESOURCES}/"
 
+# Build and embed the widget extension (desktop/Notification Center widget)
+WIDGET_APPEX="${CONTENTS}/PlugIns/StatusBarWidget.appex"
+WIDGET_SOURCES=(
+    widget/StatusBarWidget.swift
+    Sources/StatusCache.swift
+    Sources/Models.swift
+    Sources/Helpers.swift
+    Sources/Constants.swift
+)
+echo "🧩 Building widget extension..."
+mkdir -p "${WIDGET_APPEX}/Contents/MacOS"
+if [ "$RELEASE" = true ]; then
+    swiftc -O -parse-as-library -application-extension "${WIDGET_SOURCES[@]}" \
+        -framework WidgetKit -framework SwiftUI \
+        -target arm64-apple-macosx26.0 -o "${BUILD_DIR}/widget-arm64"
+    swiftc -O -parse-as-library -application-extension "${WIDGET_SOURCES[@]}" \
+        -framework WidgetKit -framework SwiftUI \
+        -target x86_64-apple-macosx26.0 -o "${BUILD_DIR}/widget-x86_64"
+    lipo -create "${BUILD_DIR}/widget-arm64" "${BUILD_DIR}/widget-x86_64" \
+        -output "${WIDGET_APPEX}/Contents/MacOS/StatusBarWidget"
+    rm "${BUILD_DIR}/widget-arm64" "${BUILD_DIR}/widget-x86_64"
+else
+    swiftc -O -parse-as-library -application-extension "${WIDGET_SOURCES[@]}" \
+        -framework WidgetKit -framework SwiftUI \
+        -target arm64-apple-macosx26.0 -o "${WIDGET_APPEX}/Contents/MacOS/StatusBarWidget"
+fi
+# Stray const-values from the widget compile would break codesign
+rm -f "${WIDGET_APPEX}/Contents/MacOS/"*.swiftconstvalues
+cat > "${WIDGET_APPEX}/Contents/Info.plist" <<'WIDGETPLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key><string>com.statusbar.app.widget</string>
+    <key>CFBundleName</key><string>StatusBarWidget</string>
+    <key>CFBundleDisplayName</key><string>StatusBar</string>
+    <key>CFBundleExecutable</key><string>StatusBarWidget</string>
+    <key>CFBundlePackageType</key><string>XPC!</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array><string>MacOSX</string></array>
+    <key>CFBundleShortVersionString</key><string>1.1</string>
+    <key>CFBundleVersion</key><string>2</string>
+    <key>LSMinimumSystemVersion</key><string>26.0</string>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.widgetkit-extension</string>
+    </dict>
+</dict>
+</plist>
+WIDGETPLIST
+
 # Extract App Intents metadata so Shortcuts/Spotlight can discover intents
 if [ -f "${BUILD_DIR}/StatusBar.swiftconstvalues" ] && xcrun --find appintentsmetadataprocessor > /dev/null 2>&1; then
     echo "🎛  Extracting App Intents metadata..."
@@ -216,12 +270,16 @@ if [ -n "${CODESIGN_IDENTITY:-}" ]; then
             "${CONTENTS}/Frameworks/Sparkle.framework"
     fi
 
+    [ -d "${WIDGET_APPEX}" ] && codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp \
+        --entitlements widget/StatusBarWidget.entitlements "${WIDGET_APPEX}"
     codesign --force --sign "$CODESIGN_IDENTITY" --options runtime --timestamp \
         "${MACOS}/statusbar-cli"
     codesign --force --sign "$CODESIGN_IDENTITY" --options runtime \
         --entitlements StatusBar.entitlements --timestamp "${APP_BUNDLE}"
 else
     # Ad-hoc signing (local development)
+    [ -d "${WIDGET_APPEX}" ] && codesign --force --sign - --options runtime \
+        --entitlements widget/StatusBarWidget.entitlements "${WIDGET_APPEX}"
     codesign --force --sign - --options runtime "${MACOS}/statusbar-cli"
     codesign --force --sign - --options runtime --entitlements StatusBar.entitlements "${APP_BUNDLE}"
 fi
