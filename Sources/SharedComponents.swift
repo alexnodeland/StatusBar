@@ -37,6 +37,10 @@ extension View {
 struct SparklineView: View {
     let checkpoints: [StatusCheckpoint]
 
+    /// Fixed slot count so every row's strip has identical width and both
+    /// edges align down the list. Missing history renders as placeholders.
+    static let slotCount = 20
+
     private let barWidth: CGFloat = 3
     private let barGap: CGFloat = 2
     @ScaledMetric(relativeTo: .caption2) private var maxHeight: CGFloat = 13
@@ -51,23 +55,35 @@ struct SparklineView: View {
         }
     }
 
+    private var recent: [StatusCheckpoint] {
+        Array(checkpoints.suffix(Self.slotCount))
+    }
+
     private var issueCount: Int {
-        checkpoints.filter { $0.indicator != "none" }.count
+        recent.filter { $0.indicator != "none" }.count
     }
 
     var body: some View {
         HStack(alignment: .bottom, spacing: barGap) {
-            ForEach(Array(checkpoints.suffix(24).enumerated()), id: \.offset) { _, checkpoint in
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(colorForIndicator(checkpoint.indicator))
-                    .opacity(checkpoint.indicator == "none" ? 0.85 : 1)
-                    .frame(width: barWidth, height: barHeight(for: checkpoint.indicator))
+            // History fills from the right; empty slots lead on the left
+            ForEach(0..<Self.slotCount, id: \.self) { slot in
+                let historyIndex = slot - (Self.slotCount - recent.count)
+                if historyIndex >= 0 {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(colorForIndicator(recent[historyIndex].indicator))
+                        .opacity(recent[historyIndex].indicator == "none" ? 0.85 : 1)
+                        .frame(width: barWidth, height: barHeight(for: recent[historyIndex].indicator))
+                } else {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(Color.primary.opacity(0.10))
+                        .frame(width: barWidth, height: 7)
+                }
             }
         }
         .frame(height: maxHeight, alignment: .center)
-        .help("Last \(checkpoints.suffix(24).count) checks: \(issueCount) with issues")
+        .help("Last \(recent.count) checks: \(issueCount) with issues")
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Status history: \(issueCount) of \(checkpoints.suffix(24).count) checks had issues")
+        .accessibilityLabel("Status history: \(issueCount) of \(recent.count) checks had issues")
         .accessibilityValue(issueCount == 0 ? "No issues" : "\(issueCount) issues detected")
     }
 }

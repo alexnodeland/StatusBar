@@ -55,11 +55,8 @@ struct SourceRow: View {
 
             Spacer(minLength: Design.Spacing.cardInner)
 
-            if !checkpoints.isEmpty {
-                SparklineView(checkpoints: checkpoints)
-                    .layoutPriority(1)
-            }
-
+            // Accessories sit inboard of the sparkline so the strip column
+            // stays perfectly aligned on every row.
             if source.isSnoozed {
                 Image(systemName: "bell.slash.fill")
                     .font(Design.Typography.micro)
@@ -82,6 +79,9 @@ struct SourceRow: View {
                     .frame(width: 12)
                     .accessibilityLabel("Loading")
             }
+
+            SparklineView(checkpoints: checkpoints)
+                .layoutPriority(1)
 
             Image(systemName: "chevron.right")
                 .font(Design.Typography.micro)
