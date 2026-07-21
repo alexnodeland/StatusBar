@@ -3,6 +3,16 @@
 All notable changes to StatusBar. Full release notes with downloads live on the
 [GitHub Releases page](https://github.com/alexnodeland/StatusBar/releases).
 
+## v0.3.1 — 2026-07-20
+
+- New app icon: the uptime tick strip on a graphite squircle
+- Design pass matching the website: monospaced "data voice" for statuses,
+  timestamps, uptime numbers, badges, URLs, and section headers
+- Aggregate tick strip in the popover header — one tick per source
+- Redesigned rows: status text never truncates; fixed-width aligned
+  sparkline column with placeholder ticks while history fills
+- Refreshed marketing screenshots and social card
+
 ## v0.3.0 — 2026-07-20
 
 - Edit a source's name and URL without losing its history
